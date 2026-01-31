@@ -465,34 +465,11 @@ importers:
         specifier: workspace:*
         version: link:../..
 
-<<<<<<< Updated upstream
   extensions/signal:
     devDependencies:
       openclaw:
         specifier: workspace:*
         version: link:../..
-=======
-  extensions/qq:
-    dependencies:
-      openclaw:
-        specifier: workspace:*
-        version: link:../..
-      ws:
-        specifier: ^8.19.0
-        version: 8.19.0
-      zod:
-        specifier: ^4.3.6
-        version: 4.3.6
-    devDependencies:
-      '@types/ws':
-        specifier: ^8.18.1
-        version: 8.18.1
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-
-  extensions/signal: {}
->>>>>>> Stashed changes
 
   extensions/slack:
     devDependencies:
