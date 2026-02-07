@@ -1,0 +1,65 @@
+{
+  "name": "openclaw-skill-stagehand",
+  "version": "1.0.0",
+  "description": "Stagehand browser automation skill for OpenClaw with MiniMax AI",
+  "skills": [
+    {
+      "name": "stagehand",
+      "description": "AI-powered browser automation using Stagehand with MiniMax 2.1 model",
+      "script": "scripts/stagehand_browser.py",
+      "entrypoint": "main",
+      "commands": [
+        {
+          "name": "stagehand navigate",
+          "description": "Navigate to a URL",
+          "usage": "/stagehand navigate <url>"
+        },
+        {
+          "name": "stagehand act",
+          "description": "Perform an action using natural language",
+          "usage": "/stagehand act <instruction>"
+        },
+        {
+          "name": "stagehand extract",
+          "description": "Extract structured data from the page",
+          "usage": "/stagehand extract <instruction> [--schema <json>]"
+        },
+        {
+          "name": "stagehand observe",
+          "description": "Observe available elements on the page",
+          "usage": "/stagehand observe <instruction>"
+        },
+        {
+          "name": "stagehand agent",
+          "description": "Run autonomous agent workflow",
+          "usage": "/stagehand agent <task>"
+        }
+      ]
+    }
+  ],
+  "configuration": {
+    "env": [
+      {
+        "name": "MINIMAX_API_KEY",
+        "required": true,
+        "description": "MiniMax API key for authentication"
+      },
+      {
+        "name": "MINIMAX_API_BASE",
+        "required": false,
+        "default": "https://api.minimax.io/v1",
+        "description": "MiniMax API base URL"
+      }
+    ]
+  },
+  "author": "DeepSeeker AI",
+  "license": "MIT",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "dependencies": {
+    "vercel-minimax-ai-provider": "^0.0.2"
+  }
+}
