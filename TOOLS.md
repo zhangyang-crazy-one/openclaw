@@ -13,6 +13,33 @@ Things like:
 - Device nicknames
 - Anything environment-specific
 
+## Node.js Environment
+
+### Node Version Manager (nvm)
+```bash
+# 加载nvm
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+# 使用特定版本
+nvm use 22
+
+# 安装新版本
+nvm install 22
+```
+
+### pnpm (Node Package Manager)
+```bash
+# 全局安装
+pnpm add -g <package>
+
+# 运行脚本
+pnpm exec <command>
+
+# 使用本地node_modules
+pnpm run <script>
+```
+
 ## Examples
 
 ```markdown
@@ -33,7 +60,7 @@ Things like:
 
 ## Why Separate?
 
-Skills are shared. Your setup is yours. Keeping them apart means you can update skills without losing your notes, and share skills without leaking your infrastructure.
+Skills are shared. Your setup is yours. Keeping them apart means you can update skills without losing your notes, and share skills without losing your infrastructure.
 
 ---
 
