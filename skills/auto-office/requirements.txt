@@ -1,0 +1,3 @@
+# Auto Office 技能依赖
+openpyxl>=3.0.0
+python-pptx>=0.6.23
