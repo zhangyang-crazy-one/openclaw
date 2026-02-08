@@ -51,18 +51,31 @@ function resolveRunner() {
 }
 
 function run(cmd, args) {
-  const child = spawn(cmd, args, {
-    cwd: uiDir,
-    stdio: "inherit",
-    env: process.env,
-    shell: process.platform === "win32",
+  return new Promise((resolve) => {
+    const child = spawn(cmd, args, {
+      cwd: uiDir,
+      stdio: "inherit",
+      env: process.env,
+      shell: process.platform === "win32",
+    });
+    child.on("exit", (code, signal) => {
+      if (signal) {
+        resolve({ code: 1, signal });
+      } else {
+        resolve({ code: code ?? 1, signal: null });
+      }
+    });
   });
-  child.on("exit", (code, signal) => {
-    if (signal) {
-      process.exit(1);
-    }
-    process.exit(code ?? 1);
-  });
+}
+
+async function runAsync(cmd, args, envOverride) {
+  const result = await run(cmd, args);
+  if (result.signal) {
+    process.exit(1);
+  }
+  if (result.code !== 0) {
+    process.exit(result.code);
+  }
 }
 
 function runSync(cmd, args, envOverride) {
@@ -124,14 +137,39 @@ if (action !== "install" && !script) {
   process.exit(2);
 }
 
-if (action === "install") {
-  run(runner.cmd, ["install", ...rest]);
-} else {
-  if (!depsInstalled(action === "test" ? "test" : "build")) {
-    const installEnv =
-      action === "build" ? { ...process.env, NODE_ENV: "production" } : process.env;
-    const installArgs = action === "build" ? ["install", "--prod"] : ["install"];
-    runSync(runner.cmd, installArgs, installEnv);
+function copyLogo() {
+  const srcLogo = path.join(repoRoot, "docs", "assets", "pixel-lobster.svg");
+  const destDir = path.join(repoRoot, "dist", "control-ui", "assets");
+  const destLogo = path.join(destDir, "pixel-lobster.svg");
+  try {
+    if (!fs.existsSync(srcLogo)) {
+      process.stderr.write(`Warning: Logo not found at ${srcLogo}\n`);
+      return;
+    }
+    if (!fs.existsSync(destDir)) {
+      fs.mkdirSync(destDir, { recursive: true });
+    }
+    fs.copyFileSync(srcLogo, destLogo);
+  } catch (err) {
+    process.stderr.write(`Warning: Failed to copy logo: ${err.message}\n`);
   }
-  run(runner.cmd, ["run", script, ...rest]);
 }
+
+async function main() {
+  if (action === "install") {
+    run(runner.cmd, ["install", ...rest]);
+  } else {
+    if (!depsInstalled(action === "test" ? "test" : "build")) {
+      const installEnv =
+        action === "build" ? { ...process.env, NODE_ENV: "production" } : process.env;
+      const installArgs = action === "build" ? ["install", "--prod"] : ["install"];
+      runSync(runner.cmd, installArgs, installEnv);
+    }
+    await runAsync(runner.cmd, ["run", script, ...rest]);
+    if (action === "build") {
+      copyLogo();
+    }
+  }
+}
+
+main();
