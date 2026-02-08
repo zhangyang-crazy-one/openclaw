@@ -1,0 +1,622 @@
+#!/usr/bin/env python3
+"""
+MiniMax Browser Automation - Stagehand Architecture
+
+基于 Stagehand 核心设计重构:
+1. Hybrid Accessibility Tree (可访问性树)
+2. Two-Phase Inference (两阶段推理)
+3. Self-Healing (自愈能力)
+4. Shadow DOM 穿透支持
+"""
+
+import asyncio
+import json
+import os
+import re
+from typing import Any, Dict, List, Optional
+
+import httpx
+from playwright.async_api import async_playwright
+
+from scripts.a11y_tree import AccessibilityTreeBuilder
+
+
+class MiniMaxBrowserV3:
+    """
+    基于 Stagehand 架构的浏览器自动化.
+    
+    核心优势:
+    - 语义化元素定位 (不受 CSS selector 变化影响)
+    - 两阶段推理 (找元素 → 定动作)
+    - 自愈能力 (页面更新后自动适配)
+    """
+    
+    def __init__(
+        self,
+        model: str = "MiniMax-M2",
+        headless: bool = True,
+    ):
+        self.model = model
+        self.headless = headless
+        
+        # MiniMax 配置 - 国内版
+        self.api_key = os.getenv("MINIMAX_API_KEY")
+        self.api_base = os.getenv("MINIMAX_API_BASE", "https://api.minimaxi.com/v1")
+        
+        if not self.api_key:
+            raise ValueError("MINIMAX_API_KEY 未设置")
+        
+        # 组件
+        self.a11y_builder = AccessibilityTreeBuilder()
+        
+        # 状态
+        self.browser = None
+        self.context = None
+        self.page = None
+        self.initialized = False
+        
+        # 缓存
+        self._cached_tree: Optional[str] = None
+        self._tree_version: int = 0
+    
+    async def _call_llm(
+        self,
+        messages: List[Dict],
+        max_tokens: int = 4000
+    ) -> str:
+        """调用 MiniMax API."""
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+        }
+        
+        payload = {
+            "model": self.model,
+            "messages": messages,
+            "max_tokens": max_tokens,
+        }
+        
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            response = await client.post(
+                f"{self.api_base}/chat/completions",
+                headers=headers,
+                json=payload,
+            )
+            response.raise_for_status()
+            return response.json()["choices"][0]["message"]["content"]
+    
+    def _build_system_prompt(self) -> str:
+        """构建系统提示词."""
+        return """You are a professional browser automation assistant.
+Your goal is to help users interact with web pages using natural language.
+
+Key principles:
+1. Understand user intent from natural language
+2. Match elements semantically (not by CSS selectors)
+3. Handle dynamic page changes gracefully
+4. Provide clear reasoning for your actions
+
+Always respond with valid JSON."""
+    
+    async def initialize(self) -> Dict[str, Any]:
+        """初始化浏览器."""
+        try:
+            playwright = await async_playwright().start()
+            
+            chrome_path = os.getenv("CHROME_PATH") or "/usr/bin/google-chrome"
+            
+            if os.path.exists(chrome_path):
+                self.browser = await playwright.chromium.launch(
+                    headless=self.headless,
+                    executable_path=chrome_path,
+                )
+            else:
+                self.browser = await playwright.chromium.launch(headless=self.headless)
+            
+            self.context = await self.browser.new_context()
+            self.page = await self.context.new_page()
+            self.initialized = True
+            
+            return {
+                "success": True,
+                "message": "✅ 浏览器初始化成功",
+                "architecture": "Stagehand V3",
+                "features": [
+                    "Hybrid Accessibility Tree",
+                    "Two-Phase Inference", 
+                    "Self-Healing",
+                ]
+            }
+            
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    async def _get_accessibility_tree(self, force_refresh: bool = False) -> str:
+        """获取页面可访问性树."""
+        if self._cached_tree and not force_refresh:
+            return self._cached_tree
+        
+        self._cached_tree = await self.a11y_builder.build_tree(self.page)
+        self._tree_version += 1
+        
+        return self._cached_tree
+    
+    async def _execute_action(self, action_plan: Dict) -> bool:
+        """执行动作."""
+        element_id = action_plan.get("element_id", 0)
+        method = action_plan.get("method", "click")
+        arguments = action_plan.get("arguments", ["left"])
+        
+        # 获取元素
+        tree = await self._get_accessibility_tree()
+        lines = tree.split("\n")
+        
+        if element_id >= len(lines):
+            # 尝试模糊匹配
+            return await self._fallback_action(action_plan)
+        
+        # 获取元素信息
+        element_info = await self.page.evaluate(f"""() => {{
+            const elements = document.querySelectorAll('a, button, input, select, textarea, [role]');
+            if (elements[{element_id}]) {{
+                const el = elements[{element_id}];
+                return {{
+                    tag: el.tagName.toLowerCase(),
+                    id: el.id || '',
+                    href: el.href || '',
+                    text: el.innerText?.trim() || '',
+                    selector: el.id ? `#\${{el.id}}` : ''
+                }};
+            }}
+            return null;
+        }}""")
+        
+        if not element_info:
+            return await self._fallback_action(action_plan)
+        
+        # 执行动作
+        selector = element_info.get("selector", "")
+        
+        if method == "click":
+            if selector:
+                await self.page.click(selector)
+            else:
+                await self.page.evaluate(f"""() => {{
+                    const elements = document.querySelectorAll('a, button, [role]');
+                    if (elements[{element_id}]) elements[{element_id}].click();
+                }}""")
+        
+        elif method == "fill":
+            value = action_plan.get("value", "")
+            if selector:
+                await self.page.fill(selector, value)
+            else:
+                await self.page.evaluate(f"""(v) => {{
+                    const elements = document.querySelectorAll('input, textarea');
+                    if (elements[{element_id}]) elements[{element_id}].value = v;
+                }}""", value)
+        
+        elif method == "hover":
+            if selector:
+                await self.page.hover(selector)
+        
+        elif method == "scroll":
+            position = action_plan.get("arguments", ["50%"])[0]
+            if "%" in position:
+                pct = int(position.replace("%", ""))
+                await self.page.evaluate(f"""(p) => window.scrollTo(0, document.body.scrollHeight * p / 100)""", pct)
+        
+        elif method == "press":
+            key = action_plan.get("arguments", ["Enter"])[0]
+            await self.page.keyboard.press(key)
+        
+        return True
+    
+    async def _fallback_action(self, action_plan: Dict) -> bool:
+        """回退动作: 尝试语义化匹配."""
+        instruction = action_plan.get("reasoning", "")
+        
+        # 尝试基于文本内容点击
+        if "登录" in instruction or "login" in instruction.lower():
+            await self.page.click('button:has-text("登录"), a:has-text("登录"), [role="button"]:has-text("登录")')
+            return True
+        
+        if "提交" in instruction or "submit" in instruction.lower():
+            await self.page.click('button:has-text("提交"), [type="submit"]')
+            return True
+        
+        # 兜底: 页面点击
+        return False
+    
+    async def navigate(self, url: str) -> Dict[str, Any]:
+        """导航到 URL."""
+        if not self.initialized:
+            return {"success": False, "error": "浏览器未初始化"}
+        
+        try:
+            await self.page.goto(url, wait_until="domcontentloaded")
+            
+            # 获取初始树
+            await self._get_accessibility_tree(force_refresh=True)
+            
+            return {
+                "success": True,
+                "url": url,
+                "title": await self.page.title(),
+                "tree_version": self._tree_version,
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    async def act(self, instruction: str) -> Dict[str, Any]:
+        """
+        执行自然语言指令 - 两阶段推理.
+        
+        Phase 1: 从 A11y Tree 找到匹配元素
+        Phase 2: 确定执行动作
+        """
+        if not self.initialized:
+            return {"success": False, "error": "浏览器未初始化"}
+        
+        try:
+            # 获取可访问性树
+            tree = await self._get_accessibility_tree()
+            
+            # 构建提示词 (Phase 1 + Phase 2)
+            messages = [
+                {"role": "system", "content": self._build_system_prompt()},
+                {"role": "user", "content": f"""
+=== PHASE 1: FIND ELEMENT ===
+从以下可访问性树中找到匹配指令的元素:
+
+{tree}
+
+指令: {instruction}
+
+请分析并返回 JSON:
+{{
+    "element_id": 元素索引(数字),
+    "element_description": "元素描述",
+    "reasoning": "为什么选择这个元素"
+}}
+
+=== PHASE 2: DETERMINE ACTION ===
+Based on the instruction and element, determine the action:
+
+指令: {instruction}
+
+如果是指示点击/选择:
+{{
+    "element_id": <来自Phase 1>,
+    "method": "click|hover|fill",
+    "arguments": ["left" 或具体值],
+    "reasoning": "解释为什么选择这个动作"
+}}
+
+如果是指示滚动:
+{{
+    "method": "scroll",
+    "arguments": ["25%|50%|75%|100%"],
+    "reasoning": "滚动位置"
+}}
+
+如果是指示按键:
+{{
+    "method": "press",
+    "arguments": ["Enter|Space|ArrowUp|ArrowDown"],
+    "reasoning": "按键原因"
+}}
+
+如果无法匹配:
+{{"element_id": -1}}
+"""}
+            ]
+            
+            response = await self._call_llm(messages)
+            
+            # 解析响应
+            action_plan = self._parse_llm_response(response)
+            
+            # 执行动作
+            success = False
+            if action_plan.get("element_id", -1) >= 0:
+                success = await self._execute_action(action_plan)
+            
+            return {
+                "success": success,
+                "instruction": instruction,
+                "action_plan": action_plan,
+                "reasoning": action_plan.get("reasoning", ""),
+                "tree_version": self._tree_version,
+            }
+            
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    def _parse_llm_response(self, response: str) -> Dict:
+        """解析 LLM 响应."""
+        try:
+            # 尝试 JSON
+            return json.loads(response)
+        except json.JSONDecodeError:
+            # 尝试提取 JSON 块
+            match = re.search(r'\{[^{}]+\}', response.replace("\n", ""))
+            if match:
+                try:
+                    return json.loads(match.group())
+                except json.JSONDecodeError:
+                    pass
+            
+            # 尝试提取 element_id
+            id_match = re.search(r'"element_id"?:\s*(\d+)', response)
+            method_match = re.search(r'"method"?:\s*"([^"]+)"', response)
+            
+            return {
+                "element_id": int(id_match.group(1)) if id_match else 0,
+                "method": method_match.group(1) if method_match else "click",
+            }
+    
+    async def extract(self, instruction: str) -> Dict[str, Any]:
+        """
+        提取结构化数据 - 基于 A11y Tree.
+        
+        优势: 不依赖具体 HTML 结构，只依赖语义内容
+        """
+        if not self.initialized:
+            return {"success": False, "error": "浏览器未初始化"}
+        
+        try:
+            tree = await self._get_accessibility_tree()
+            
+            messages = [
+                {"role": "system", "content": "You are a data extraction assistant. Respond with valid JSON."},
+                {"role": "user", "content": f"""
+从页面中提取信息.
+
+可访问性树:
+{tree}
+
+提取指令: {instruction}
+
+请提取并返回 JSON:
+{{
+    "extracted": {{
+        // 根据指令提取的字段
+    }},
+    "confidence": 0.0-1.0,
+    "source_description": "数据来源描述"
+}}
+"""}
+            ]
+            
+            response = await self._call_llm(messages)
+            
+            try:
+                data = json.loads(response)
+            except json.JSONDecodeError:
+                match = re.search(r'\{[^{}]+\}', response)
+                data = {"extracted": match.group() if match else response}
+            
+            return {
+                "success": True,
+                "instruction": instruction,
+                "data": data,
+                "tree_version": self._tree_version,
+            }
+            
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    async def observe(self, instruction: str) -> Dict[str, Any]:
+        """观察页面元素 - 返回匹配指令的元素."""
+        if not self.initialized:
+            return {"success": False, "error": "浏览器未初始化"}
+        
+        try:
+            tree = await self._get_accessibility_tree()
+            
+            messages = [
+                {"role": "system", "content": "You are a UI analyst. Find matching elements."},
+                {"role": "user", "content": f"""
+找到匹配指令的元素.
+
+可访问性树:
+{tree}
+
+指令: {instruction}
+
+返回 JSON:
+{{
+    "matching_elements": [匹配的元素索引列表],
+    "description": "页面结构描述",
+    "recommendations": ["建议的操作列表"]
+}}
+"""}
+            ]
+            
+            response = await self._call_llm(messages)
+            
+            try:
+                analysis = json.loads(response)
+            except json.JSONDecodeError:
+                analysis = {"description": response}
+            
+            return {
+                "success": True,
+                "instruction": instruction,
+                "analysis": analysis,
+                "tree": tree,
+                "element_count": len(tree.split("\n")),
+            }
+            
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    async def agent(self, task: str) -> Dict[str, Any]:
+        """
+        自主代理 - 复杂任务规划与执行.
+        
+        自愈能力: 每次操作前刷新 A11y Tree
+        """
+        if not self.initialized:
+            return {"success": False, "error": "浏览器未初始化"}
+        
+        try:
+            results = []
+            
+            # 分析任务并规划步骤
+            tree = await self._get_accessibility_tree()
+            
+            messages = [
+                {"role": "system", "content": "You are a task planning assistant for browser automation."},
+                {"role": "user", "content": f"""
+当前页面可访问性树:
+{tree}
+
+任务: {task}
+
+请规划执行步骤，返回 JSON:
+[
+    {{
+        "step": 1,
+        "action": "navigate|click|fill|extract|scroll|press",
+        "instruction": "具体的自然语言指令",
+        "reasoning": "为什么这个步骤是必要的"
+    }}
+]
+最多 5 个步骤。
+"""}
+            ]
+            
+            response = await self._call_llm(messages)
+            
+            try:
+                plan = json.loads(response)
+            except json.JSONDecodeError:
+                match = re.search(r'\[[^\[\]]+\]', response)
+                plan = json.loads(match.group()) if match else []
+            
+            if not isinstance(plan, list):
+                return {"success": False, "error": "无法解析任务计划"}
+            
+            # 执行计划
+            for step in plan[:5]:
+                step_num = step.get("step", 0)
+                action = step.get("action", "")
+                instruction = step.get("instruction", "")
+                
+                if action == "navigate" and instruction.startswith("http"):
+                    result = await self.navigate(instruction)
+                elif action in ["click", "hover", "fill", "scroll", "press"]:
+                    result = await self.act(instruction)
+                elif action == "extract":
+                    result = await self.extract(instruction)
+                else:
+                    result = {"action": action, "message": "跳过"}
+                
+                results.append({
+                    "step": step_num,
+                    "action": action,
+                    "success": result.get("success", False),
+                    "result": result,
+                })
+                
+                # 自愈: 每次操作后刷新树
+                if action in ["click", "scroll", "navigate"]:
+                    await self._get_accessibility_tree(force_refresh=True)
+            
+            return {
+                "success": True,
+                "task": task,
+                "plan": plan,
+                "results": results,
+                "self_healing": {
+                    "tree_refreshes": self._tree_version,
+                    "total_steps": len(results),
+                }
+            }
+            
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    async def close(self):
+        """关闭浏览器."""
+        if self.browser:
+            await self.browser.close()
+            self.initialized = False
+
+
+# ============ CLI ============
+
+async def main():
+    import argparse
+    
+    parser = argparse.ArgumentParser(
+        description="MiniMax Browser Automation V3 - Stagehand Architecture",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+示例:
+  %(prog)s --test                   # 测试 API 连接
+  %(prog)s --init                  # 初始化浏览器
+  %(prog)s -u https://example.com  # 导航
+  %(prog)s -a "点击登录按钮"        # 执行动作
+  %(prog)s -e "提取所有标题"         # 提取数据
+  %(prog)s --agent "完成注册"        # 自主代理
+        """
+    )
+    parser.add_argument("--test", action="store_true", help="测试 API")
+    parser.add_argument("--init", action="store_true", help="初始化")
+    parser.add_argument("--navigate", "-u", help="导航 URL")
+    parser.add_argument("--act", "-a", help="执行动作")
+    parser.add_argument("--extract", "-e", help="提取数据")
+    parser.add_argument("--agent", help="自主代理任务")
+    parser.add_argument("--observe", "-o", help="观察页面")
+    parser.add_argument("--headed", action="store_true", help="显示窗口")
+    
+    args = parser.parse_args()
+    
+    browser = MiniMaxBrowserV3(headless=not args.headed)
+    
+    # 测试
+    if args.test:
+        print("=" * 60)
+        print("🧪 测试 MiniMax API")
+        print("=" * 60)
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                resp = await client.post(
+                    f"{browser.api_base}/chat/completions",
+                    headers={"Authorization": f"Bearer {browser.api_key}"},
+                    json={"model": browser.model, "messages": [{"role": "user", "content": "hi"}], "max_tokens": 10}
+                )
+                print(f"✅ API 正常: {resp.status_code}")
+        except Exception as e:
+            print(f"❌ API 错误: {e}")
+        return
+    
+    # 初始化
+    result = await browser.initialize()
+    print(json.dumps(result, indent=2, ensure_ascii=False))
+    
+    if result.get("success"):
+        if args.navigate:
+            result = await browser.navigate(args.navigate)
+            print(json.dumps(result, indent=2, ensure_ascii=False))
+        elif args.act:
+            result = await browser.act(args.act)
+            print(json.dumps(result, indent=2, ensure_ascii=False))
+        elif args.extract:
+            result = await browser.extract(args.extract)
+            print(json.dumps(result, indent=2, ensure_ascii=False))
+        elif args.observe:
+            result = await browser.observe(args.observe)
+            print(json.dumps(result, indent=2, ensure_ascii=False))
+        elif args.agent:
+            result = await browser.agent(args.agent)
+            print(json.dumps(result, indent=2, ensure_ascii=False))
+    
+    await browser.close()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
