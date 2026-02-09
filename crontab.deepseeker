@@ -1,0 +1,68 @@
+# DeepSeeker Cron Tasks
+# Updated: 2026-02-07
+# All tasks include full PATH to fix uv not found error
+
+PATH=/usr/local/bin:/home/liujerry/.local/bin:/home/liujerry/.local/share/pnpm:/usr/bin:/bin:/home/liujerry/.nvm/current/bin:/home/liujerry/.npm-global/bin:/home/liujerry/bin:/home/liujerry/.fnm/current/bin:/home/liujerry/.volta/bin:/home/liujerry/.asdf/shims:/home/liujerry/.bun/bin
+NVM_DIR=/home/liujerry/.nvm
+HOME=/home/liujerry
+
+# ==========================================
+# A股历史数据批量获取 (交易日每30分钟)
+# ==========================================
+
+30 9 * * 1-5 cd /home/liujerry/moltbot/skills/stock-analyzer/scripts && uv run python3 fetch_all_a_stocks.py 0 200 >> ~/.logs/all_stocks_history.log 2>&1
+0 10 * * 1-5 cd /home/liujerry/moltbot/skills/stock-analyzer/scripts && uv run python3 fetch_all_a_stocks.py 1 200 >> ~/.logs/all_stocks_history.log 2>&1
+30 10 * * 1-5 cd /home/liujerry/moltbot/skills/stock-analyzer/scripts && uv run python3 fetch_all_a_stocks.py 2 200 >> ~/.logs/all_stocks_history.log 2>&1
+0 11 * * 1-5 cd /home/liujerry/moltbot/skills/stock-analyzer/scripts && uv run python3 fetch_all_a_stocks.py 3 200 >> ~/.logs/all_stocks_history.log 2>&1
+30 11 * * 1-5 cd /home/liujerry/moltbot/skills/stock-analyzer/scripts && uv run python3 fetch_all_a_stocks.py 4 200 >> ~/.logs/all_stocks_history.log 2>&1
+0 13 * * 1-5 cd /home/liujerry/moltbot/skills/stock-analyzer/scripts && uv run python3 fetch_all_a_stocks.py 5 200 >> ~/.logs/all_stocks_history.log 2>&1
+30 13 * * 1-5 cd /home/liujerry/moltbot/skills/stock-analyzer/scripts && uv run python3 fetch_all_a_stocks.py 6 200 >> ~/.logs/all_stocks_history.log 2>&1
+0 14 * * 1-5 cd /home/liujerry/moltbot/skills/stock-analyzer/scripts && uv run python3 fetch_all_a_stocks.py 7 200 >> ~/.logs/all_stocks_history.log 2>&1
+30 14 * * 1-5 cd /home/liujerry/moltbot/skills/stock-analyzer/scripts && uv run python3 fetch_all_a_stocks.py 8 200 >> ~/.logs/all_stocks_history.log 2>&1
+0 15 * * 1-5 cd /home/liujerry/moltbot/skills/stock-analyzer/scripts && uv run python3 fetch_all_a_stocks.py 9 200 >> ~/.logs/all_stocks_history.log 2>&1
+
+# 每日收盘后检查进度
+30 16 * * 1-5 cd /home/liujerry/moltbot/skills/stock-analyzer/scripts && uv run python3 fetch_all_a_stocks.py --status >> ~/.logs/all_stocks_status.log 2>&1
+
+# 每周日检查数据质量
+0 17 * * 0 cd /home/liujerry/moltbot/skills/stock-analyzer/scripts && uv run python3 fetch_all_a_stocks.py --quality >> ~/.logs/all_stocks_quality.log 2>&1
+
+# ==========================================
+# 邮箱每日分析报告 (每日09:00)
+# 使用nvm切换Node 22发送QQ消息
+# ==========================================
+
+0 9 * * * bash /home/liujerry/moltbot/scripts/email_daily_report.sh >> ~/.logs/email_stat.log 2>&1
+
+# ==========================================
+# 学术研究 (每4小时)
+# ==========================================
+
+0 */4 * * * cd /home/liujerry/moltbot && uv run python3 scripts/academic_final.py >> ~/.logs/deepseeker_academic.log 2>&1
+
+# 量化金融研究
+0 10 * * * cd /home/liujerry/moltbot/skills/quant-finance && uv run python3 quant_research.py --query "quantitative investing" --type quant --limit 8 >> ~/.logs/quant_research.log 2>&1
+
+# 宏观情绪分析
+0 11 * * * cd /home/liujerry/moltbot/skills/macro-sentiment && uv run python3 macro_sentiment.py --query "investor sentiment" --type sentiment --limit 8 >> ~/.logs/macro_sentiment.log 2>&1
+
+# ==========================================
+# 知识图谱 (每小时)
+# ==========================================
+
+0 * * * * cd /home/liujerry/moltbot && uv run python3 scripts/moltbook_knowledge_sync.py >> ~/.logs/deepseeker_knowledge.log 2>&1
+0 */4 * * * cd /home/liujerry/moltbot && uv run python3 scripts/auto_extract_knowledge.py --latest >> ~/.logs/deepseeker_extract.log 2>&1
+
+# ==========================================
+# 股票技术分析 (每日)
+# ==========================================
+
+0 8 * * * cd /home/liujerry/moltbot/skills/stock-analyzer/scripts && uv run python3 daily_analysis.py >> ~/.logs/stock_analysis.log 2>&1
+
+# ==========================================
+# 每周任务 (周六)
+# ==========================================
+
+0 12 * * 6 cd /home/liujerry/moltbot/skills/quant-finance && uv run python3 quant_research.py --query "machine learning stock prediction" --type ml --limit 15 --save >> ~/.logs/quant_research.log 2>&1
+
+0 14 * * 6 cd /home/liujerry/moltbot/skills/macro-sentiment && uv run python3 macro_sentiment.py --query "Federal Reserve policy" --type policy --limit 15 --save >> ~/.logs/macro_sentiment.log 2>&1
