@@ -1,4 +1,10 @@
 
+## 2026-02-12
+- **上游同步完成**: 自动合并 upstream/main 到 fork
+  - 新分支: codex/subagent-improvements, feat/system-prompt-subagents-guidance
+  - 49 个文件更改，+1679/-893 行
+  - 包含飞书扩展测试、cron 服务回归测试、WhatsApp markdown 支持等更新
+
 ## 2026-02-11
 - **系统启动与任务补做**
   - 启动 Neo4j 数据库（从 Created 状态）
