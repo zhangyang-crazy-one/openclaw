@@ -1,0 +1,73 @@
+# 行业分析技能配置文件
+
+# 数据路径
+data_dir: "/home/liujerry/金融数据/stocks"
+output_dir: "/home/liujerry/金融数据/predictions"
+
+# 多因子配置
+# 基于学术研究成果
+factor_weights:
+  size: 0.15           # 规模因子 (Fama-French, 1993)
+  value: 0.20           # 价值因子 (Fama-French, 1992)
+  profitability: 0.20  # 盈利能力因子 (Fama-French, 2006)
+  investment: 0.10      # 投资因子 (Fama-French, 2006)
+  momentum: 0.15        # 动量因子 (Carhart, 1997)
+  gross_profitability: 0.10  # 毛利率因子 (Novy-Marx, 2013)
+  growth: 0.10           # 成长因子 (Hou et al., 2015)
+
+# 行业分类配置
+# 基于证监会《上市公司行业分类指引》(2023)
+industry_mapping:
+  # 主要行业
+  technology: ["C09", "C10", "C22", "C23", "C24"]  # 计算机、传媒、软件
+  healthcare: ["C13", "C14", "C15"]  # 医药生物、医疗器械、医疗服务
+  new_energy: ["C16", "C17", "C35", "C36", "C37"]  # 电气设备、电力设备
+  manufacturing: ["C30", "C31", "C32"]  # 机械设备
+  consumer: ["C49", "C50", "C51", "C52"]  # 消费
+  finance: ["C42", "C43", "C44"]  # 金融
+  real_estate: ["C45", "C46"]  # 房地产
+
+# 轮动策略配置
+rotation:
+  lookback_periods: [63, 126, 252]  # 3, 6, 12个月
+  signal_thresholds:
+    strong_bull: 10    # 动量差值阈值
+    strong_bear: -10
+
+# 输出配置
+output:
+  format: "json"  # json, markdown
+  save_results: true
+  filename: "industry_analysis_results.json"
+
+# 引用文献配置
+citations:
+  - id: "FF1992"
+    title: "The Cross-Section of Expected Stock Returns"
+    authors: "Fama, E.F., French, K.R."
+    year: 1992
+    journal: "Journal of Finance"
+    
+  - id: "Carhart1997"
+    title: "On Persistence in Mutual Fund Performance"
+    authors: "Carhart, M.M."
+    year: 1997
+    journal: "Journal of Finance"
+    
+  - id: "FF2006"
+    title: "Profitability, Investment and Average Returns"
+    authors: "Fama, E.F., French, K.R."
+    year: 2006
+    journal: "Journal of Financial Economics"
+    
+  - id: "Novy2013"
+    title: "The Other Side of Value"
+    authors: "Novy-Marx, R."
+    year: 2013
+    journal: "Journal of Financial Economics"
+    
+  - id: "Hou2015"
+    title: "Digesting Anomalies"
+    authors: "Hou, K., Xue, C., Zhang, L."
+    year: 2015
+    journal: "Review of Financial Studies"
