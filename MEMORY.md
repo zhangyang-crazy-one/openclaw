@@ -1,6 +1,11 @@
 
 ## 2026-02-13
 - **上游同步完成**: 自动合并 upstream/main 到 fork
+  - 143 个文件更改，+4186/-2064 行
+  - 新增：飞书媒体测试、ZAI 端点检测脚本、heartbeat-wake 测试等
+  - 删除：soul-evil hook 相关文件、一些测试文件重构
+  - 新增脚本：label-open-issues.ts、vitest-slowest.mjs
+- **上游同步完成**: 自动合并 upstream/main 到 fork
   - 71 个文件更改，+2173/-150 行
   - 新增音频预检、HTTP认证测试、Telegram检测测试等功能
   - Discord 消息处理预检增强，命令队列重构
