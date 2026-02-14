@@ -47,9 +47,6 @@ export async function resolveBootstrapFilesForRun(params: {
     sessionKey,
   );
 
-  // Ensure SOUL.md is always at the beginning for personality reinforcement
-  const soulOrdered = ensureSoulAtFront(bootstrapFiles);
-
   return applyBootstrapHookOverrides({
     files: soulOrdered,
     workspaceDir: params.workspaceDir,
