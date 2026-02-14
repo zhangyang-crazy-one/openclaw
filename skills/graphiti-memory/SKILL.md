@@ -1,74 +1,52 @@
 ---
 name: graphiti-memory
-version: 1.0.1
+version: 2.1.0
 description: Graphiti 知识图谱记忆系统 - 集成 DeepSeek + Ollama
 ---
 
-# Graphiti Memory
+# Graphiti Memory (v2.1)
 
 Graphiti 知识图谱记忆系统，支持时序事实存储和语义搜索。
 
-## ✅ 当前状态
+## 当前状态 ✅
 
-| 组件 | 状态 | 说明 |
+| 组件 | 状态 | 版本 |
 |------|------|------|
-| Neo4j | ✅ 运行中 | localhost:7687 |
-| Graphiti API | ✅ 运行中 | localhost:8001 |
-| DeepSeek LLM | ✅ 使用中 | JSON mode + schema |
-| Ollama Embedding | ✅ 使用中 | embeddinggemma:300m |
-| Episodes | ✅ 9 | 消息已存储 |
-| Entities | ✅ 6 | 实体已提取 |
-| Relations | ✅ 1 | 关系已创建 (DeepSeeker USES_FOR_PERSONALITY) |
+| Neo4j | ✅ 运行中 | 5.26.0 |
+| Graphiti API | ✅ healthy | /home/liujerry/graphiti/ |
+| DeepSeek LLM | ✅ JSON mode | deepseek-chat |
+| Ollama Embedding | ✅ 768维 | embeddinggemma:300m |
+| Worker | ✅ 后台运行 | 处理消息队列 |
+| fulltext 索引 | ✅ ONLINE | node + edge |
 
-## 🔧 已修复问题
+## 数据统计
 
-### 1. DeepSeek LLM 客户端 (`deepseek_client.py`)
-- 使用 `response_format={"type": "json_object"}` 确保 JSON 输出
-- 添加 JSON schema 到 system prompt
-- 返回格式兼容 `_handle_structured_response`
-
-### 2. Ollama Embedder (`ollama_embedder.py`)
-- 正确处理 Ollama API 格式: `{"embeddings": [[...]]}`
-- `create_batch()` 返回完整 embeddings 列表
-
-### 3. API 服务 (`zep_graphiti.py`)
-- 正确创建 DeepSeekClient（基于 base_url/model 检测）
-- Ollama embedder 使用 `embeddinggemma:300m` 模型
-
-### 4. 驱动生命周期 (`neo4j_driver.py`)
-- 禁用自动索引创建（后台任务导致 Driver closed 错误）
-- 索引改为按需创建
+| 类型 | 数量 |
+|------|------|
+| Episodic | 14 |
+| Entity | 97 |
+| Relations | 处理中 |
 
 ## 快速启动
 
 ```bash
-# 启动 Graphiti API
-./scripts/start-graphiti.sh
+# 1. 确保 Neo4j 运行
+docker ps | grep neo4j || docker run -d --name neo4j \
+  -v neo4j_data:/data \
+  -p 7474:7474 -p 7687:7687 \
+  -e NEO4J_AUTH=neo4j/graphiti_memory_2026 \
+  neo4j:5.26.0
 
-# 检查状态
-./scripts/status.sh
+# 2. 创建 fulltext 索引 (首次)
+docker exec neo4j cypher-shell -u neo4j -p graphiti_memory_2026 "
+CREATE FULLTEXT INDEX node_name_and_summary FOR (n:Entity) ON EACH [n.name, n.summary];
+CREATE FULLTEXT INDEX edge_name_and_fact FOR ()-[r:RELATES_TO]-() ON EACH [r.name, r.fact];
+"
 
-# 直接同步（推荐）
-python3 scripts/graphiti-sync-direct.py
-```
-
-## 架构
-
-```
-OpenClaw Memory → Graphiti API → Neo4j
-                        ↑
-                   DeepSeek LLM (JSON mode)
-                   Ollama Embedding (768维)
-```
-
-## 文件结构
-
-```
-scripts/
-├── start-graphiti.sh      # 启动 Graphiti API
-├── status.sh             # 检查状态和快速测试
-├── sync-memory.py        # 同步 memory 目录
-└── graphiti-sync-direct.py  # 直接同步（修复版）
+# 3. 启动 Graphiti (使用 uv)
+cd /home/liujerry/graphiti/server
+source ../.env
+uv run uvicorn graph_service.main:app --host 0.0.0.0 --port 8000
 ```
 
 ## 环境变量
@@ -92,38 +70,93 @@ EMBEDDING_MODEL=embeddinggemma:300m
 ## API 使用
 
 ```bash
-# 添加消息到处理队列
-curl -X POST http://localhost:8001/messages \
+# 健康检查
+curl http://localhost:8000/healthcheck
+
+# 添加消息 (自动提取实体)
+curl -X POST http://localhost:8000/messages \
   -H "Content-Type: application/json" \
-  -d '{"group_id": "my-group", "messages": [{"content": "...", "role_type": "user", "role": "assistant"}]}'
+  -d '{
+    "group_id": "openclaw-main",
+    "messages": [{"content": "内容...", "role_type": "user", "role": "user"}]
+  }'
 
 # 搜索
-curl -X POST http://localhost:8001/search \
+curl -X POST http://localhost:8000/search \
   -H "Content-Type: application/json" \
-  -d '{"query": "关键词", "group_ids": ["my-group"]}'
+  -d '{"query": "关键词", "group_ids": ["openclaw-main"]}'
+```
+
+## Python 使用
+
+```python
+import asyncio
+from graphiti_core import Graphiti
+from graphiti_core.embedder.ollama import OllamaEmbedder, OllamaEmbedderConfig
+
+async def add_memory():
+    embedder = OllamaEmbedder(
+        config=OllamaEmbedderConfig(
+            embedding_model="embeddinggemma:300m",
+            base_url="http://localhost:11434",
+        )
+    )
+    
+    graphiti = Graphiti(
+        uri="bolt://localhost:7687",
+        user="neo4j",
+        password="graphiti_memory_2026",
+        embedder=embedder,
+    )
+    
+    await graphiti.add_episode(
+        group_id="openclaw-main",
+        name="memory: filename.md",
+        episode_body="内容...",
+        source=EpisodeType.text,
+    )
+    
+    await graphiti.close()
+
+asyncio.run(add_memory())
 ```
 
 ## 故障排除
 
-### 搜索返回空结果
+### Neo4j 未运行
 ```bash
-# 检查 EntityEdges 是否存在
-curl "http://localhost:7474/db/neo4j/query/v2" \
-  -H "Content-Type: application/json" \
-  -u "neo4j:graphiti_memory_2026" \
-  -d '{"statement": "MATCH ()-[e:RELATES_TO]->() RETURN count(e)"}'
-
-# 如果为 0，尝试添加更多数据并等待处理
+docker start neo4j
+sleep 120  # 等待启动
 ```
 
 ### Graphiti 无法启动
 ```bash
 # 检查端口
-netstat -tlnp | grep 8001
+netstat -tlnp | grep 8000
 
 # 查看日志
-tail -50 /tmp/graphiti-api.log
+tail -50 /tmp/graphiti.log
+
+# 重启
+pkill -f uvicorn
+cd /home/liujerry/graphiti/server && source ../.env && uv run uvicorn graph_service.main:app
 ```
+
+### 消息未处理
+```bash
+# 检查 worker 日志
+tail -100 /tmp/graphiti.log | grep -i worker
+
+# 重新添加消息
+curl -X POST http://localhost:8000/messages -d '...'
+```
+
+## 文件位置
+
+- Graphiti 源码: `/home/liujerry/graphiti/`
+- 技能配置: `/home/liujerry/moltbot/skills/graphiti-memory/`
+- Memory 文件: `/home/liujerry/moltbot/memory/`
+- 日志: `/tmp/graphiti.log`
 
 ## 来源
 

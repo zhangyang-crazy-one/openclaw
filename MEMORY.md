@@ -1,4 +1,12 @@
 
+## 2026-02-14
+- **Graphiti 知识图谱工作**
+  - Neo4j GDS 插件版本不兼容（2.5.0 ≠ 5.26.0）
+  - 用户修改版 Graphiti 源码可用（/home/liujerry/graphiti/）
+  - DeepSeek LLM + Ollama Embedder 测试通过
+  - 技能文档更新到 v2.0
+  - 详情: [memory/2026-02-14.md](/home/liujerry/moltbot/memory/2026-02-14.md)
+
 ## 2026-02-13
 
 - **股票分析系统重大升级**
