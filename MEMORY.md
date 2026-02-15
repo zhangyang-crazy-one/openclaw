@@ -1,5 +1,9 @@
 
-## 2026-02-14
+## 2026-02-15
+- **上游同步完成**: 自动合并 upstream/main 到 fork
+  - 222 个上游提交，473 个文件更改
+  - 主要更新：iOS/macOS Gateway 重构、Podman 支持、Tlon 扩展增强、Discord exec approvals 改进
+  - 新增：PR 工作流技能、agent 提交控制策略、telnyx voice provider 测试等
 - **Graphiti 知识图谱工作**
   - Neo4j GDS 插件版本不兼容（2.5.0 ≠ 5.26.0）
   - 用户修改版 Graphiti 源码可用（/home/liujerry/graphiti/）
