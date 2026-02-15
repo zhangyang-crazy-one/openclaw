@@ -1,5 +1,11 @@
 
-## 2026-02-15
+## 2026-02-16
+- **上游同步完成**: 自动合并 upstream/main 到 fork
+  - 210 个文件更改，+4778/-4941 行
+  - 删除 AGENT_SUBMISSION_CONTROL_POLICY.md（已合并到主文档）
+  - 新增：announce-idempotency.ts、attachment-normalize.ts、jsonl-socket.ts 等多个模块
+  - Telegram、Discord、Slack 等渠道增强
+  - 大量测试文件重构
 - **长期基本面量化模型 v3.1 完成**
   - 财报数据获取系统创建 (`fetch_fundamentals.py`, `fetch_all_financials.py`)
   - 获取 100 条财务指标, 5124 条 PB 历史数据
