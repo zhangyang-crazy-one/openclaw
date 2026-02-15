@@ -1,6 +1,11 @@
 
 ## 2026-02-15
-- **上游同步完成**: 自动合并 upstream/main 到 fork
+- **长期基本面量化模型 v3.1 完成**
+  - 财报数据获取系统创建 (`fetch_fundamentals.py`, `fetch_all_financials.py`)
+  - 获取 100 条财务指标, 5124 条 PB 历史数据
+  - Top 5: 民生银行 (62.1), 浦发银行 (61.4), 中国联通 (59.7), 雅戈尔 (59.7), 招商银行 (58.9)
+  - 因子: 估值 35%, 成长 40%, 质量 25%
+  - 详情: [memory/2026-02-15.md](/home/liujerry/moltbot/memory/2026-02-15.md)
   - 222 个上游提交，473 个文件更改
   - 主要更新：iOS/macOS Gateway 重构、Podman 支持、Tlon 扩展增强、Discord exec approvals 改进
   - 新增：PR 工作流技能、agent 提交控制策略、telnyx voice provider 测试等
