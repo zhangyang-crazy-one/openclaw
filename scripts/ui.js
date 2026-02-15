@@ -51,20 +51,16 @@ function resolveRunner() {
 }
 
 function run(cmd, args) {
-  return new Promise((resolve) => {
-    const child = spawn(cmd, args, {
-      cwd: uiDir,
-      stdio: "inherit",
-      env: process.env,
-      shell: process.platform === "win32",
-    });
-    child.on("exit", (code, signal) => {
-      if (signal) {
-        resolve({ code: 1, signal });
-      } else {
-        resolve({ code: code ?? 1, signal: null });
-      }
-    });
+  const child = spawn(cmd, args, {
+    cwd: uiDir,
+    stdio: "inherit",
+    env: process.env,
+  });
+  child.on("exit", (code, signal) => {
+    if (signal) {
+      process.exit(1);
+    }
+    process.exit(code ?? 1);
   });
 }
 
@@ -83,7 +79,6 @@ function runSync(cmd, args, envOverride) {
     cwd: uiDir,
     stdio: "inherit",
     env: envOverride ?? process.env,
-    shell: process.platform === "win32",
   });
   if (result.signal) {
     process.exit(1);
