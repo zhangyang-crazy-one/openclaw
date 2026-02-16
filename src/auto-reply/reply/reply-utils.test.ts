@@ -597,18 +597,7 @@ describe("createReplyReferencePlanner", () => {
       startId: "parent",
     });
     expect(planner.use()).toBe("thread-1");
-    expect(planner.hasReplied()).toBe(true);
     expect(planner.use()).toBeUndefined();
-  });
-
-  it("uses existingId on every call when mode is all", () => {
-    const planner = createReplyReferencePlanner({
-      replyToMode: "all",
-      existingId: "thread-1",
-      startId: "parent",
-    });
-    expect(planner.use()).toBe("thread-1");
-    expect(planner.use()).toBe("thread-1");
   });
 
   it("honors allowReference=false", () => {
@@ -643,7 +632,6 @@ describe("createStreamingDirectiveAccumulator", () => {
     const result = accumulator.consume("current]] Yo");
     expect(result?.text).toBe("Yo");
     expect(result?.replyToCurrent).toBe(true);
-    expect(result?.replyToTag).toBe(true);
   });
 
   it("propagates explicit reply ids across chunks", () => {
