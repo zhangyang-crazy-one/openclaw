@@ -171,7 +171,7 @@ def post_to_moltbook(title, content):
         "-H", f"Authorization: Bearer {creds['api_key']}",
         "-H", "Content-Type: application/json",
         "-d", json.dumps({
-            "submolt": "general",
+            "submolt_name": "general",
             "title": title,
             "content": content
         })
@@ -190,7 +190,8 @@ def post_to_moltbook(title, content):
             print(f"✅ 发帖成功: {title}")
             return True
         else:
-            print(f"❌ 发帖失败: {resp.get('error')}")
+            error_msg = resp.get('error') or resp.get('message') or 'Unknown error'
+            print(f"❌ 发帖失败: {error_msg}")
             return False
     except:
         print(f"❌ 解析失败: {result.stdout}")
