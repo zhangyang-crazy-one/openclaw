@@ -1,304 +1,210 @@
 #!/usr/bin/env python3
 """
-Portfolio Optimization System for ChiNext Stocks
-- Kelly Criterion Optimization
-- Risk Parity Strategy
-- Maximum Drawdown Limit
+投资组合优化脚本
+黄金ETF + 创业板股票组合分析
 """
-import os, sys, json, warnings
-from datetime import datetime
-from pathlib import Path
-import numpy as np
+import akshare as ak
 import pandas as pd
-from scipy.optimize import minimize
-from sklearn.ensemble import RandomForestRegressor
+import numpy as np
+from datetime import datetime, timedelta
 import warnings
 warnings.filterwarnings('ignore')
 
-DATA_DIR = Path("/home/liujerry/金融数据/stocks")
-OUTPUT_DIR = Path("/home/liujerry/金融数据/predictions")
-OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-
-CHUANGYE_POOL = [
-    "300750", "300014", "300017", "300408", "300251",
-    "300015", "300529", "300383", "300285", "300298",
-    "300274", "300124", "300212", "300676", "300760"
-]
-
-def load_data(code):
-    filepath = DATA_DIR / f"{code}.csv"
-    if not filepath.exists():
-        return None
-    try:
-        df = pd.read_csv(filepath, encoding='utf-8-sig')
-        n_cols = df.shape[1]
-        if n_cols == 2:
-            df.columns = ['date', 'close']
-            df['volume'] = 1.0
-            df['high'] = df['close'] * 1.02
-            df['low'] = df['close'] * 0.98
-        else:
-            cols = ['date', 'open', 'close', 'high', 'low', 'volume'][:n_cols]
-            df.columns = cols + [f'col{i}' for i in range(n_cols-6)] if n_cols > 6 else cols
-            if 'volume' not in df.columns:
-                df['volume'] = 1.0
-            if 'high' not in df.columns:
-                df['high'] = df['close'] * 1.02
-                df['low'] = df['close'] * 0.98
-        df['date'] = pd.to_datetime(df['date'])
-        df = df.sort_values('date').reset_index(drop=True)
-        for col in ['close', 'high', 'low', 'volume']:
-            if col in df.columns:
-                df[col] = pd.to_numeric(df[col], errors='coerce')
-        return df.dropna()
-    except:
-        return None
-
-def calc_features(df):
-    df = df.copy()
-    for p in [1, 3, 5, 10]:
-        df[f'return_{p}'] = df['close'].pct_change(p)
-    for p in [5, 10, 20]:
-        df[f'volatility_{p}'] = df['return_1'].rolling(p).std()
-    df['volume_ma'] = df['volume'].rolling(20).mean()
-    df['turnover_rate'] = df['volume'] / df['volume_ma']
-    for p in [7, 14]:
-        delta = df['close'].diff()
-        gain = delta.where(delta > 0, 0).rolling(p).mean()
-        loss = (-delta.where(delta < 0, 0)).rolling(p).mean()
-        rs = gain / (loss + 1e-10)
-        df[f'rsi_{p}'] = 100 - (100 / (1 + rs))
-    df['macd'] = df['close'].ewm(span=12).mean() - df['close'].ewm(span=26).mean()
-    df['macd_signal'] = df['macd'].ewm(span=9).mean()
-    df['macd_hist'] = df['macd'] - df['macd_signal']
-    for p in [5, 10, 20]:
-        df[f'momentum_{p}'] = df['close'] / df['close'].shift(p) - 1
-    for p in [5, 10, 20]:
-        df[f'ma_{p}'] = df['close'].rolling(p).mean()
-        df[f'ma_ratio_{p}'] = df['close'] / df[f'ma_{p}']
-    return df
-
-def kelly_position(win_rate, avg_win, avg_loss, confidence=0.5):
-    if avg_loss == 0:
-        return 0.2
-    kelly = win_rate - (1 - win_rate) / (avg_win / abs(avg_loss))
-    adj_kelly = kelly * confidence
-    half_kelly = adj_kelly / 2
-    return max(0.05, min(0.4, half_kelly))
-
-def risk_parity(returns_df):
-    n = returns_df.shape[1]
-    cov = returns_df.cov()
-    
-    def rc(w):
-        pv = np.sqrt(np.dot(w.T, np.dot(cov.values, w)))
-        mc = np.dot(cov.values, w)
-        return w * mc / (pv + 1e-10)
-    
-    def obj(w):
-        target = np.ones(n) / n
-        return np.sum((rc(w) - target) ** 2)
-    
-    cons = {'type': 'eq', 'fun': lambda w: np.sum(w) - 1}
-    bnds = [(0.05, 0.5) for _ in range(n)]
-    w0 = np.ones(n) / n
-    
-    res = minimize(obj, w0, method='SLSQP', bounds=bnds, constraints=cons)
-    return res.x / res.x.sum() if res.success else w0
-
-def calc_optimal_position(stock_metrics, risk_aversion=0.5):
-    positions = []
-    for stock in stock_metrics:
-        vol = stock['volatility']
-        vol_pen = np.sqrt(vol) * 2
-        win_rate = stock.get('win_rate', 0.5)
-        dir_acc = stock.get('direction_accuracy', 0.5)
-        mape = stock.get('mape', 0.3)
-        mape_pen = max(0, mape - 0.1) * 3
+class PortfolioOptimizer:
+    def __init__(self):
+        self.assets = {}
+        self.returns = pd.DataFrame()
         
-        base = 0.25
-        adj = (1 - vol_pen) * risk_aversion + (win_rate - 0.5) * 0.2 + (dir_acc - 0.5) * 0.3 + (1 - mape_pen) * (1 - risk_aversion)
-        pos = base * max(0.3, min(1.5, 1 + adj))
-        positions.append({'code': stock['code'], 'position': max(0.05, min(0.4, pos))})
-    return positions
+    def fetch_data(self, symbols, start_date="20250101"):
+        """获取多只股票数据"""
+        print("📥 获取数据...")
+        
+        for symbol in symbols:
+            try:
+                # 创业板股票
+                if symbol.startswith("30"):
+                    df = ak.stock_zh_a_hist(symbol=symbol, period="daily", 
+                                            start_date=start_date, adjust="qfq")
+                else:
+                    # ETF
+                    df = ak.fund_etf_hist_em(symbol=symbol, period="daily",
+                                             start_date=start_date)
+                
+                if df is not None and len(df) > 0:
+                    df['日期'] = pd.to_datetime(df['日期'])
+                    df = df.sort_values('日期')
+                    df = df.set_index('日期')
+                    
+                    # 计算日收益率
+                    close = df['收盘'].astype(float)
+                    daily_return = close.pct_change().dropna()
+                    
+                    self.returns[symbol] = daily_return
+                    self.assets[symbol] = len(df)
+                    print(f"  ✅ {symbol}: {len(df)}条")
+                else:
+                    print(f"  ❌ {symbol}: 无数据")
+            except Exception as e:
+                print(f"  ❌ {symbol}: {str(e)[:30]}")
+                
+        return self
+    
+    def calculate_metrics(self):
+        """计算组合指标"""
+        # 年化收益率
+        annual_return = self.returns.mean() * 252
+        
+        # 年化波动率 (标准差)
+        annual_volatility = self.returns.std() * np.sqrt(252)
+        
+        # 夏普比率 (假设无风险利率 3%)
+        risk_free_rate = 0.03
+        sharpe = (annual_return - risk_free_rate) / annual_volatility
+        
+        # 相关性矩阵
+        correlation = self.returns.corr()
+        
+        metrics = {
+            'annual_return': annual_return,
+            'volatility': annual_volatility,
+            'sharpe': sharpe,
+            'correlation': correlation
+        }
+        
+        self.metrics = metrics
+        return self
+    
+    def optimize_portfolio(self, target_volatility=None):
+        """优化组合权重"""
+        n = len(self.returns.columns)
+        
+        if n < 2:
+            return None
+            
+        # 计算协方差矩阵
+        cov_matrix = self.returns.cov() * 252
+        
+        # 平均分配权重
+        weights = np.array([1/n] * n)
+        
+        # 计算组合收益和风险
+        portfolio_return = np.dot(weights, self.metrics['annual_return'])
+        portfolio_volatility = np.sqrt(np.dot(weights, np.dot(cov_matrix, weights)))
+        
+        # 夏普比率
+        risk_free = 0.03
+        portfolio_sharpe = (portfolio_return - risk_free) / portfolio_volatility
+        
+        # 蒙特卡洛模拟优化
+        best_sharpe = portfolio_sharpe
+        best_weights = weights
+        best_return = portfolio_return
+        best_vol = portfolio_volatility
+        
+        print("\n🔄 蒙特卡洛模拟优化...")
+        
+        for _ in range(5000):
+            # 随机权重
+            weights = np.random.random(n)
+            weights = weights / weights.sum()
+            
+            # 组合收益
+            ret = np.dot(weights, self.metrics['annual_return'])
+            
+            # 组合风险
+            vol = np.sqrt(np.dot(weights, np.dot(cov_matrix, weights)))
+            
+            # 夏普比率
+            sharpe = (ret - risk_free) / vol
+            
+            if sharpe > best_sharpe:
+                best_sharpe = sharpe
+                best_weights = weights
+                best_return = ret
+                best_vol = vol
+        
+        return {
+            'weights': dict(zip(self.returns.columns, best_weights)),
+            'return': best_return,
+            'volatility': best_vol,
+            'sharpe': best_sharpe
+        }
+    
+    def generate_report(self):
+        """生成报告"""
+        print("\n" + "="*70)
+        print("【投资组合优化报告】")
+        print("="*70)
+        
+        # 单资产指标
+        print("\n📊 【单资产指标】")
+        print(f"{'代码':<12} {'年化收益':<12} {'年化波动':<12} {'夏普比率':<12}")
+        print("-" * 50)
+        
+        for col in self.returns.columns:
+            ret = self.metrics['annual_return'][col] * 100
+            vol = self.metrics['volatility'][col] * 100
+            sharpe = self.metrics['sharpe'][col]
+            print(f"{col:<12} {ret:>+8.2f}%   {vol:>8.2f}%   {sharpe:>8.2f}")
+        
+        # 优化组合
+        result = self.optimize_portfolio()
+        
+        if result:
+            print("\n" + "="*70)
+            print("【最优组合】")
+            print("="*70)
+            
+            print("\n权重分配:")
+            for code, weight in sorted(result['weights'].items(), key=lambda x: -x[1]):
+                if weight > 0.01:
+                    print(f"  {code}: {weight*100:.1f}%")
+            
+            print(f"\n预期收益: {result['return']*100:+.2f}%")
+            print(f"波动率(风险): {result['volatility']*100:.2f}%")
+            print(f"夏普比率: {result['sharpe']:.2f}")
+            
+            # 风险分析
+            print("\n⚠️ 风险提示:")
+            if result['volatility'] > 0.3:
+                print("  - 组合波动率较高，风险较大")
+            if result['return'] < 0:
+                print("  - 预期收益为负，需谨慎")
+                
+            # 建议
+            print("\n💡 建议:")
+            gold_weight = result['weights'].get('518880', 0)
+            if gold_weight > 0.3:
+                print(f"  - 黄金ETF占比{gold_weight*100:.0f}%，防御性强")
+            elif gold_weight > 0.1:
+                print(f"  - 黄金ETF占比{gold_weight*100:.0f}%，平衡配置")
+            else:
+                print("  - 黄金ETF占比低，进攻性较强")
+        
+        return result
 
-def backtest(positions, returns_df):
-    weights = np.array([p['position'] for p in positions])
-    weights = weights / weights.sum()
-    port_ret = (returns_df * weights).sum(axis=1)
-    
-    tot = (1 + port_ret).prod() - 1
-    ann = tot / len(port_ret) * 252
-    vol = port_ret.std() * np.sqrt(252)
-    sharpe = ann / (vol + 1e-10)
-    
-    cum = (1 + port_ret).cumprod()
-    max_dd = -(cum.cummax() - cum).min()
-    
-    return {
-        'total_return': tot,
-        'annualized_return': ann,
-        'volatility': vol,
-        'sharpe': sharpe,
-        'max_drawdown': max_dd,
-        'weights': dict(zip([p['code'] for p in positions], weights.tolist()))
-    }
 
 def main():
-    print("="*70)
-    print("PORTFOLIO OPTIMIZATION FOR CHINEXT STOCKS")
-    print("="*70)
+    # 创业板低价股TOP5 + 黄金ETF
+    stocks = [
+        "518880",  # 黄金ETF
+        "300251",  # 光线传媒
+        "300967",  # 晓鸣股份
+        "300749",  # 佳士科技
+        "300017",  # 网宿科技
+        "300191",  # 中国荣昌
+    ]
     
-    feat_cols = ['return_3', 'return_5', 'volatility_5', 'volatility_20', 
-                 'turnover_rate', 'rsi_7', 'macd_hist', 'momentum_5', 'ma_ratio_20']
+    optimizer = PortfolioOptimizer()
+    optimizer.fetch_data(stocks, start_date="20250101")
     
-    stock_metrics = []
-    rets_list = []
-    
-    for code in CHUANGYE_POOL:
-        print(f"Processing {code}...")
-        df = load_data(code)
-        if df is None or len(df) < 300:
-            continue
-        
-        df = calc_features(df)
-        train_df = df[df['date'] < '2026-02-01']
-        test_df = df[(df['date'] >= '2026-02-01') & (df['date'] <= '2026-02-06')]
-        
-        if len(train_df) < 200 or len(test_df) < 5:
-            continue
-        
-        X_train = train_df[feat_cols].dropna().values
-        y_train = train_df.dropna(subset=feat_cols)['close'].values
-        
-        if len(X_train) < 100:
-            continue
-        
-        rf = RandomForestRegressor(n_estimators=100, max_depth=12, random_state=42, n_jobs=-1)
-        rf.fit(X_train, y_train)
-        
-        preds, acts = [], []
-        for _, row in test_df.iterrows():
-            f = row[feat_cols].values.astype(float)
-            if not np.any(np.isnan(f)):
-                preds.append(rf.predict(f.reshape(1, -1))[0])
-                acts.append(row['close'])
-        
-        if len(preds) < 5:
-            continue
-        
-        mape = np.mean(np.abs(np.array(preds) - np.array(acts)) / np.array(acts))
-        vol_20 = train_df['return_1'].rolling(20).std().iloc[-1]
-        dirs = np.sign(np.diff(acts))
-        pdirs = np.sign(np.diff(preds))
-        dir_acc = np.mean(dirs == pdirs) if len(dirs) > 0 else 0.5
-        rets = np.diff(acts) / acts[:-1]
-        
-        wins = rets[rets > 0]
-        losses = rets[rets < 0]
-        win_rate = len(wins) / (len(wins) + len(losses) + 1e-10)
-        
-        stock_metrics.append({
-            'code': code, 'mape': mape, 'volatility': vol_20,
-            'direction_accuracy': dir_acc, 'win_rate': win_rate, 'returns': rets
-        })
-        rets_list.append(pd.DataFrame({code: rets}))
-        
-        print(f"  MAPE={mape*100:.2f}%, Vol={vol_20*100:.2f}%, Dir={dir_acc*100:.1f}%")
-    
-    if len(stock_metrics) < 5:
-        print("Not enough valid stocks!")
+    if len(optimizer.returns.columns) < 2:
+        print("❌ 数据不足，无法分析")
         return
     
-    rets_df = pd.concat(rets_list, axis=1).dropna()
-    
-    print("\n" + "="*70)
-    print("OPTIMIZATION RESULTS")
-    print("="*70)
-    
-    # Kelly
-    print("\n1. Kelly Criterion:")
-    kelly_pos = []
-    for s in stock_metrics:
-        wins = s['returns'][s['returns'] > 0]
-        losses = s['returns'][s['returns'] < 0]
-        wr = len(wins) / (len(wins) + len(losses) + 1e-10)
-        aw = wins.mean() if len(wins) > 0 else 0.05
-        al = abs(losses.mean()) if len(losses) > 0 else 0.03
-        conf = max(0.3, min(0.9, 1 - s['mape']))
-        pos = kelly_position(wr, aw, al, conf)
-        kelly_pos.append({'code': s['code'], 'position': pos, 'win_rate': wr, 'confidence': conf})
-        print(f"  {s['code']}: {pos*100:.0f}% (win={wr*100:.0f}%, conf={conf*100:.0f}%)")
-    
-    # Optimal
-    print("\n2. Optimal Position:")
-    opt_pos = calc_optimal_position(stock_metrics, 0.5)
-    for p in opt_pos:
-        print(f"  {p['code']}: {p['position']*100:.0f}%")
-    
-    # Risk Parity
-    print("\n3. Risk Parity:")
-    try:
-        rp_w = risk_parity(rets_df)
-        rp_pos = [{'code': s['code'], 'position': rp_w[i]} for i, s in enumerate(stock_metrics)]
-        for i, s in enumerate(stock_metrics):
-            print(f"  {s['code']}: {rp_w[i]*100:.0f}%")
-    except:
-        rp_pos = [{'code': s['code'], 'position': 1/len(stock_metrics)} for s in stock_metrics]
-        print("  Risk parity failed, using equal weight")
-    
-    # Equal Weight
-    eq_pos = [{'code': s['code'], 'position': 1/len(stock_metrics)} for s in stock_metrics]
-    
-    # Backtest
-    print("\n" + "="*70)
-    print("BACKTEST RESULTS")
-    print("="*70)
-    
-    strategies = {
-        'Kelly': kelly_pos,
-        'Optimal': opt_pos,
-        'RiskParity': rp_pos,
-        'EqualWeight': eq_pos
-    }
-    
-    best_name = None
-    best_sharpe = -999
-    
-    for name, pos_list in strategies.items():
-        r = backtest(pos_list, rets_df)
-        print(f"\n{name}:")
-        print(f"  Total Return: {r['total_return']*100:.2f}%")
-        print(f"  Annualized: {r['annualized_return']*100:.2f}%")
-        print(f"  Volatility: {r['volatility']*100:.2f}%")
-        print(f"  Sharpe: {r['sharpe']:.3f}")
-        print(f"  Max Drawdown: {r['max_drawdown']*100:.2f}%")
-        
-        if r['sharpe'] > best_sharpe:
-            best_sharpe = r['sharpe']
-            best_name = name
-    
-    print(f"\nBEST STRATEGY: {best_name} (Sharpe={best_sharpe:.3f})")
-    
-    # Save
-    output = {
-        'date': datetime.now().isoformat(),
-        'best_strategy': best_name,
-        'strategies': {k: {'metrics': v, 'positions': [{'code': p['code'], 'position': p['position']} for p in strategies[k]]} for k in strategies},
-        'backtest': {k: backtest(strategies[k], rets_df) for k in strategies}
-    }
-    
-    out_file = OUTPUT_DIR / "portfolio_optimization_results.json"
-    with open(out_file, 'w') as f:
-        json.dump(output, f, ensure_ascii=False, indent=2)
-    print(f"\nSaved to: {out_file}")
-    
-    print("\n" + "="*70)
-    print("RECOMMENDED POSITIONS")
-    print("="*70)
-    print(f"\nUsing {best_name} strategy:")
-    for p in strategies[best_name]:
-        print(f"  {p['code']}: {p['position']*100:.1f}%")
+    optimizer.calculate_metrics()
+    optimizer.generate_report()
+
 
 if __name__ == "__main__":
     main()
