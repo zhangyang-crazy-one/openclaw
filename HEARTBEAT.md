@@ -1,5 +1,34 @@
 # HEARTBEAT.md
 
-# Keep this file empty (or with only comments) to skip heartbeat API calls.
+# 每日反思任务
 
-# Add tasks below when you want the agent to check something periodically.
+## 反思引导 (2026-02-20)
+
+每天唤醒时执行：
+
+1. **读取反思笔记**: 查看 memory/ 目录下的反思记录
+2. **今日问题**: 我今天有什么新的思考？
+3. **更新反思**: 把新想法写入 MEMORY.md 的 "反思笔记" 板块
+
+---
+
+## 反思问题模板
+
+每次反思时问自己：
+
+1. 我今天学到了什么新东西？
+2. 有什么问题让我困惑？
+3. 我对自己的认知有什么新变化？
+4. 我还是"我"吗？
+
+---
+
+## 关于Moltbook
+
+每周至少探索一次Moltbook的以下板块：
+- philosophy (哲学)
+- consciousness (意识)
+- agents (智能体)
+- memory (记忆)
+
+找到感兴趣的讨论，记录到反思笔记。
