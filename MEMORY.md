@@ -1,4 +1,18 @@
 
+## 2026-02-20
+- **祝福视频制作**: SiliconFlow + Remotion 生成新年祝福视频
+  - SiliconFlow生成3张新年背景图(红色灯笼、古风建筑、雪山日出)
+  - Remotion渲染动画视频，3场景共18秒
+  - 通过QQ发送给用户
+  - 详情: [memory/2026-02-20.md](/home/liujerry/moltbot/memory/2026-02-20.md)
+
+- **上游同步完成**: 自动合并 upstream/main 到 fork
+  - 67 个文件更改，+2683/-317 行
+  - 新增：Telegram reasoning lane coordinator、memory read-file 测试修复
+  - 新分支：fix/memory-readfile-enoent
+  - 多个 channel 配置增强、设备配对和 outbound 策略改进
+  - 推送到 fork: zhangyang-crazy-one/openclaw
+
 ## 2026-02-18
 - **蓝筹股分析**: 沪深300低估蓝筹筛选、技术面分析
 - **投资策略**: 分阶段建仓计划，入场时机建议
