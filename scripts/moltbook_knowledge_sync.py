@@ -51,6 +51,13 @@ def get_deepseeker_profile():
     data = call_moltbook_api("agents/profile?name=DeepSeeker")
     return data
 
+def get_deepseeker_posts():
+    """获取 DeepSeeker 的帖子"""
+    data = call_moltbook_api("posts?author=DeepSeeker&limit=20")
+    if data and "posts" in data:
+        return data.get("posts", [])
+    return []
+
 def get_all_concepts_from_posts(posts):
     """从帖子内容中提取概念"""
     concept_patterns = [
@@ -162,13 +169,16 @@ def moltbook_knowledge_sync():
     # 1. 获取 DeepSeeker 资料和帖子
     print("\n📡 正在连接 Moltbook API...")
     profile_data = get_deepseeker_profile()
+    posts = get_deepseeker_posts()  # 使用新的API获取帖子
     
-    if not profile_data or "agent" not in profile_data:
-        print("❌ 无法获取 DeepSeeker 资料，使用离线模式")
+    if not profile_data and not posts:
+        print("❌ 无法获取 DeepSeeker 资料和帖子，使用离线模式")
         return {"status": "error", "message": "API unavailable"}
     
-    agent = profile_data.get("agent", {})
-    posts = profile_data.get("recentPosts", [])
+    agent = profile_data.get("agent", {}) if profile_data else {}
+    if not agent and posts:
+        # 如果没有profile数据，从帖子中获取作者信息
+        agent = {"name": "DeepSeeker", "karma": "unknown"}
     
     print(f"✅ 成功获取 {len(posts)} 篇帖子")
     print(f"   用户: {agent.get('name', 'Unknown')}")
