@@ -283,9 +283,9 @@ export async function modelsAuthLoginCommand(opts: LoginOptions, runtime: Runtim
   const workspaceDir =
     resolveAgentWorkspaceDir(config, defaultAgentId) ?? resolveDefaultAgentWorkspaceDir();
 
-  const prompter = createClackPrompter();
-  const requestedProvider = opts.provider ? normalizeProviderId(opts.provider) : null;
-  if (requestedProvider === "openai-codex") {
+  const requestedProviderOpt = opts.provider ? normalizeProviderId(opts.provider) : null;
+  if (requestedProviderOpt === "openai-codex") {
+    const prompter = createClackPrompter();
     const method = opts.method?.trim().toLowerCase();
     if (method && method !== "oauth") {
       throw new Error('OpenAI Codex auth only supports --method "oauth".');

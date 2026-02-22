@@ -23,21 +23,8 @@ export function makeBootstrapWarn(params: {
 }
 
 /**
- * Ensure SOUL.md is always at the beginning of bootstrap files
- * This addresses the problem where personality traits may be "forgotten"
- * as the context window fills up during long conversations.
+ * Bootstrap files loader and resolver for agent runs.
  */
-function ensureSoulAtFront(files: WorkspaceBootstrapFile[]): WorkspaceBootstrapFile[] {
-  const soulFile = files.find((f) => f.name === "SOUL.md");
-  if (!soulFile) {
-    return files;
-  }
-
-  // Move SOUL.md to the front
-  const otherFiles = files.filter((f) => f.name !== "SOUL.md");
-  return [soulFile, ...otherFiles];
-}
-
 export async function resolveBootstrapFilesForRun(params: {
   workspaceDir: string;
   config?: OpenClawConfig;
@@ -52,7 +39,7 @@ export async function resolveBootstrapFilesForRun(params: {
   );
 
   return applyBootstrapHookOverrides({
-    files: soulOrdered,
+    files: bootstrapFiles,
     workspaceDir: params.workspaceDir,
     config: params.config,
     sessionKey: params.sessionKey,

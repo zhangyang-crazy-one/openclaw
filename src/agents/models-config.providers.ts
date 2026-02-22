@@ -648,25 +648,6 @@ async function buildHuggingfaceProvider(apiKey?: string): Promise<ProviderConfig
   };
 }
 
-async function buildHuggingfaceProvider(apiKey?: string): Promise<ProviderConfig> {
-  // Resolve env var name to value for discovery (GET /v1/models requires Bearer token).
-  const resolvedSecret =
-    apiKey?.trim() !== ""
-      ? /^[A-Z][A-Z0-9_]*$/.test(apiKey!.trim())
-        ? (process.env[apiKey!.trim()] ?? "").trim()
-        : apiKey!.trim()
-      : "";
-  const models =
-    resolvedSecret !== ""
-      ? await discoverHuggingfaceModels(resolvedSecret)
-      : HUGGINGFACE_MODEL_CATALOG.map(buildHuggingfaceModelDefinition);
-  return {
-    baseUrl: HUGGINGFACE_BASE_URL,
-    api: "openai-completions",
-    models,
-  };
-}
-
 function buildTogetherProvider(): ProviderConfig {
   return {
     baseUrl: TOGETHER_BASE_URL,
