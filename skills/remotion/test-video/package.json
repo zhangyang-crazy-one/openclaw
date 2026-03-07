@@ -1,0 +1,11 @@
+{
+  "name": "test-video",
+  "version": "1.0.0",
+  "scripts": {
+    "render": "remotion render src/index.tsx HelloWorld out/video.mp4"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.433",
+    "remotion": "^4.0.433"
+  }
+}
