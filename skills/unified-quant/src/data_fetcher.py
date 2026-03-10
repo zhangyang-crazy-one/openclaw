@@ -221,7 +221,7 @@ class StockDataFetcher:
 # 测试
 if __name__ == '__main__':
     with StockDataFetcher() as fetcher:
-        codes = ['sz.300276', 'sz.300199', 'sz.300502', 'sz.300274', 'sz.300308']
+        codes = ['sz.300276', 'sz.300199', 'sz.300502', 'sz.300274', 'sz.300308', 'sz.300926', 'sz.300573']
         
         print("=" * 60)
         print("🚀 高效股票分析 (Baostock)")

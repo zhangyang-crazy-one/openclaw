@@ -1,20 +1,25 @@
 #!/usr/bin/env python3
 """
 SearXNG Search Script
-支持多引擎学术搜索
+支持多引擎学术搜索（带重试机制）
 """
 import argparse
 import json
 import urllib.request
 import urllib.parse
 import sys
+import time
 from typing import List, Dict, Optional
 
 # SearXNG 服务地址
 SEARXNG_BASE_URL = "http://localhost:8080"
 
+# 重试配置
+MAX_RETRIES = 3
+RETRY_DELAY = 2  # 秒
 
-def search(
+
+def search_with_retry(
     query: str,
     engines: Optional[List[str]] = None,
     max_results: int = 10,
@@ -22,7 +27,7 @@ def search(
     language: str = "zh"
 ) -> Dict:
     """
-    执行 SearXNG 搜索
+    执行 SearXNG 搜索（带重试机制）
     
     Args:
         query: 搜索关键词
@@ -34,25 +39,39 @@ def search(
     Returns:
         搜索结果字典
     """
-    # 构建URL
-    params = {
-        'q': query,
-        'format': 'json' if format_json else 'html',
-        'max_results': max_results,
-        'language': language
-    }
+    last_error = None
+    for attempt in range(MAX_RETRIES):
+        try:
+            # 构建URL
+            params = {
+                'q': query,
+                'format': 'json' if format_json else 'html',
+                'max_results': max_results,
+                'language': language
+            }
+            
+            if engines:
+                params['engines'] = ','.join(engines)
+            
+            url = f"{SEARXNG_BASE_URL}/search?{urllib.parse.urlencode(params)}"
+            
+            with urllib.request.urlopen(url, timeout=30) as response:
+                data = json.loads(response.read().decode('utf-8'))
+                return data
+        except Exception as e:
+            last_error = str(e)
+            if attempt < MAX_RETRIES - 1:
+                print(f"  ⚠️ 搜索失败 (尝试 {attempt+1}/{MAX_RETRIES}): {e}", file=sys.stderr)
+                time.sleep(RETRY_DELAY)
+            continue
     
-    if engines:
-        params['engines'] = ','.join(engines)
-    
-    url = f"{SEARXNG_BASE_URL}/search?{urllib.parse.urlencode(params)}"
-    
-    try:
-        with urllib.request.urlopen(url, timeout=30) as response:
-            data = json.loads(response.read().decode('utf-8'))
-            return data
-    except Exception as e:
-        return {'error': str(e), 'results': []}
+    return {'error': last_error, 'results': []}
+
+
+# 兼容旧接口
+def search(query, engines=None, max_results=10, format_json=True, language="zh"):
+    """兼容旧接口，实际调用带重试的版本"""
+    return search_with_retry(query, engines, max_results, format_json, language)
 
 
 def print_results(results: Dict, verbose: bool = False):
@@ -97,8 +116,8 @@ def main():
     if args.engines:
         engines = [e.strip() for e in args.engines.split(',')]
     
-    # 执行搜索
-    results = search(
+    # 执行搜索（带重试）
+    results = search_with_retry(
         query=args.query,
         engines=engines,
         max_results=args.max,
