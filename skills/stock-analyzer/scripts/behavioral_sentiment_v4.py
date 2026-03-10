@@ -31,15 +31,58 @@ def log(msg, level="INFO"):
     print(f"[{datetime.now().strftime('%H:%M:%S')}] {prefix} {msg}")
 
 
+def retry_request(func, max_retries=3, delay=5, *args, **kwargs):
+    """带重试的请求函数"""
+    import time
+    last_error = None
+    
+    for attempt in range(1, max_retries + 1):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            last_error = str(e)[:100]
+            if attempt < max_retries:
+                log(f"第 {attempt}/{max_retries} 次尝试失败: {last_error}, {delay}秒后重试...", "WARNING")
+                time.sleep(delay)
+            else:
+                log(f"全部 {max_retries} 次尝试失败: {last_error}", "ERROR")
+    
+    return None
+
+
+def try_multiple_sources(sources, source_names):
+    """
+    尝试多个数据源，自动切换
+    sources: [(func1, args1), (func2, args2), ...]
+    source_names: ["akshare", "baostock", ...]
+    """
+    import time
+    
+    for i, (func, args, kwargs) in enumerate(sources):
+        try:
+            name = source_names[i] if i < len(source_names) else f"数据源{i+1}"
+            log(f"尝试数据源: {name}...", "INFO")
+            result = func(*args, **kwargs)
+            if result is not None:
+                log(f"✅ {name} 成功获取数据", "SUCCESS")
+                return result
+        except Exception as e:
+            log(f"⚠️ {source_names[i]} 失败: {str(e)[:50]}, 切换下一个...", "WARNING")
+            time.sleep(2)
+    
+    log("❌ 所有数据源都失败", "ERROR")
+    return None
+
+
 def load_economic_summary():
     """加载宏观经济数据摘要"""
     log("📈 加载宏观经济数据...")
     
-    # 先运行经济数据更新
+    # 先运行经济数据更新 (v3版本)
     try:
         subprocess.run(
-            [PYTHON_BIN, str(DATA_DIR / "scripts/economic_data_enhanced.py")],
-            capture_output=True, timeout=120
+            [PYTHON_BIN, str(DATA_DIR / "scripts/economic_data_enhanced_v3.py")],
+            capture_output=True, timeout=180
         )
     except Exception as e:
         log(f"更新经济数据失败: {str(e)[:50]}", "WARNING")
@@ -100,20 +143,17 @@ def load_economic_summary():
 
 
 def get_market_sentiment():
-    """获取市场情绪数据"""
+    """获取市场情绪数据 - 多数据源"""
     log("📊 获取市场情绪数据...")
     
-    # 尝试从akshare获取市场数据
-    try:
+    # 数据源1: akshare
+    def source_akshare():
         import akshare as ak
         stock_zh_a_spot_em = ak.stock_zh_a_spot_em()
         
-        # 计算涨跌情绪
         up_count = len(stock_zh_a_spot_em[stock_zh_a_spot_em['涨跌幅'] > 0])
         down_count = len(stock_zh_a_spot_em[stock_zh_a_spot_em['涨跌幅'] < 0])
         flat_count = len(stock_zh_a_spot_em[stock_zh_a_spot_em['涨跌幅'] == 0])
-        
-        # 涨停数量
         limit_up = len(stock_zh_a_spot_em[stock_zh_a_spot_em['涨跌幅'] >= 9.9])
         
         return {
@@ -121,31 +161,153 @@ def get_market_sentiment():
             "下跌": down_count,
             "平盘": flat_count,
             "涨停": limit_up,
-            "总成交": len(stock_zh_a_spot_em)
+            "总成交": len(stock_zh_a_spot_em),
+            "source": "akshare"
         }
-    except Exception as e:
-        log(f"获取市场数据失败: {str(e)[:50]}", "WARNING")
+    
+    # 数据源2: baostock
+    def source_baostock():
+        import baostock as bs
+        import pandas as pd
+        
+        lg = bs.login()
+        # 获取所有A股实时行情
+        rs = bs.query_all_stock()
+        data_list = []
+        while (rs.error_code == '0') & rs.next():
+            data_list.append(rs.get_row_data())
+        bs.logout()
+        
+        if not data_list:
+            return None
+        
+        df = pd.DataFrame(data_list, columns=rs.fields)
+        
+        # 转换涨跌幅为数值
+        if 'changePercent' in df.columns:
+            df['涨跌幅'] = pd.to_numeric(df['changePercent'], errors='coerce')
+        
+        up_count = len(df[df['涨跌幅'] > 0]) if '涨跌幅' in df.columns else 0
+        down_count = len(df[df['涨跌幅'] < 0]) if '涨跌幅' in df.columns else 0
+        flat_count = len(df[df['涨跌幅'] == 0]) if '涨跌幅' in df.columns else 0
+        limit_up = len(df[df['涨跌幅'] >= 9.9]) if '涨跌幅' in df.columns else 0
+        
+        return {
+            "上涨": up_count,
+            "下跌": down_count,
+            "平盘": flat_count,
+            "涨停": limit_up,
+            "总成交": len(df),
+            "source": "baostock"
+        }
+    
+    # 数据源3: sina (网页爬取)
+    def source_sina():
+        import requests
+        url = "https://push2.eastmoney.com/api/qt/clist/get"
+        params = {
+            "pn": 1,
+            "pz": 5000,
+            "po": 1,
+            "np": 1,
+            "fltt": 2,
+            "invt": 2,
+            "fid": "f3",
+            "fs": "m:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23",
+            "fields": "f1,f2,f3,f4,f12,f13"
+        }
+        resp = requests.get(url, params=params, timeout=30)
+        data = resp.json()
+        
+        if data.get('data') and data['data'].get('diff'):
+            stocks = data['data']['diff']
+            up = sum(1 for s in stocks if float(s.get('f3', 0)) > 0)
+            down = sum(1 for s in stocks if float(s.get('f3', 0)) < 0)
+            flat = sum(1 for s in stocks if float(s.get('f3', 0)) == 0)
+            limit_up = sum(1 for s in stocks if float(s.get('f3', 0)) >= 9.9)
+            
+            return {
+                "上涨": up,
+                "下跌": down,
+                "平盘": flat,
+                "涨停": limit_up,
+                "总成交": len(stocks),
+                "source": "sina/eastmoney"
+            }
         return None
+    
+    # 尝试多个数据源
+    sources = [
+        (source_akshare, (), {}),
+        (source_baostock, (), {}),
+        (source_sina, (), {})
+    ]
+    source_names = ["akshare", "baostock", "sina"]
+    
+    result = try_multiple_sources(sources, source_names)
+    
+    # 如果成功，移除 source 字段（用于显示）
+    if result:
+        result = {k: v for k, v in result.items() if k != 'source'}
+    
+    return result
 
 
 def get_fund_flow():
-    """获取资金流向"""
+    """获取资金流向 - 多数据源"""
     log("💰 获取资金流向...")
     
-    try:
+    # 数据源1: akshare 沪港通
+    def source_akshare_hsgt():
         import akshare as ak
-        # 北向资金
-        try:
-            north_money = ak.stock_fund_flow_statistics(symbol="北向资金")
-            if not north_money.empty:
-                net_inflow = north_money.iloc[0]['今日净流入-亿'] if '今日净流入-亿' in north_money.columns else 0
-                return {"北向资金净流入": net_inflow}
-        except:
-            pass
-    except Exception as e:
-        log(f"获取资金流向失败: {str(e)[:50]}", "WARNING")
+        df = ak.stock_hsgt_fund_flow_summary_em()
+        if df is not None and not df.empty:
+            north_data = df[df['资金方向'] == '北向']
+            if not north_data.empty:
+                # 获取净流入列（需要检查具体列名）
+                return {"北向资金(沪港通)": "获取成功", "source": "akshare-hsgt"}
+        return None
     
-    return None
+    # 数据源2: akshare 市场资金流向
+    def source_akshare_market():
+        import akshare as ak
+        df = ak.stock_market_fund_flow()
+        if df is not None:
+            return {"市场资金流向": "获取成功", "source": "akshare-market"}
+        return None
+    
+    # 数据源3: baostock 资金流向
+    def source_baostock():
+        import baostock as bs
+        import pandas as pd
+        
+        lg = bs.login()
+        # 获取北向资金数据
+        rs = bs.query_hsgt_stocks()
+        bs.logout()
+        
+        if rs.error_code == '0' and rs.next():
+            return {"北向资金(baostock)": "获取成功", "source": "baostock"}
+        return None
+    
+    # 尝试多个数据源
+    sources = [
+        (source_akshare_hsgt, (), {}),
+        (source_akshare_market, (), {}),
+        (source_baostock, (), {})
+    ]
+    source_names = ["akshare-沪港通", "akshare-市场", "baostock"]
+    
+    result = try_multiple_sources(sources, source_names)
+    
+    # 如果成功，移除 source 字段
+    if result:
+        result = {k: v for k, v in result.items() if k != 'source'}
+    
+    if result is None:
+        log("获取资金流向失败，跳过", "WARNING")
+    
+    return result
 
 
 def format_report(market_sentiment, fund_flow, economic_data):
