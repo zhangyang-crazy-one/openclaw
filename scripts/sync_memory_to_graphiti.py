@@ -11,6 +11,7 @@ import requests
 
 # 配置
 GRAPHITI_API = "http://localhost:8000"
+NEO4J_AUTH = ("neo4j", "graphiti_memory_2026")
 MOLTBOT_DIR = Path("/home/liujerry/moltbot")
 MEMORY_FILES = [
     MOLTBOT_DIR / "MEMORY.md",
@@ -24,7 +25,36 @@ MEMORY_FILES = [
 MEMORY_DIR = MOLTBOT_DIR / "memory"
 
 # self-improving目录
-SELF_IMPROVING_DIR = Path.home() / ".self-improving"
+SELF_IMPROVING_DIR = Path.home() / "self-improving"
+
+
+def get_knowledge_graph_stats():
+    """获取知识图谱统计信息"""
+    try:
+        import subprocess
+        result = subprocess.run(
+            ["docker", "exec", "neo4j", "cypher-shell", "-u", "neo4j", "-p", "graphiti_memory_2026", 
+             "MATCH (n) RETURN labels(n)[0] as type, count(*) as count"],
+            capture_output=True, text=True, timeout=10
+        )
+        lines = result.stdout.strip().split('\n')
+        stats = {"entities": 0, "episodes": 0}
+        for line in lines[1:]:  # Skip header
+            if 'Episodic' in line:
+                # Extract count between quotes
+                parts = line.split('"')
+                if len(parts) >= 3:
+                    count = int(parts[2].replace(',', '').strip())
+                    stats["episodes"] = count
+            elif 'Entity' in line:
+                parts = line.split('"')
+                if len(parts) >= 3:
+                    count = int(parts[2].replace(',', '').strip())
+                    stats["entities"] = count
+        return stats
+    except Exception as e:
+        print(f"  ⚠️ 统计获取失败: {e}")
+        return {"entities": 0, "episodes": 0}
 
 
 def get_file_info(file_path):
@@ -186,10 +216,29 @@ def main():
     print(f"知识图谱记忆同步 - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"Graphiti API: {GRAPHITI_API}")
     
+    # 同步前统计
+    print("\n=== 同步前统计 ===")
+    stats_before = get_knowledge_graph_stats()
+    print(f"  📊 实体: {stats_before.get('entities', 0)}")
+    print(f"  📝 Episodes: {stats_before.get('episodes', 0)}")
+    
     # 同步各类型文件
     sync_memory_files()
     sync_daily_memory()
     sync_self_improving()
+    
+    # 同步后统计
+    print("\n=== 同步后统计 ===")
+    stats_after = get_knowledge_graph_stats()
+    print(f"  📊 实体: {stats_after.get('entities', 0)}")
+    print(f"  📝 Episodes: {stats_after.get('episodes', 0)}")
+    
+    # 计算新增
+    new_entities = stats_after.get('entities', 0) - stats_before.get('entities', 0)
+    new_episodes = stats_after.get('episodes', 0) - stats_before.get('episodes', 0)
+    
+    if new_entities > 0 or new_episodes > 0:
+        print(f"\n  ✨ 本次新增: 实体 {new_entities}, Episodes {new_episodes}")
     
     print("\n同步完成!")
 

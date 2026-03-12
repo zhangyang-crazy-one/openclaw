@@ -12,10 +12,56 @@ from urllib.parse import quote_plus
 
 # 搜索关键词
 SEARCH_QUERIES = [
-    "AI data governance 2024",
-    "knowledge graph deep learning",
-    "LLM reasoning optimization",
+    "AI governance 2024",
+    "data governance LLM 2024",
+    "large language model AI regulation",
+    "knowledge graph",
+    "LLM reasoning",
 ]
+
+# 配置
+DISCOVERY_DIR = Path.home() / ".config" / "deepseeker" / "discoveries"
+
+def generate_summary(paper):
+    """生成论文摘要 - 简单提取式"""
+    
+    title = paper.get("title", "")
+    abstract = paper.get("abstract", "")[:800]
+    
+    # 简单提取摘要前150字作为概括
+    summary = abstract[:150].strip()
+    if len(abstract) > 150:
+        summary += "..."
+    
+    # 添加研究领域标签
+    title_lower = title.lower()
+    if "governance" in title_lower or "regulation" in title_lower:
+        category = "[AI治理]"
+    elif "knowledge graph" in title_lower:
+        category = "[知识图谱]"
+    elif "reasoning" in title_lower or "llm" in title_lower:
+        category = "[LLM]"
+    elif "data" in title_lower:
+        category = "[数据科学]"
+    else:
+        category = "[AI研究]"
+    
+    return f"{category} {summary}"
+
+def load_existing_papers():
+    """加载已保存的论文标题，避免重复"""
+    existing = set()
+    if DISCOVERY_DIR.exists():
+        for f in DISCOVERY_DIR.glob("papers_*.json"):
+            try:
+                with open(f) as fp:
+                    data = json.load(fp)
+                    for p in data.get("papers", []):
+                        key = f"{p.get('title', '')[:50]}_{p.get('year', '')}"
+                        existing.add(key)
+            except:
+                pass
+    return existing
 
 def search_arxiv(query, max_results=10):
     """搜索 arXiv - 快速版"""
@@ -109,6 +155,14 @@ def academic_search():
             unique_papers.append(paper)
     
     total = len(unique_papers)
+    
+    # 生成论文摘要
+    print(f"\n📝 正在生成论文摘要...")
+    for i, paper in enumerate(unique_papers[:5], 1):
+        print(f"   [{i}/{min(5, total)}] {paper['title'][:35]}...")
+        summary = generate_summary(paper)
+        paper["summary"] = summary
+        time.sleep(0.5)
     
     print(f"\n📊 总计: {total} 篇论文")
     print(f"📚 来源: {source_counts}")

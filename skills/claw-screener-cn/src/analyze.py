@@ -10,7 +10,7 @@ sys.path.insert(0, __file__.rsplit('/', 1)[0])
 
 from data_fetcher import AStockDataFetcher
 from technical_indicators import calculate_williams_r, calculate_rsi, calculate_bollinger_bands, calculate_macd, calculate_kdj
-from formulas import BuffettFormula, analyze_stock_fundamental
+from formulas import FormulaEngine, FinancialData
 
 
 def analyze_single_stock(stock_code: str, name: str = "") -> dict:

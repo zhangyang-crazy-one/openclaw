@@ -239,12 +239,13 @@ def generate_obsidian(paper, summary):
     """生成 Obsidian 格式"""
     arxiv_id = paper.get('arxiv_id', '')
     date_str = datetime.now().strftime('%Y-%m-%d')
+    tags_str = ', '.join([f'"{t}"' for t in summary.get('tags', ['paper'])])
     
     yaml = f"""---
 title: "{paper.get('title', '')[:60]}"
 authors: {json.dumps(paper.get('authors', [])[:3])}
 date: "{date_str}"
-tags: [{', '.join([f'"{t}"' for t in summary.get('tags', ['paper'])])]}
+tags: [{tags_str}]
 arxiv: "{arxiv_id}"
 type: paper-note
 ---
