@@ -44,6 +44,14 @@
     "openclaw-workspace": {
       "version": "1.0.0",
       "installedAt": 1773290105879
+    },
+    "planning-with-files": {
+      "version": "2.22.0",
+      "installedAt": 1773447276653
+    },
+    "planning-with-files-from-github": {
+      "version": "1.0.0",
+      "installedAt": 1773447293327
     }
   }
 }

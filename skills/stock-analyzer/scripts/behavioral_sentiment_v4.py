@@ -146,24 +146,86 @@ def get_market_sentiment():
     """获取市场情绪数据 - 多数据源"""
     log("📊 获取市场情绪数据...")
     
-    # 数据源1: akshare
+    # 数据源1: akshare 实时行情 (可能失败)
     def source_akshare():
         import akshare as ak
-        stock_zh_a_spot_em = ak.stock_zh_a_spot_em()
+        try:
+            stock_zh_a_spot_em = ak.stock_zh_a_spot_em()
+            
+            up_count = len(stock_zh_a_spot_em[stock_zh_a_spot_em['涨跌幅'] > 0])
+            down_count = len(stock_zh_a_spot_em[stock_zh_a_spot_em['涨跌幅'] < 0])
+            flat_count = len(stock_zh_a_spot_em[stock_zh_a_spot_em['涨跌幅'] == 0])
+            limit_up = len(stock_zh_a_spot_em[stock_zh_a_spot_em['涨跌幅'] >= 9.9])
+            
+            return {
+                "上涨": up_count,
+                "下跌": down_count,
+                "平盘": flat_count,
+                "涨停": limit_up,
+                "总成交": len(stock_zh_a_spot_em),
+                "source": "akshare"
+            }
+        except Exception as e:
+            log(f"  ⚠️ akshare实时行情失败: {type(e).__name__}")
+            return None
+    
+    # 数据源1.5: akshare 历史数据 - 创业板全量
+    def source_akshare_hist():
+        import akshare as ak
+        from concurrent.futures import ThreadPoolExecutor, as_completed
         
-        up_count = len(stock_zh_a_spot_em[stock_zh_a_spot_em['涨跌幅'] > 0])
-        down_count = len(stock_zh_a_spot_em[stock_zh_a_spot_em['涨跌幅'] < 0])
-        flat_count = len(stock_zh_a_spot_em[stock_zh_a_spot_em['涨跌幅'] == 0])
-        limit_up = len(stock_zh_a_spot_em[stock_zh_a_spot_em['涨跌幅'] >= 9.9])
-        
-        return {
-            "上涨": up_count,
-            "下跌": down_count,
-            "平盘": flat_count,
-            "涨停": limit_up,
-            "总成交": len(stock_zh_a_spot_em),
-            "source": "akshare"
-        }
+        try:
+            today = datetime.now().strftime('%Y%m%d')
+            
+            # 获取创业板股票列表 (300xxx开头)
+            stock_list = ak.stock_info_a_code_name()
+            chinese_stocks = stock_list[stock_list['code'].str.startswith('300')]['code'].tolist()
+            log(f"  📊 创业板股票: {len(chinese_stocks)}只")
+            
+            def get_change(code):
+                try:
+                    df = ak.stock_zh_a_hist(symbol=code, period='daily', 
+                                           start_date=today, end_date=today)
+                    if len(df) > 0:
+                        return float(df.iloc[0]['涨跌幅'])
+                except:
+                    pass
+                return None
+            
+            # 多线程获取
+            changes = []
+            with ThreadPoolExecutor(max_workers=15) as executor:
+                futures = {executor.submit(get_change, code): code for code in chinese_stocks}
+                for future in as_completed(futures, timeout=90):
+                    try:
+                        change = future.result()
+                        if change is not None:
+                            changes.append(change)
+                    except:
+                        pass
+            
+            if len(changes) > 0:
+                up = sum(1 for c in changes if c > 0)
+                down = sum(1 for c in changes if c < 0)
+                flat = sum(1 for c in changes if c == 0)
+                limit_up = sum(1 for c in changes if c >= 9.9)
+                limit_down = sum(1 for c in changes if c <= -9.9)
+                total = len(changes)
+                
+                log(f"  ✅ 获取创业板 {total} 只数据")
+                
+                return {
+                    "上涨": up,
+                    "下跌": down,
+                    "平盘": flat,
+                    "涨停": limit_up,
+                    "跌停": limit_down,
+                    "总成交": total,
+                    "source": "创业板全量"
+                }
+        except Exception as e:
+            log(f"  ⚠️ 创业板数据获取失败: {type(e).__name__}")
+        return None
     
     # 数据源2: baostock
     def source_baostock():
@@ -239,10 +301,11 @@ def get_market_sentiment():
     # 尝试多个数据源
     sources = [
         (source_akshare, (), {}),
+        (source_akshare_hist, (), {}),
         (source_baostock, (), {}),
         (source_sina, (), {})
     ]
-    source_names = ["akshare", "baostock", "sina"]
+    source_names = ["akshare", "akshare-hist", "baostock", "sina"]
     
     result = try_multiple_sources(sources, source_names)
     
@@ -254,63 +317,190 @@ def get_market_sentiment():
 
 
 def get_fund_flow():
-    """获取资金流向 - 多数据源"""
+    """获取资金流向 - 行为金融核心数据"""
     log("💰 获取资金流向...")
     
-    # 数据源1: akshare 沪港通
-    def source_akshare_hsgt():
-        import akshare as ak
-        df = ak.stock_hsgt_fund_flow_summary_em()
-        if df is not None and not df.empty:
-            north_data = df[df['资金方向'] == '北向']
-            if not north_data.empty:
-                # 获取净流入列（需要检查具体列名）
-                return {"北向资金(沪港通)": "获取成功", "source": "akshare-hsgt"}
-        return None
-    
-    # 数据源2: akshare 市场资金流向
+    # 数据源1: akshare 市场资金流向 (主力/散户)
     def source_akshare_market():
         import akshare as ak
+        
         df = ak.stock_market_fund_flow()
-        if df is not None:
-            return {"市场资金流向": "获取成功", "source": "akshare-market"}
-        return None
+        if df is None or len(df) == 0:
+            return None
+        
+        # 取最新数据
+        latest = df.iloc[-1]
+        
+        # 解析主力资金（超大单+大单）
+        main_flow = float(latest.get('超大单净流入-净额', 0)) + float(latest.get('大单净流入-净额', 0))
+        small_flow = float(latest.get('小单净流入-净额', 0))
+        
+        # 判断主力动向
+        if main_flow > 0:
+            main_action = "净流入"
+        elif main_flow < 0:
+            main_action = "净流出"
+        else:
+            main_action = "持平"
+        
+        return {
+            "主力净流入": main_flow,
+            "主力动向": main_action,
+            "小单净流入": small_flow,
+            "source": "市场资金"
+        }
     
-    # 数据源3: baostock 资金流向
-    def source_baostock():
-        import baostock as bs
-        import pandas as pd
+    # 数据源2: akshare 北向资金
+    def source_akshare_hsgt():
+        import akshare as ak
         
-        lg = bs.login()
-        # 获取北向资金数据
-        rs = bs.query_hsgt_stocks()
-        bs.logout()
+        df = ak.stock_hsgt_fund_flow_summary_em()
+        if df is None or len(df) == 0:
+            return None
         
-        if rs.error_code == '0' and rs.next():
-            return {"北向资金(baostock)": "获取成功", "source": "baostock"}
-        return None
+        # 汇总北向资金（沪股通+深股通）
+        north_money = 0
+        north_up = north_down = 0
+        
+        for _, row in df.iterrows():
+            if row.get('资金方向') == '北向' and row.get('板块') in ['沪股通', '深股通']:
+                north_money += float(row.get('成交净买额', 0) or 0)
+                north_up += int(row.get('上涨数', 0) or 0)
+                north_down += int(row.get('下跌数', 0) or 0)
+        
+        return {
+            "北向资金": north_money,
+            "北向上涨": north_up,
+            "北向下跌": north_down,
+            "source": "北向资金"
+        }
+    
+    # 数据源3: akshare 行业资金流向
+    def source_akshare_industry():
+        import akshare as ak
+        
+        df = ak.stock_fund_flow_industry()
+        if df is None or len(df) == 0:
+            return None
+        
+        # 取前5名资金流入行业
+        top_inflow = df.nlargest(5, '净额')[['行业', '净额', '行业-涨跌幅']].values.tolist()
+        
+        # 取前5名资金流出行业
+        top_outflow = df.nsmallest(5, '净额')[['行业', '净额', '行业-涨跌幅']].values.tolist()
+        
+        return {
+            "流入前五": top_inflow,
+            "流出前五": top_outflow,
+            "source": "行业资金"
+        }
     
     # 尝试多个数据源
-    sources = [
-        (source_akshare_hsgt, (), {}),
-        (source_akshare_market, (), {}),
-        (source_baostock, (), {})
-    ]
-    source_names = ["akshare-沪港通", "akshare-市场", "baostock"]
+    results = {}
+    for source_fn in [source_akshare_market, source_akshare_hsgt, source_akshare_industry]:
+        try:
+            result = source_fn()
+            if result:
+                results.update(result)
+        except Exception as e:
+            log(f"  ⚠️ {source_fn.__name__} 失败: {type(e).__name__}")
     
-    result = try_multiple_sources(sources, source_names)
+    if results:
+        return results
     
-    # 如果成功，移除 source 字段
-    if result:
-        result = {k: v for k, v in result.items() if k != 'source'}
-    
-    if result is None:
-        log("获取资金流向失败，跳过", "WARNING")
-    
-    return result
+    return None
 
 
-def format_report(market_sentiment, fund_flow, economic_data):
+def get_institutional_behavior():
+    """获取机构行为数据 - 龙虎榜+融资融券"""
+    log("🏦 获取机构行为数据...")
+    
+    results = {}
+    
+    # 数据源1: 龙虎榜机构行为
+    def source_lhb():
+        import akshare as ak
+        
+        df = ak.stock_lhb_stock_statistic_em()
+        if df is None or len(df) == 0:
+            return None
+        
+        # 获取最新日期的数据
+        latest_date = df['最近上榜日'].max()
+        today_lhb = df[df['最近上榜日'] == latest_date]
+        
+        if len(today_lhb) == 0:
+            return None
+        
+        # 统计机构买入/卖出
+        institutional_buy = today_lhb['买方机构次数'].sum()
+        institutional_sell = today_lhb['卖方机构次数'].sum()
+        
+        # 计算龙虎榜净买入
+        net_buy = today_lhb['龙虎榜净买额'].sum()
+        
+        return {
+            "龙虎榜净买额": net_buy,
+            "机构买入": int(institutional_buy),
+            "机构卖出": int(institutional_sell),
+            "上榜股数": len(today_lhb),
+            "数据日期": latest_date,
+            "source": "龙虎榜"
+        }
+    
+    # 数据源2: 融资融券 (杠杆情绪)
+    def source_margin():
+        import akshare as ak
+        
+        df = ak.stock_margin_account_info()
+        if df is None or len(df) == 0:
+            return None
+        
+        # 获取最新数据
+        latest = df.iloc[-1]
+        margin_balance = float(latest.get('融资余额', 0)) * 1e8  # 转换为元
+        margin_buy = float(latest.get('融资买入额', 0)) * 1e8
+        
+        # 融资余额变化
+        if len(df) >= 2:
+            prev = df.iloc[-2]
+            prev_balance = float(prev.get('融资余额', 0)) * 1e8
+            margin_change = margin_balance - prev_balance
+        else:
+            margin_change = 0
+        
+        # 维持担保比
+        avg_ratio = latest.get('平均维持担保比例', 0)
+        
+        # 参与交易投资者
+        traders = latest.get('参与交易的投资者数量', 0)
+        
+        return {
+            "融资余额": margin_balance,
+            "融资买入": margin_buy,
+            "融资变化": margin_change,
+            "avg_ratio": float(avg_ratio),
+            "参与交易者": int(traders),
+            "数据日期": str(latest.get('日期', '')),
+            "source": "融资融券"
+        }
+    
+    # 获取数据
+    for source_fn in [source_lhb, source_margin]:
+        try:
+            result = source_fn()
+            if result:
+                results.update(result)
+        except Exception as e:
+            log(f"  ⚠️ {source_fn.__name__} 失败: {type(e).__name__}")
+    
+    if results:
+        return results
+    
+    return None
+
+
+def format_report(market_sentiment, fund_flow, economic_data, institutional=None):
     """格式化分析报告"""
     lines = []
     lines.append("=" * 60)
@@ -334,11 +524,61 @@ def format_report(market_sentiment, fund_flow, economic_data):
         lines.append(f"  • 下跌: {market_sentiment.get('下跌', 0)} ({down_pct:.1f}%)")
         lines.append(f"  • 涨停: {market_sentiment.get('涨停', 0)}")
     
-    # 资金流向
+    # 资金流向 - 行为金融核心
     if fund_flow:
-        lines.append("\n💵 【资金流向】")
-        for k, v in fund_flow.items():
-            lines.append(f"  • {k}: {v}亿")
+        lines.append("\n💵 【资金流向 - 行为金融分析】")
+        
+        # 主力资金
+        if "主力净流入" in fund_flow:
+            main_flow = fund_flow.get("主力净流入", 0) / 1e8  # 转换为亿
+            main_action = fund_flow.get("主力动向", "未知")
+            lines.append(f"  • 主力资金: {main_action} ({main_flow:.2f}亿)")
+        
+        # 北向资金
+        if "北向资金" in fund_flow:
+            north = fund_flow.get("北向资金", 0) / 1e8
+            north_up = fund_flow.get("北向上涨", 0)
+            north_down = fund_flow.get("北向下跌", 0)
+            lines.append(f"  • 北向资金: {north:.2f}亿 (上涨{north_up}家/下跌{north_down}家)")
+        
+        # 行业资金
+        if "流入前五" in fund_flow:
+            lines.append("\n  📊 资金流入行业:")
+            for item in fund_flow.get("流入前五", [])[:3]:
+                lines.append(f"    • {item[0]}: +{item[1]:.2f}亿 ({item[2]:+.2f}%)")
+        
+        if "流出前五" in fund_flow:
+            lines.append("\n  📊 资金流出行业:")
+            for item in fund_flow.get("流出前五", [])[:3]:
+                lines.append(f"    • {item[0]}: {item[1]:.2f}亿 ({item[2]:+.2f}%)")
+    
+    # 机构行为 - 龙虎榜+融资融券
+    if institutional:
+        lines.append("\n🏦 【机构行为 - 杠杆与主力】")
+        
+        # 龙虎榜
+        if "龙虎榜净买额" in institutional:
+            lhb_net = institutional.get("龙虎榜净买额", 0) / 1e8
+            lhb_count = institutional.get("上榜股数", 0)
+            inst_buy = institutional.get("机构买入", 0)
+            inst_sell = institutional.get("机构卖出", 0)
+            lhb_date = institutional.get("数据日期", "未知")
+            lines.append(f"  • 龙虎榜 ({lhb_date}): 净买入 {lhb_net:.2f}亿 ({lhb_count}只股票)")
+            lines.append(f"    - 机构买入: {inst_buy}次, 机构卖出: {inst_sell}次")
+        
+        # 融资融券
+        if "融资余额" in institutional:
+            margin = institutional.get("融资余额", 0) / 1e8
+            margin_buy = institutional.get("融资买入", 0) / 1e8
+            margin_change = institutional.get("融资变化", 0) / 1e8
+            avg_ratio = institutional.get("avg_ratio", 0)
+            traders = institutional.get("参与交易者", 0)
+            margin_date = institutional.get("数据日期", "未知")
+            lines.append(f"  • 融资融券 ({margin_date}):")
+            lines.append(f"    - 融资余额: {margin:.2f}亿, 今日买入: {margin_buy:.2f}亿")
+            lines.append(f"    - 融资变化: {margin_change:+.2f}亿")
+            lines.append(f"    - 维持担保比: {avg_ratio:.1f}%")
+            lines.append(f"    - 参与交易者: {traders:,}人")
     
     # 行为建议
     lines.append("\n🎯 【投资建议】")
@@ -373,8 +613,11 @@ def main():
     # 3. 资金流向
     fund_flow = get_fund_flow()
     
-    # 4. 生成报告
-    report = format_report(market_sentiment, fund_flow, economic_data)
+    # 4. 机构行为 (龙虎榜+融资融券)
+    institutional = get_institutional_behavior()
+    
+    # 5. 生成报告
+    report = format_report(market_sentiment, fund_flow, economic_data, institutional)
     print(report)
     
     # 5. 保存报告

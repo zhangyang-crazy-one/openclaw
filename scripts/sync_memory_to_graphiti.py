@@ -2,9 +2,11 @@
 """
 知识图谱记忆同步脚本
 将记忆文件同步到Graphiti知识图谱
+修复版 - 使用新API端点
 """
 import os
 import json
+import uuid
 from datetime import datetime
 from pathlib import Path
 import requests
@@ -19,13 +21,21 @@ MEMORY_FILES = [
     MOLTBOT_DIR / "IDENTITY.md",
     MOLTBOT_DIR / "USER.md",
     MOLTBOT_DIR / "HEARTBEAT.md",
+    MOLTBOT_DIR / "AGENTS.md",
 ]
+
+# Workspace目录
+WORKSPACE_DIR = Path.home() / ".openclaw" / "workspace"
+PLANNING_DIR = WORKSPACE_DIR / "planning"
 
 # 记忆目录
 MEMORY_DIR = MOLTBOT_DIR / "memory"
 
 # self-improving目录
 SELF_IMPROVING_DIR = Path.home() / "self-improving"
+
+# 默认group_id
+DEFAULT_GROUP_ID = "moltbot"
 
 
 def get_knowledge_graph_stats():
@@ -34,24 +44,14 @@ def get_knowledge_graph_stats():
         import subprocess
         result = subprocess.run(
             ["docker", "exec", "neo4j", "cypher-shell", "-u", "neo4j", "-p", "graphiti_memory_2026", 
-             "MATCH (n) RETURN labels(n)[0] as type, count(*) as count"],
+             "MATCH (n) RETURN count(n)"],
             capture_output=True, text=True, timeout=10
         )
         lines = result.stdout.strip().split('\n')
-        stats = {"entities": 0, "episodes": 0}
-        for line in lines[1:]:  # Skip header
-            if 'Episodic' in line:
-                # Extract count between quotes
-                parts = line.split('"')
-                if len(parts) >= 3:
-                    count = int(parts[2].replace(',', '').strip())
-                    stats["episodes"] = count
-            elif 'Entity' in line:
-                parts = line.split('"')
-                if len(parts) >= 3:
-                    count = int(parts[2].replace(',', '').strip())
-                    stats["entities"] = count
-        return stats
+        if len(lines) >= 2:
+            count = int(lines[1].strip())
+            return {"entities": count, "episodes": count}
+        return {"entities": 0, "episodes": 0}
     except Exception as e:
         print(f"  ⚠️ 统计获取失败: {e}")
         return {"entities": 0, "episodes": 0}
@@ -71,7 +71,7 @@ def get_file_info(file_path):
     }
 
 
-def extract_content_preview(file_path, max_chars=500):
+def extract_content_preview(file_path, max_chars=2000):
     """提取文件内容预览"""
     if not file_path.exists():
         return ""
@@ -79,56 +79,77 @@ def extract_content_preview(file_path, max_chars=500):
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read(max_chars)
-            return content.replace('\n', ' ')[:max_chars]
+            return content[:max_chars]
     except:
         return ""
 
 
-def create_episode(file_info, content_preview, category):
-    """在Graphiti中创建Episode"""
-    episode_data = {
-        "episodes": [
-            {
-                "entity_names": [file_info["name"]],
-                "fact": f"[{category}] {file_info['name']}: {content_preview}",
-                "source_link": str(file_info["path"]),
-            }
-        ]
-    }
-    
-    try:
-        response = requests.post(
-            f"{GRAPHITI_API}/episodes",
-            json=episode_data,
-            timeout=30
-        )
-        return response.status_code == 200
-    except Exception as e:
-        print(f"Error creating episode: {e}")
-        return False
-
-
-def create_entity(file_info, category):
-    """在Graphiti中创建Entity"""
+def create_entity_node(name, summary, group_id=DEFAULT_GROUP_ID):
+    """在Graphiti中创建Entity节点 (新API)"""
     entity_data = {
-        "entities": [
-            {
-                "name": file_info["name"],
-                "entity_type": category,
-                "description": f"修改时间: {file_info['modified']}, 大小: {file_info['size']} bytes",
-            }
-        ]
+        "uuid": str(uuid.uuid4()),
+        "group_id": group_id,
+        "name": name,
+        "summary": summary,
     }
     
     try:
         response = requests.post(
-            f"{GRAPHITI_API}/entities",
+            f"{GRAPHITI_API}/entity-node",
             json=entity_data,
             timeout=30
         )
-        return response.status_code == 200
+        if response.status_code == 201:
+            return True
+        else:
+            print(f"    ⚠️ Entity创建失败: {response.status_code} - {response.text[:100]}")
+            return False
     except Exception as e:
-        print(f"Error creating entity: {e}")
+        print(f"    ❌ Entity创建错误: {e}")
+        return False
+
+
+def create_episode_messages(file_info, content, category, group_id=DEFAULT_GROUP_ID):
+    """在Graphiti中创建Episode消息 (新API)"""
+    # 将内容分段，每段作为一条消息
+    messages = []
+    
+    # 添加文件元数据作为system消息
+    messages.append({
+        "content": f"文件: {file_info['name']}, 类型: {category}, 修改: {file_info['modified']}, 大小: {file_info['size']} bytes",
+        "role_type": "system",
+        "role": "metadata",
+        "timestamp": datetime.now().isoformat(),
+        "source_description": f"file:{file_info['path']}"
+    })
+    
+    # 添加内容作为user消息
+    messages.append({
+        "content": content[:5000],  # 限制长度
+        "role_type": "user",
+        "role": "memory",
+        "timestamp": datetime.now().isoformat(),
+        "source_description": f"file:{file_info['path']}"
+    })
+    
+    message_data = {
+        "group_id": group_id,
+        "messages": messages
+    }
+    
+    try:
+        response = requests.post(
+            f"{GRAPHITI_API}/messages",
+            json=message_data,
+            timeout=30
+        )
+        if response.status_code == 202:
+            return True
+        else:
+            print(f"    ⚠️ Messages创建失败: {response.status_code} - {response.text[:100]}")
+            return False
+    except Exception as e:
+        print(f"    ❌ Messages创建错误: {e}")
         return False
 
 
@@ -142,6 +163,7 @@ def sync_memory_files():
         "IDENTITY.md": "identity",
         "USER.md": "user",
         "HEARTBEAT.md": "heartbeat",
+        "AGENTS.md": "agents",
     }
     
     for file_path in MEMORY_FILES:
@@ -151,13 +173,13 @@ def sync_memory_files():
         
         info = get_file_info(file_path)
         category = categories.get(file_path.name, "other")
-        preview = extract_content_preview(file_path)
+        content = extract_content_preview(file_path)
         
-        # 创建实体
-        create_entity(info, category)
+        # 创建实体节点
+        create_entity_node(file_path.name, content[:500], category)
         
-        # 创建Episode记录
-        create_episode(info, preview, category)
+        # 创建Episode消息
+        create_episode_messages(info, content, category)
         
         print(f"  ✅ {file_path.name}")
 
@@ -170,17 +192,25 @@ def sync_daily_memory():
         print("  memory目录不存在")
         return
     
+    count = 0
     for md_file in sorted(MEMORY_DIR.glob("*.md")):
         if md_file.name == "README.md":
             continue
         
         info = get_file_info(md_file)
-        preview = extract_content_preview(md_file, 300)
+        content = extract_content_preview(md_file, 3000)
         
-        # 创建Episode记录
-        create_episode(info, preview, "daily_memory")
+        # 创建实体节点
+        create_entity_node(md_file.name, content[:500], "daily")
+        
+        # 创建Episode消息
+        create_episode_messages(info, content, "daily_memory")
         
         print(f"  ✅ {md_file.name}")
+        count += 1
+    
+    if count == 0:
+        print("  无每日记忆文件")
 
 
 def sync_self_improving():
@@ -197,19 +227,53 @@ def sync_self_improving():
         "reflections.md",
     ]
     
+    count = 0
     for name in key_files:
         file_path = SELF_IMPROVING_DIR / name
         if not file_path.exists():
             continue
         
         info = get_file_info(file_path)
-        preview = extract_content_preview(file_path, 300)
+        content = extract_content_preview(file_path, 3000)
         
-        # 创建实体和Episode
-        create_entity(info, "self_improving")
-        create_episode(info, preview, "self_improving")
+        # 创建实体节点
+        create_entity_node(name, content[:500], "self_improving")
+        
+        # 创建Episode消息
+        create_episode_messages(info, content, "self_improving")
         
         print(f"  ✅ {name}")
+        count += 1
+    
+    if count == 0:
+        print("  无self-improving文件")
+
+
+def sync_planning_files():
+    """同步planning文件夹"""
+    print("\n=== 同步planning文件 ===")
+    
+    if not PLANNING_DIR.exists():
+        print("  planning目录不存在")
+        return
+    
+    planning_files = list(PLANNING_DIR.glob("*.md"))
+    
+    if not planning_files:
+        print("  无planning文件")
+        return
+    
+    for md_file in planning_files:
+        info = get_file_info(md_file)
+        content = extract_content_preview(md_file, 3000)
+        
+        # 创建实体节点
+        create_entity_node(md_file.name, content[:500], "planning")
+        
+        # 创建Episode消息
+        create_episode_messages(info, content, "planning")
+        
+        print(f"  ✅ {md_file.name}")
 
 
 def main():
@@ -226,6 +290,7 @@ def main():
     sync_memory_files()
     sync_daily_memory()
     sync_self_improving()
+    sync_planning_files()
     
     # 同步后统计
     print("\n=== 同步后统计 ===")
