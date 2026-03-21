@@ -1,0 +1,15 @@
+{
+  "name": "dot-e-report-intro",
+  "version": "1.0.0",
+  "description": "DOT&E FY2024 Report Introduction Video",
+  "main": "index.jsx",
+  "scripts": {
+    "build": "remotion render DOTE-Report-Intro out/video.mp4",
+    "preview": "remotion preview",
+    "start": "remotion studio"
+  },
+  "dependencies": {
+    "@remotion/cli": "^3.3.16",
+    "remotion": "^3.3.16"
+  }
+}

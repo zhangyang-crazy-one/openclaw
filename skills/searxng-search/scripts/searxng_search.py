@@ -42,20 +42,27 @@ def search_with_retry(
     last_error = None
     for attempt in range(MAX_RETRIES):
         try:
-            # 构建URL
+            # 构建URL - 使用quote进行正确编码
+            query_encoded = urllib.parse.quote(query)
+            
             params = {
-                'q': query,
                 'format': 'json' if format_json else 'html',
                 'max_results': max_results,
                 'language': language
             }
             
             if engines:
+                # 引擎列表直接拼接，不urlencode（避免逗号被编码）
                 params['engines'] = ','.join(engines)
             
-            url = f"{SEARXNG_BASE_URL}/search?{urllib.parse.urlencode(params)}"
+            # 先对除engines外的参数编码，然后手动添加engines
+            other_params = urllib.parse.urlencode({k: v for k, v in params.items() if k != 'engines'})
+            if engines:
+                url = f"{SEARXNG_BASE_URL}/search?q={query_encoded}&{other_params}&engines={','.join(engines)}"
+            else:
+                url = f"{SEARXNG_BASE_URL}/search?q={query_encoded}&{other_params}"
             
-            with urllib.request.urlopen(url, timeout=30) as response:
+            with urllib.request.urlopen(url, timeout=60) as response:
                 data = json.loads(response.read().decode('utf-8'))
                 return data
         except Exception as e:

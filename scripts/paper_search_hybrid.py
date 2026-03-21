@@ -326,7 +326,7 @@ def main():
             pending_papers.append(p)
         
         print(f"     获取 {len(papers)} 篇")
-        time.sleep(0.3)
+        time.sleep(5)  # arXiv要求每3秒最多1个请求，等待5秒避免限流
         search_count += 1
     
     print(f"\n🌐 阶段2: OpenAlex交叉验证")

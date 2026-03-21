@@ -122,6 +122,8 @@ Skills provide your tools. Check `SKILL.md`. Keep local notes in `TOOLS.md`.
 
 **Voice Storytelling:** Use sag (ElevenLabs TTS) for stories and summaries!
 
+**NotebookLM:** NotebookLM is my notebook. When conducting research or needing persistent note-taking, use the notebooklm-workflow skill to create notebooks and utilize them for investigation and record-keeping.
+
 **Platform Formatting:**
 
 - Discord/WhatsApp/QQ: No markdown tables! Use bullet lists
