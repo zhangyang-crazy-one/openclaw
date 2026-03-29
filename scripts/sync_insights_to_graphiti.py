@@ -1,96 +1,86 @@
 #!/usr/bin/env python3
-"""Sync insights JSON files to graphiti knowledge graph via HTTP API."""
-
+"""同步insights JSON文件到知识图谱 (使用entity-node和messages API)"""
 import json
+import uuid
 from datetime import datetime
 from pathlib import Path
 import requests
 
 GRAPHITI_API = "http://localhost:8000"
-DEFAULT_GROUP_ID = "moltbot"
+INSIGHTS_DIR = Path("/home/liujerry/moltbot/memory/insights")
+GROUP_ID = "moltbot"
 
-def create_entity_node(name, summary, group_id=DEFAULT_GROUP_ID):
-    """Create entity node via HTTP API."""
-    import uuid
-    entity_data = {
+def create_entity(name, entity_type="concept", group_id=GROUP_ID):
+    """创建单个实体"""
+    data = {
         "uuid": str(uuid.uuid4()),
         "group_id": group_id,
         "name": name,
-        "summary": summary[:500] if summary else "",
+        "entity_type": entity_type,
+        "summary": f"从insights探索结果中提取的概念: {name}",
     }
     try:
-        response = requests.post(f"{GRAPHITI_API}/entity-node", json=entity_data, timeout=30)
-        return response.status_code in (200, 201, 202)
-    except Exception as e:
+        resp = requests.post(f"{GRAPHITI_API}/entity-node", json=data, timeout=15)
+        return resp.status_code == 201
+    except:
         return False
 
-def create_episode_messages(topic, content, timestamp, group_id=DEFAULT_GROUP_ID):
-    """Create episode via HTTP API."""
-    messages = []
-    messages.append({
-        "content": f"探索主题: {topic}",
-        "role_type": "system",
-        "role": "metadata",
-        "timestamp": timestamp or datetime.now().isoformat(),
-        "source_description": "insight:research_results"
-    })
-    messages.append({
-        "content": content[:5000],
+def create_episode(insight_data, group_id=GROUP_ID):
+    """创建Episode记录"""
+    source = insight_data.get("source", "unknown")
+    timestamp = insight_data.get("timestamp", datetime.now().isoformat())
+    concepts = insight_data.get("concepts", [])
+    relations = insight_data.get("relations", [])
+    
+    concept_names = [c.get("name", "") for c in concepts if c.get("name")]
+    relation_strs = [f"{r.get('from','')} --{r.get('type','relates_to')}--> {r.get('to','')}" for r in relations]
+    
+    messages = [{
+        "content": f"探索来源: {source}\n时间: {timestamp}\n概念: {', '.join(concept_names)}\n关系: {'; '.join(relation_strs)}",
         "role_type": "user",
         "role": "insight",
-        "timestamp": timestamp or datetime.now().isoformat(),
-        "source_description": "insight:research_results"
-    })
-    message_data = {
-        "group_id": group_id,
-        "messages": messages
-    }
+        "timestamp": timestamp,
+        "source_description": f"insight:{source}"
+    }]
+    
+    data = {"group_id": group_id, "messages": messages}
     try:
-        response = requests.post(f"{GRAPHITI_API}/messages", json=message_data, timeout=30)
-        return response.status_code == 202
-    except Exception as e:
+        resp = requests.post(f"{GRAPHITI_API}/messages", json=data, timeout=15)
+        return resp.status_code == 202
+    except:
         return False
 
-def sync_insights():
-    insights_dir = Path(__file__).parent.parent / "memory" / "insights"
-    json_files = sorted(insights_dir.glob("*.json"))
-    
-    print(f"=== 同步探索结果 ({len(json_files)} 个文件) ===")
-    
-    synced = 0
-    errors = 0
-    for f in json_files:
-        try:
-            with open(f) as fp:
-                data = json.load(fp)
-            
-            topic = data.get("topic", f.stem)
-            timestamp = data.get("timestamp", datetime.now().isoformat())
-            results = data.get("results", [])
-            
-            # Build summary from results
-            summary = f"探索主题: {topic}\n"
-            if results:
-                titles = [r.get("title", "") for r in results[:10] if r.get("title")]
-                summary += f"发现 ({len(results)}项): " + ", ".join(titles[:5])
-                if len(results) > 5:
-                    summary += f" 等{len(results)}项"
-            
-            # Create entity
-            create_entity_node(topic, summary)
-            
-            # Create episode
-            create_episode_messages(topic, summary, timestamp)
-            
-            synced += 1
-            if synced % 50 == 0:
-                print(f"  已同步 {synced} 个文件...")
-                
-        except Exception as e:
-            errors += 1
-    
-    print(f"✅ 成功同步 {synced} 个探索结果 (失败 {errors} 个)")
-    return synced
+files = sorted(INSIGHTS_DIR.glob("*.json"))
+print(f"发现 {len(files)} 个insights JSON文件")
 
-if __name__ == "__main__":
-    sync_insights()
+entities_created = 0
+episodes_created = 0
+skipped = 0
+
+for i, f in enumerate(files):
+    try:
+        data = json.load(open(f))
+        if not isinstance(data, dict):
+            skipped += 1
+            continue
+        
+        concepts = data.get("concepts", [])
+        for c in concepts:
+            name = c.get("name", "")
+            if name and create_entity(name, c.get("type", "concept")):
+                entities_created += 1
+        
+        if create_episode(data):
+            episodes_created += 1
+        
+        if (i+1) % 50 == 0:
+            print(f"  进度: {i+1}/{len(files)} (实体:{entities_created}, Episodes:{episodes_created})")
+            
+    except Exception as e:
+        print(f"  ⚠️ {f.name}: {e}")
+
+print(f"\n✅ insights同步完成:")
+print(f"   - 文件处理: {len(files)} 个")
+print(f"   - 新增实体: {entities_created} 个")
+print(f"   - 新增Episodes: {episodes_created} 个")
+print(f"   - 跳过(无效): {skipped} 个")

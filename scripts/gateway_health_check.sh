@@ -65,8 +65,9 @@ if [ "$GRAPHITI" != "200" ]; then
     
     # 尝试重启 Graphiti worker
     pkill -f 'graph_service/main.py' 2>/dev/null || true
+    pkill -f 'uvicorn graph_service.main' 2>/dev/null || true
     sleep 1
-    cd /home/liujerry/graphiti && nohup /usr/bin/python3 server/graph_service/main.py > /tmp/graphiti.log 2>&1 &
+    cd /home/liujerry/graphiti/server && nohup /usr/bin/python3 -m uvicorn graph_service.main:app --host 0.0.0.0 --port 8000 > /tmp/graphiti.log 2>&1 &
     sleep 3
 fi
 

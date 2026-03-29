@@ -68,24 +68,46 @@ class DataSource:
         return self.cache.get(f'quote_{stock_code}')
     
     def _get_quote_akshare(self, stock_code: str) -> Dict:
-        """akshare获取实时行情"""
-        df = ak.stock_zh_a_spot_em()
-        row = df[df['代码'] == stock_code]
+        """akshare获取实时行情（多通道 fallback: eastmoney -> sina）"""
+        # 通道1: 东方财富
+        try:
+            df = ak.stock_zh_a_spot_em()
+            row = df[df['代码'] == stock_code]
+            if not row.empty:
+                return {
+                    'code': stock_code,
+                    'name': row['名称'].values[0],
+                    'price': row['最新价'].values[0],
+                    'change_pct': row['涨跌幅'].values[0],
+                    'volume': row['成交量'].values[0],
+                    'amount': row['成交额'].values[0],
+                    'pe': row.get('市盈率-动态', [0]).values[0],
+                    'pb': row.get('市净率', [0]).values[0],
+                    'source': 'akshare-eastmoney'
+                }
+        except Exception as e:
+            print(f"  [data_source] eastmoney 失败: {e}")
         
-        if row.empty:
-            raise ValueError(f"股票 {stock_code} 不存在")
+        # 通道2: 新浪
+        try:
+            df = ak.stock_zh_a_spot()
+            row = df[df['代码'] == stock_code]
+            if not row.empty:
+                return {
+                    'code': stock_code,
+                    'name': row['名称'].values[0],
+                    'price': row['最新价'].values[0],
+                    'change_pct': row['涨跌幅'].values[0],
+                    'volume': row['成交量'].values[0],
+                    'amount': row['成交额'].values[0],
+                    'pe': row.get('市盈率-动态', 0) if '市盈率-动态' in row.index else 0,
+                    'pb': row.get('市净率', 0) if '市净率' in row.index else 0,
+                    'source': 'akshare-sina'
+                }
+        except Exception as e:
+            print(f"  [data_source] sina 失败: {e}")
         
-        return {
-            'code': stock_code,
-            'name': row['名称'].values[0],
-            'price': row['最新价'].values[0],
-            'change_pct': row['涨跌幅'].values[0],
-            'volume': row['成交量'].values[0],
-            'amount': row['成交额'].values[0],
-            'pe': row.get('市盈率-动态', [0]).values[0],
-            'pb': row.get('市净率', [0]).values[0],
-            'source': 'akshare'
-        }
+        raise ValueError(f"股票 {stock_code} 不存在或获取失败")
     
     def _get_quote_baostock(self, stock_code: str) -> Dict:
         """baostock获取最新收盘价"""

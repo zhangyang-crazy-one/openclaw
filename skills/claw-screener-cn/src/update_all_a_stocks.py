@@ -17,6 +17,12 @@ STOCKS_DIR = Path("/home/liujerry/金融数据/stocks")
 FINANCIAL_DIR = Path("/home/liujerry/金融数据/fundamentals/chuangye_full")
 FINANCIAL_A_FILE = FINANCIAL_DIR / "profit.csv"
 
+# EastMoney API headers
+EM_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    "Referer": "https://finance.eastmoney.com/"
+}
+
 
 def get_a_stock_codes() -> list:
     """获取A股股票代码列表"""
@@ -33,8 +39,62 @@ def get_a_stock_codes() -> list:
         return [(f"{i:06d}", f"股票{i}") for i in range(1, 100)]
 
 
+def fetch_kline_eastmoney(symbol: str) -> pd.DataFrame:
+    """使用东方财富API获取K线数据"""
+    try:
+        # EastMoney: 沪市(6xxxxx)=1, 深市(0/3xxxxx)=0
+        market = 1 if symbol.startswith('6') else 0
+        
+        url = f"https://push2his.eastmoney.com/api/qt/stock/kline/get"
+        params = {
+            "secid": f"{market}.{symbol}",
+            "fields1": "f1,f2,f3,f4,f5,f6",
+            "fields2": "f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61",
+            "klt": "101",   # 日K线
+            "fqt": "1",     # 前复权
+            "beg": "0",
+            "end": "20500101",
+            "lmt": "90"     # 最近90天
+        }
+        
+        response = requests.get(url, params=params, headers=EM_HEADERS, timeout=10)
+        if response.status_code != 200:
+            return pd.DataFrame()
+        
+        data = response.json()
+        klines = data.get("data", {}).get("klines", [])
+        if not klines:
+            return pd.DataFrame()
+        
+        # 解析K线数据: date,open,close,high,low,volume,amount,...
+        records = []
+        for line in klines:
+            parts = line.split(',')
+            if len(parts) >= 6:
+                records.append({
+                    'date': parts[0],
+                    'open': float(parts[1]),
+                    'close': float(parts[2]),
+                    'high': float(parts[3]),
+                    'low': float(parts[4]),
+                    'volume': int(parts[5]),
+                })
+        
+        if not records:
+            return pd.DataFrame()
+        
+        df = pd.DataFrame(records)
+        # 只保留需要的列
+        df = df[['date', 'open', 'high', 'low', 'close', 'volume']]
+        
+        return df
+        
+    except Exception as e:
+        return pd.DataFrame()
+
+
 def fetch_kline_sina(symbol: str) -> pd.DataFrame:
-    """使用新浪API获取K线数据"""
+    """使用新浪API获取K线数据 (备用)"""
     try:
         # 沪市用sh, 深市用sz
         exchange = "sh" if symbol.startswith('6') else "sz"
@@ -132,12 +192,17 @@ def fetch_financial_akshare(symbol: str) -> dict:
     return {}
 
 
-def update_all_a_stocks(batch_size: int = 50):
-    """批量更新全量A股数据"""
+def update_all_a_stocks(batch_size: int = 50, start: int = 0):
+    """批量更新全量A股数据
+    
+    Args:
+        batch_size: 本次处理的股票数量
+        start: 从哪个索引开始（0=从000001开始，1491=从300001开始）
+    """
     
     print("=" * 60)
     print("📈 A股全量数据更新 (混合数据源)")
-    print("   K线: Sina API")
+    print("   K线: EastMoney API")
     print("   财务: akshare")
     print("=" * 60)
     
@@ -165,12 +230,14 @@ def update_all_a_stocks(batch_size: int = 50):
     success_financial = 0
     failed = []
     
-    for i, (code, name) in enumerate(stocks[:batch_size]):
-        print(f"\n[{i+1}/{min(batch_size, total)}] {code} {name}...")
+    end = min(start + batch_size, total)
+    for i, (code, name) in enumerate(stocks[start:end]):
+        idx = start + i
+        print(f"\n[{idx+1}/{total}] {code} {name}...")
         
-        # 获取K线 (Sina)
+        # 获取K线 (EastMoney)
         try:
-            df = fetch_kline_sina(code)
+            df = fetch_kline_eastmoney(code)
             if not df.empty:
                 stock_file = STOCKS_DIR / f"{code}.csv"
                 df.to_csv(stock_file, index=False)
@@ -193,11 +260,11 @@ def update_all_a_stocks(batch_size: int = 50):
         except Exception as e:
             print(f"   ❌ 财务失败")
         
-        # 避免请求过快
+        # 避免请求过快 (EastMoney API)
         time.sleep(random.uniform(0.3, 0.6))
         
         if (i + 1) % 10 == 0:
-            print(f"\n   📊 进度: {i+1}/{min(batch_size, total)}")
+            print(f"\n   📊 进度: {i+1}/{end - start}")
     
     # 保存财务数据
     if existing_financial:
@@ -219,5 +286,11 @@ def update_all_a_stocks(batch_size: int = 50):
 
 if __name__ == "__main__":
     import sys
-    batch = int(sys.argv[1]) if len(sys.argv) > 1 else 50
-    update_all_a_stocks(batch_size=batch)
+    batch = 50
+    start = 0
+    for arg in sys.argv[1:]:
+        if arg.startswith('--start='):
+            start = int(arg.split('=')[1])
+        else:
+            batch = int(arg)
+    update_all_a_stocks(batch_size=batch, start=start)

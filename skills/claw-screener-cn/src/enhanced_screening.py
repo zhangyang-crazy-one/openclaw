@@ -122,26 +122,110 @@ class EnhancedScreener:
             
             data['financial'] = df_financial
             
-            # 获取实时行情
-            df_quote = ak.stock_zh_a_spot_em()
-            row = df_quote[df_quote['代码'] == stock_code]
-            if not row.empty:
-                data['price'] = row['最新价'].values[0]
-                data['name'] = row['名称'].values[0]
-                data['pe'] = row['市盈率-动态'].values[0] if '市盈率-动态' in row.columns else 0
-                data['pb'] = row['市净率'].values[0] if '市净率' in row.columns else 0
+            # 获取实时行情 (多通道 fallback: eastmoney -> sina-http -> sina-batch)
+            quote_success = False
+            
+            # 方式1: 东方财富
+            try:
+                df_quote = ak.stock_zh_a_spot_em()
+                row = df_quote[df_quote['代码'] == stock_code]
+                if not row.empty:
+                    row = row.iloc[0]
+                    data['price'] = row['最新价']
+                    data['name'] = row['名称']
+                    data['pe'] = row.get('市盈率-动态', 0) if '市盈率-动态' in row.index else 0
+                    data['pb'] = row.get('市净率', 0) if '市净率' in row.index else 0
+                    data['quote_source'] = 'eastmoney'
+                    quote_success = True
+            except Exception as e:
+                print(f"  [enhanced_screening] eastmoney quote failed: {e}")
+            
+            # 方式2: Sina HTTP (快，约1秒)
+            if not quote_success:
+                try:
+                    import requests
+                    sym = f'sh{stock_code}' if stock_code.startswith('6') else f'sz{stock_code}'
+                    url = f'https://hq.sinajs.cn/list={sym}'
+                    headers = {'Referer': 'http://finance.sina.com.cn', 'User-Agent': 'Mozilla/5.0'}
+                    resp = requests.get(url, headers=headers, timeout=5)
+                    if resp.status_code == 200 and '"' in resp.text:
+                        fields = resp.text.strip().split('"')[1].split(',')
+                        if len(fields) > 4:
+                            data['name'] = fields[0]
+                            data['price'] = float(fields[3])
+                            data['quote_source'] = 'sina-http'
+                            quote_success = True
+                except Exception as e:
+                    print(f"  [enhanced_screening] sina-http quote failed: {e}")
+            
+            # 方式3: Sina 全量 (慢，约40秒)
+            if not quote_success:
+                try:
+                    df_quote = ak.stock_zh_a_spot()
+                    row = df_quote[df_quote['代码'] == stock_code]
+                    if not row.empty:
+                        row = row.iloc[0]
+                        data['price'] = row['最新价']
+                        data['name'] = row['名称']
+                        data['quote_source'] = 'sina-batch'
+                        quote_success = True
+                except Exception as e:
+                    print(f"  [enhanced_screening] sina-batch quote failed: {e}")
+            
+            if not quote_success:
+                print(f"  [enhanced_screening] 获取 {stock_code} 实时行情失败")
                 
-            # 获取历史行情 (用于动量和波动率)
+            # 获取历史行情 (用于动量和波动率) - 多通道 fallback: akshare -> baostock
+            history_success = False
+            import baostock as bs
+            
+            # 方式1: akshare eastmoney
             try:
                 df_history = ak.stock_zh_a_hist(
-                    symbol=stock_code, 
+                    symbol=stock_code,
                     period="monthly",
                     start_date="20250101",
                     adjust="qfq"
                 )
-                data['history'] = df_history
-            except:
-                pass
+                if df_history is not None and not df_history.empty:
+                    data['history'] = df_history
+                    data['history_source'] = 'akshare-eastmoney'
+                    history_success = True
+            except Exception as e:
+                print(f"  [enhanced_screening] akshare hist 失败: {e}")
+            
+            # 方式2: baostock (备用)
+            if not history_success:
+                try:
+                    bs_code = f'sh.{stock_code}' if stock_code.startswith('6') else f'sz.{stock_code}'
+                    lg = bs.login()
+                    rs = bs.query_history_k_data_plus(
+                        bs_code,
+                        'date,code,open,high,low,close,volume,pctChg',
+                        start_date='2025-01-01',
+                        frequency='m',
+                        adjustflag='3'
+                    )
+                    if rs.error_code == '0':
+                        rows = []
+                        while rs.next():
+                            rows.append(rs.get_row_data())
+                        if rows:
+                            import pandas as pd
+                            df_bs = pd.DataFrame(rows, columns=rs.fields)
+                            df_bs = df_bs.rename(columns={
+                                'date': '日期', 'open': '开盘', 'high': '最高', 'low': '最低',
+                                'close': '收盘', 'volume': '成交量', 'pctChg': '涨跌幅'
+                            })
+                            df_bs['日期'] = pd.to_datetime(df_bs['日期'])
+                            for col in ['开盘','最高','最低','收盘','成交量','涨跌幅']:
+                                df_bs[col] = pd.to_numeric(df_bs[col], errors='coerce')
+                            data['history'] = df_bs.sort_values('日期')
+                            data['history_source'] = 'baostock'
+                            history_success = True
+                    bs.logout()
+                except Exception as e:
+                    print(f"  [enhanced_screening] baostock hist 失败: {e}")
                 
         except Exception as e:
             print(f"获取数据失败: {e}")

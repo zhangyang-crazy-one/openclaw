@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>千人糕流程图 - A4单页</title>
+<style>
+  @page {
+    size: A4;
+    margin: 10mm 12mm;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: "PingFang SC", "Microsoft YaHei", "SimHei", sans-serif;
+    background: #fffdf5;
+    width: 210mm;
+    min-height: 297mm;
+    padding: 8mm 10mm;
+    color: #3d1f00;
+    font-size: 11px;
+  }
+
+  /* 标题 */
+  .hero {
+    text-align: center;
+    margin-bottom: 6px;
+    padding-bottom: 5px;
+    border-bottom: 2px solid #c8952a;
+  }
+  .hero h1 {
+    font-size: 20px;
+    color: #8B4513;
+    letter-spacing: 2px;
+  }
+  .hero .sub {
+    font-size: 10px;
+    color: #a06020;
+    margin-top: 2px;
+  }
+
+  /* 故事引入 */
+  .story {
+    background: #fff9ee;
+    border-left: 3px solid #d4a04a;
+    border-radius: 4px;
+    padding: 4px 8px;
+    margin: 5px 0;
+    font-size: 9.5px;
+    line-height: 1.6;
+    color: #6b3810;
+  }
+
+  /* 大流程区块 */
+  .big-flow {
+    margin: 5px 0;
+  }
+
+  .stage-title {
+    font-size: 11px;
+    font-weight: bold;
+    color: #fff;
+    background: linear-gradient(90deg, #8B4513, #c8952a);
+    padding: 2px 8px;
+    border-radius: 3px;
+    margin-bottom: 3px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .stage-title .num {
+    background: rgba(255,255,255,0.25);
+    border-radius: 50%;
+    width: 16px; height: 16px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 9px;
+  }
+
+  .step-row {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    margin-bottom: 2px;
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+
+  .step {
+    background: #fff;
+    border: 1.5px solid #d4a04a;
+    border-radius: 6px;
+    padding: 3px 5px;
+    text-align: center;
+    min-width: 52px;
+    flex: 1;
+    max-width: 80px;
+    box-shadow: 1px 1px 3px rgba(139,69,19,0.08);
+  }
+  .step-icon { font-size: 16px; display: block; line-height: 1.1; }
+  .step-label { font-size: 8.5px; font-weight: bold; color: #6b3810; margin-top: 1px; }
+  .step-sub { font-size: 7.5px; color: #a07030; }
+
+  .step.out {
+    background: #fff8e7;
+    border-color: #c8952a;
+  }
+  .step.out .step-label { color: #8B4513; }
+
+  .step.final {
+    background: linear-gradient(135deg, #fff3d4, #ffe8a0);
+    border-color: #8B4513;
+    border-width: 2px;
+  }
+  .step.final .step-label { color: #8B4513; font-size: 9px; }
+
+  .arrow { color: #c8952a; font-size: 13px; flex-shrink: 0; }
+
+  .sep {
+    border: none;
+    border-top: 1.5px dashed #e8c87a;
+    margin: 4px 0;
+  }
+
+  /* 汇聚区 */
+  .merge {
+    background: linear-gradient(135deg, #fff8e7, #fff3d4);
+    border: 2px solid #c8952a;
+    border-radius: 8px;
+    padding: 5px 10px;
+    text-align: center;
+    margin: 4px 0;
+  }
+  .merge-icons { font-size: 16px; letter-spacing: 4px; }
+  .merge-text { font-size: 9px; color: #8B4513; margin-top: 2px; }
+
+  /* 制作流程（横向大图） */
+  .make-flow {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    justify-content: center;
+    margin: 4px 0;
+  }
+  .make-step {
+    background: linear-gradient(135deg, #fff, #fff9ee);
+    border: 1.5px solid #c8952a;
+    border-radius: 8px;
+    padding: 4px 8px;
+    text-align: center;
+    min-width: 55px;
+  }
+  .make-step-icon { font-size: 18px; }
+  .make-step-label { font-size: 9px; font-weight: bold; color: #6b3810; }
+  .make-step-sub { font-size: 7.5px; color: #a07030; }
+
+  .make-arrow { color: #c8952a; font-size: 14px; }
+
+  .cake-final {
+    background: linear-gradient(135deg, #ffe8a0, #ffd060);
+    border: 2px solid #8B4513;
+    border-radius: 10px;
+    padding: 5px 10px;
+    text-align: center;
+  }
+  .cake-final .cake-icon { font-size: 22px; }
+  .cake-final .cake-label { font-size: 10px; font-weight: bold; color: #6b2000; }
+  .cake-final .cake-sub { font-size: 8px; color: #8B4513; }
+
+  /* 底部启示 */
+  .insight {
+    background: linear-gradient(135deg, #8B4513, #a0522d);
+    border-radius: 8px;
+    padding: 7px 12px;
+    text-align: center;
+    margin-top: 5px;
+    color: #fff8e7;
+  }
+  .insight-title { font-size: 11px; font-weight: bold; margin-bottom: 3px; }
+  .insight-text { font-size: 9px; line-height: 1.7; }
+  .insight-highlight {
+    background: #fff3d4;
+    color: #8B4513;
+    border-radius: 5px;
+    padding: 3px 10px;
+    display: inline-block;
+    margin-top: 4px;
+    font-size: 9.5px;
+    font-weight: bold;
+  }
+  .insight-source { font-size: 8px; opacity: 0.7; margin-top: 3px; }
+
+  /* 两人对话 */
+  .dialog {
+    font-size: 9.5px;
+    line-height: 1.7;
+    color: #5a3010;
+  }
+  .dialog .q { color: #c0392b; }
+</style>
+</head>
+<body>
+
+<!-- 标题 -->
+<div class="hero">
+  <h1>🍰 千人糕流程图</h1>
+  <div class="sub">五年级语文课文 · 劳动与协作</div>
+</div>
+
+<!-- 故事引入 -->
+<div class="story">
+  <div class="dialog">
+    <span class="q">👧 女儿：</span>"爸爸，什么是千人糕？它真的需要一千个人来做吗？"<br>
+    <span>👨 爸爸：</span>（买下糕点和女儿一起吃）"一块看似普通的糕，背后凝聚着<strong>千千万万人的劳动</strong>。"
+  </div>
+</div>
+
+<!-- 原料区 -->
+<div class="big-flow">
+
+  <!-- 糖 -->
+  <div class="stage-title"><span class="num">1</span>🍬 糖的来源</div>
+  <div class="step-row">
+    <div class="step"><span class="step-icon">🌱</span><div class="step-label">甘蔗农</div><div class="step-sub">种植甘蔗</div></div>
+    <span class="arrow">→</span>
+    <div class="step"><span class="step-icon">👨‍🌾</span><div class="step-label">收割工人</div><div class="step-sub">收割甘蔗</div></div>
+    <span class="arrow">→</span>
+    <div class="step"><span class="step-icon">🚛</span><div class="step-label">运输工人</div><div class="step-sub">运送原料</div></div>
+    <span class="arrow">→</span>
+    <div class="step"><span class="step-icon">🏭</span><div class="step-label">糖厂工人</div><div class="step-sub">加工制糖</div></div>
+    <span class="arrow">→</span>
+    <div class="step out"><span class="step-icon">🍬</span><div class="step-label">白砂糖</div><div class="step-sub">到位</div></div>
+  </div>
+
+  <hr class="sep">
+
+  <!-- 面粉 -->
+  <div class="stage-title"><span class="num">2</span>🌾 面粉的来源</div>
+  <div class="step-row">
+    <div class="step"><span class="step-icon">🌱</span><div class="step-label">麦农</div><div class="step-sub">播种小麦</div></div>
+    <span class="arrow">→</span>
+    <div class="step"><span class="step-icon">👨‍🌾</span><div class="step-label">收割工人</div><div class="step-sub">收割小麦</div></div>
+    <span class="arrow">→</span>
+    <div class="step"><span class="step-icon">🚛</span><div class="step-label">运输工人</div><div class="step-sub">运送麦粒</div></div>
+    <span class="arrow">→</span>
+    <div class="step"><span class="step-icon">⚙️</span><div class="step-label">磨坊工人</div><div class="step-sub">研磨成粉</div></div>
+    <span class="arrow">→</span>
+    <div class="step out"><span class="step-icon">🌾</span><div class="step-label">面粉</div><div class="step-sub">到位</div></div>
+  </div>
+
+  <hr class="sep">
+
+  <!-- 其他原料 -->
+  <div class="stage-title"><span class="num">3</span>🥛 其他原料 &amp; 包装</div>
+  <div class="step-row">
+    <div class="step"><span class="step-icon">🐄</span><div class="step-label">牧民</div><div class="step-sub">养奶牛</div></div>
+    <span class="arrow">→</span>
+    <div class="step"><span class="step-icon">🚛</span><div class="step-label">运输</div><div class="step-sub">冷藏配送</div></div>
+    <span class="arrow">→</span>
+    <div class="step out"><span class="step-icon">🥛</span><div class="step-label">牛奶</div><div class="step-sub">到位</div></div>
+    <div style="width:6px"></div>
+    <div class="step"><span class="step-icon">🐔</span><div class="step-label">养殖户</div><div class="step-sub">养母鸡</div></div>
+    <span class="arrow">→</span>
+    <div class="step"><span class="step-icon">🚛</span><div class="step-label">运输</div><div class="step-sub">鲜蛋配送</div></div>
+    <span class="arrow">→</span>
+    <div class="step out"><span class="step-icon">🥚</span><div class="step-label">鸡蛋</div><div class="step-sub">到位</div></div>
+  </div>
+  <div class="step-row" style="margin-top:2px">
+    <div class="step"><span class="step-icon">🌳</span><div class="step-label">伐木工</div><div class="step-sub">砍伐树木</div></div>
+    <span class="arrow">→</span>
+    <div class="step"><span class="step-icon">🏭</span><div class="step-label">木厂工人</div><div class="step-sub">加工木盒</div></div>
+    <span class="arrow">→</span>
+    <div class="step"><span class="step-icon">🚛</span><div class="step-label">运输</div><div class="step-sub">配送包装</div></div>
+    <span class="arrow">→</span>
+    <div class="step out"><span class="step-icon">📦</span><div class="step-label">包装盒</div><div class="step-sub">到位</div></div>
+  </div>
+
+</div>
+
+<!-- 汇聚 -->
+<div class="merge">
+  <div class="merge-icons">🍬 + 🌾 + 🥛 + 🥚 + 📦</div>
+  <div class="merge-text">所有原料 &amp; 包装 — 汇聚到糕点厂</div>
+</div>
+
+<!-- 制作流程 -->
+<div class="stage-title" style="margin-top:4px"><span class="num">4</span>👨‍🍳 糕点师制作千人糕</div>
+<div class="make-flow">
+  <div class="make-step"><div class="make-step-icon">⚖️</div><div class="make-step-label">配料称重</div><div class="make-step-sub">精准配比</div></div>
+  <span class="make-arrow">→</span>
+  <div class="make-step"><div class="make-step-icon">🤲</div><div class="make-step-label">和面搅拌</div><div class="make-step-sub">混合原料</div></div>
+  <span class="make-arrow">→</span>
+  <div class="make-step"><div class="make-step-icon">🔥</div><div class="make-step-label">烘烤定型</div><div class="make-step-sub">高温烘焙</div></div>
+  <span class="make-arrow">→</span>
+  <div class="make-step"><div class="make-step-icon">🎨</div><div class="make-step-label">装饰包装</div><div class="make-step-sub">精美包装</div></div>
+  <span class="make-arrow">→</span>
+  <div class="cake-final"><div class="cake-icon">🍰</div><div class="cake-label">千人糕</div><div class="cake-sub">成品完成</div></div>
+</div>
+
+<!-- 流通 -->
+<div class="stage-title"><span class="num">5</span>🏪 流通与销售</div>
+<div class="step-row">
+  <div class="step"><span class="step-icon">🚛</span><div class="step-label">物流工人</div><div class="step-sub">配送至商店</div></div>
+  <span class="arrow">→</span>
+  <div class="step"><span class="step-icon">🏪</span><div class="step-label">店员</div><div class="step-sub">上架陈列</div></div>
+  <span class="arrow">→</span>
+  <div class="step"><span class="step-icon">💰</span><div class="step-label">顾客</div><div class="step-sub">购买品尝</div></div>
+</div>
+
+<!-- 启示 -->
+<div class="insight">
+  <div class="insight-title">💡 课文启示</div>
+  <div class="insight-text">
+    一块看似普通的"千人糕"，凝结着：<br>
+    农民、工匠、司机、糕点师、店员……<strong>无数人的劳动与协作</strong>。
+  </div>
+  <div class="insight-highlight">🏆 世界上任何一样东西，来之不易，且用且珍惜。</div>
+  <div class="insight-source">—— 语文五年级下册《千人糕》</div>
+</div>
+
+</body>
+</html>

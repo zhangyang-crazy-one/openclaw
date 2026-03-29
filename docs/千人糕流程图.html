@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>千人糕流程图</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(135deg, #fdf6e3 0%, #fef9f0 50%, #fff8e7 100%);
+    min-height: 100vh;
+    padding: 30px 20px;
+    color: #3d2914;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+
+  /* 标题区 */
+  .hero {
+    text-align: center;
+    padding: 30px 20px;
+    margin-bottom: 30px;
+  }
+  .hero h1 {
+    font-size: 2.6em;
+    color: #8B4513;
+    text-shadow: 1px 1px 3px rgba(139,69,19,0.15);
+    margin-bottom: 10px;
+  }
+  .hero .subtitle {
+    font-size: 1.1em;
+    color: #a0522d;
+    background: #fff3d4;
+    display: inline-block;
+    padding: 8px 24px;
+    border-radius: 20px;
+    border: 2px solid #e8c87a;
+  }
+
+  /* 引言故事 */
+  .story-box {
+    background: #fffdf7;
+    border-left: 5px solid #d4a04a;
+    border-radius: 8px;
+    padding: 18px 24px;
+    margin-bottom: 30px;
+    font-size: 0.95em;
+    line-height: 1.9;
+    color: #5a3a1a;
+  }
+  .story-box .question {
+    color: #c0392b;
+    font-weight: bold;
+  }
+
+  /* 主流程 */
+  .flow-section { margin-bottom: 25px; }
+
+  .flow-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.25em;
+    font-weight: bold;
+    color: #7a3e00;
+    margin-bottom: 12px;
+    padding-bottom: 6px;
+    border-bottom: 2px dashed #e8c87a;
+  }
+  .flow-title .emoji { font-size: 1.4em; }
+
+  .flow-row {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+
+  .node {
+    background: #fff;
+    border: 2.5px solid #d4a04a;
+    border-radius: 12px;
+    padding: 10px 16px;
+    min-width: 120px;
+    text-align: center;
+    font-size: 0.92em;
+    color: #5a3a1a;
+    box-shadow: 2px 3px 8px rgba(139,69,19,0.1);
+    flex: 1;
+    position: relative;
+  }
+  .node .icon { font-size: 1.6em; display: block; margin-bottom: 3px; }
+  .node .label { font-weight: bold; color: #8B4513; }
+  .node .sub { font-size: 0.82em; color: #a07030; margin-top: 2px; }
+
+  .arrow {
+    color: #d4a04a;
+    font-size: 1.5em;
+    padding: 0 4px;
+    flex-shrink: 0;
+  }
+
+  /* 横线分隔 */
+  .separator {
+    border: none;
+    border-top: 2px dashed #e8c87a;
+    margin: 15px 0;
+  }
+
+  /* 汇聚节点 */
+  .merge-box {
+    background: linear-gradient(135deg, #fff8e7, #fff3d4);
+    border: 3px solid #d4a04a;
+    border-radius: 16px;
+    padding: 20px;
+    margin: 20px 0;
+    text-align: center;
+  }
+  .merge-box h3 { color: #8B4513; margin-bottom: 10px; font-size: 1.15em; }
+  .merge-icons { font-size: 2em; margin-bottom: 8px; }
+  .merge-icons span { margin: 0 6px; }
+
+  /* 底部结论 */
+  .conclusion {
+    background: linear-gradient(135deg, #8B4513, #a0522d);
+    color: #fff8e7;
+    border-radius: 16px;
+    padding: 28px 32px;
+    margin-top: 30px;
+    text-align: center;
+  }
+  .conclusion h2 { font-size: 1.4em; margin-bottom: 12px; }
+  .conclusion p { font-size: 1em; line-height: 2; opacity: 0.95; }
+  .conclusion .highlight {
+    background: #fff3d4;
+    color: #8B4513;
+    border-radius: 8px;
+    padding: 10px 20px;
+    display: inline-block;
+    margin-top: 10px;
+    font-weight: bold;
+    font-size: 1.05em;
+  }
+
+  /* 图例 */
+  .legend {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    font-size: 0.88em;
+    color: #a07030;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    border: 2px solid #d4a04a;
+    background: #fff;
+  }
+
+  @media (max-width: 700px) {
+    .hero h1 { font-size: 1.8em; }
+    .node { min-width: 90px; padding: 8px 10px; font-size: 0.85em; }
+    .arrow { font-size: 1.1em; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- 标题 -->
+  <div class="hero">
+    <h1>🍰 千人糕流程图</h1>
+    <div class="subtitle">📖 五年级语文课文 · 协作与劳动</div>
+  </div>
+
+  <!-- 故事引入 -->
+  <div class="story-box">
+    <p>👧 女儿问："爸爸，什么是千人糕？它真的需要一千个人来做吗？"</p>
+    <p>👨 爸爸买下这块糕，和女儿一起吃，对她说——</p>
+    <p>一块看似普通的糕，背后凝聚着<strong>千千万万人的劳动</strong>。</p>
+  </div>
+
+  <!-- 图例 -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot"></div> 每个环节都是不同人的劳动</div>
+    <div class="legend-item"><div class="legend-dot"></div> → 箭头表示传递与协作</div>
+  </div>
+
+  <!-- 一、糖的来源 -->
+  <div class="flow-section">
+    <div class="flow-title"><span class="emoji">🍬</span> 一、糖的来源</div>
+    <div class="flow-row">
+      <div class="node">
+        <span class="icon">🌱</span>
+        <div class="label">甘蔗农</div>
+        <div class="sub">种植甘蔗</div>
+      </div>
+      <span class="arrow">→</span>
+      <div class="node">
+        <span class="icon">👨‍🌾</span>
+        <div class="label">收割工人</div>
+        <div class="sub">收割甘蔗</div>
+      </div>
+      <span class="arrow">→</span>
+      <div class="node">
+        <span class="icon">🚛</span>
+        <div class="label">运输工人</div>
+        <div class="sub">运送原料</div>
+      </div>
+      <span class="arrow">→</span>
+      <div class="node">
+        <span class="icon">🏭</span>
+        <div class="label">糖厂工人</div>
+        <div class="sub">加工制糖</div>
+      </div>
+      <span class="arrow">→</span>
+      <div class="node" style="background:#fff3d4;">
+        <span class="icon">🍬</span>
+        <div class="label">白砂糖</div>
+        <div class="sub">成品到位</div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="separator">
+
+  <!-- 二、面粉的来源 -->
+  <div class="flow-section">
+    <div class="flow-title"><span class="emoji">🌾</span> 二、面粉的来源</div>
+    <div class="flow-row">
+      <div class="node">
+        <span class="icon">🌱</span>
+        <div class="label">麦农</div>
+        <div class="sub">播种小麦</div>
+      </div>
+      <span class="arrow">→</span>
+      <div class="node">
+        <span class="icon">👨‍🌾</span>
+        <div class="label">收割工人</div>
+        <div class="sub">收割小麦</div>
+      </div>
+      <span class="arrow">→</span>
+      <div class="node">
+        <span class="icon">🚛</span>
+        <div class="label">运输工人</div>
+        <div class="sub">运送麦粒</div>
+      </div>
+      <span class="arrow">→</span>
+      <div class="node">
+        <span class="icon">⚙️</span>
+        <div class="label">磨坊工人</div>
+        <div class="sub">研磨成粉</div>
+      </div>
+      <span class="arrow">→</span>
+      <div class="node" style="background:#fff3d4;">
+        <span class="icon">🌾</span>
+        <div class="label">面粉</div>
+        <div class="sub">成品到位</div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="separator">
+
+  <!-- 三、其他原料 -->
+  <div class="flow-section">
+    <div class="flow-title"><span class="emoji">🥛</span> 三、其他原料</div>
+    <div class="flow-row">
+      <div class="node">
+        <span class="icon">🐄</span>
+        <div class="label">牧民</div>
+        <div class="sub">饲养奶牛</div>
+      </div>
+      <span class="arrow">→</span>
+      <div class="node">
+        <span class="icon">🚛</span>
+        <div class="label">运输工人</div>
+        <div class="sub">冷藏运输</div>
+      </div>
+      <span class="arrow">→</span>
+      <div class="node" style="background:#fff3d4;">
+        <span class="icon">🥛</span>
+        <div class="label">牛奶</div>
+        <div class="sub">原料到位</div>
+      </div>
+      <div style="width:20px"></div>
+      <div class="node">
+        <span class="icon">🐔</span>
+        <div class="label">养殖户</div>
+        <div class="sub">饲养母鸡</div>
+      </div>
+      <span class="arrow">→</span>
+      <div class="node">
+        <span class="icon">🚛</span>
+        <div class="label">运输工人</div>
+        <div class="sub">鲜蛋配送</div>
+      </div>
+      <span class="arrow">→</span>
+      <div class="node" style="background:#fff3d4;">
+        <span class="icon">🥚</span>
+        <div class="label">鸡蛋</div>
+        <div class="sub">原料到位</div>
+      </div>
+    </div>
+    <div class="flow-row" style="margin-top:8px">
+      <div class="node">
+        <span class="icon">🌳</span>
+        <div class="label">伐木工</div>
+        <div class="sub">砍伐树木</div>
+      </div>
+      <span class="arrow">→</span>
+      <div class="node">
+        <span class="icon">🏭</span>
+        <div class="label">木厂工人</div>
+        <div class="sub">加工木盒</div>
+      </div>
+      <span class="arrow">→</span>
+      <div class="node">
+        <span class="icon">🚛</span>
+        <div class="label">运输工人</div>
+        <div class="sub">配送包装</div>
+      </div>
+      <span class="arrow">→</span>
+      <div class="node" style="background:#fff3d4;">
+        <span class="icon">📦</span>
+        <div class="label">包装盒</div>
+        <div class="sub">包装到位</div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="separator">
+
+  <!-- 汇聚 -->
+  <div class="merge-box">
+    <div class="merge-icons">
+      <span>🍬</span><span>🌾</span><span>🥛</span><span>🥚</span><span>📦</span>
+    </div>
+    <h3>所有原料 &amp; 包装 汇聚到一起</h3>
+    <p style="color:#a07030; font-size:0.9em">糖 + 面粉 + 牛奶 + 鸡蛋 + 包装盒 + 无数双劳动的手</p>
+  </div>
+
+  <hr class="separator">
+
+  <!-- 四、制作 -->
+  <div class="flow-section">
+    <div class="flow-title"><span class="emoji">👨‍🍳</span> 四、糕点师制作</div>
+    <div class="flow-row">
+      <div class="node">
+        <span class="icon">⚖️</span>
+        <div class="label">配料称重</div>
+        <div class="sub">精准配比</div>
+      </div>
+      <span class="arrow">→</span>
+      <div class="node">
+        <span class="icon">🤲</span>
+        <div class="label">和面搅拌</div>
+        <div class="sub">混合原料</div>
+      </div>
+      <span class="arrow">→</span>
+      <div class="node">
+        <span class="icon">🔥</span>
+        <div class="label">烘烤定型</div>
+        <div class="sub">高温烘焙</div>
+      </div>
+      <span class="arrow">→</span>
+      <div class="node">
+        <span class="icon">🎨</span>
+        <div class="label">装饰包装</div>
+        <div class="sub">精美包装</div>
+      </div>
+      <span class="arrow">→</span>
+      <div class="node" style="background:#fff8e7; border-color:#8B4513;">
+        <span class="icon">🍰</span>
+        <div class="label">千人糕</div>
+        <div class="sub">成品完成</div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="separator">
+
+  <!-- 五、销售 -->
+  <div class="flow-section">
+    <div class="flow-title"><span class="emoji">🏪</span> 五、流通与销售</div>
+    <div class="flow-row">
+      <div class="node">
+        <span class="icon">🚛</span>
+        <div class="label">物流工人</div>
+        <div class="sub">配送至商店</div>
+      </div>
+      <span class="arrow">→</span>
+      <div class="node">
+        <span class="icon">🏪</span>
+        <div class="label">店员</div>
+        <div class="sub">上架陈列</div>
+      </div>
+      <span class="arrow">→</span>
+      <div class="node">
+        <span class="icon">💰</span>
+        <div class="label">顾客</div>
+        <div class="sub">购买品尝</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 结论 -->
+  <div class="conclusion">
+    <h2>💡 课文启示</h2>
+    <p>
+      一块看似普通的"千人糕"，背后凝结着：<br>
+      农民、工人、司机、司机、糕点师、店员……<br>
+      <strong>无数人的劳动与协作</strong>。
+    </p>
+    <div class="highlight">
+      🏆 世界上任何一样东西，来之不易，且用且珍惜。
+    </div>
+    <p style="margin-top:14px; font-size:0.88em; opacity:0.8;">
+      —— 语文五年级下册《千人糕》
+    </p>
+  </div>
+
+</div>
+</body>
+</html>
