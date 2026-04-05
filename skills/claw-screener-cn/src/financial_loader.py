@@ -1,6 +1,7 @@
 """
 A股财务数据加载器
 从本地CSV文件读取真实财务数据
+支持新格式: financial_main_em.csv (EastMoney, 157字段)
 """
 import pandas as pd
 from pathlib import Path
@@ -12,7 +13,7 @@ FINANCIAL_DIR = Path("/home/liujerry/金融数据/fundamentals")
 
 def load_financial_data(stock_code: str) -> Optional[Dict]:
     """
-    加载指定股票的真实财务数据
+    加载指定股票的真实财务数据 (新格式)
     
     Args:
         stock_code: 股票代码，如 '300502'
@@ -23,9 +24,91 @@ def load_financial_data(stock_code: str) -> Optional[Dict]:
     # 股票代码格式化为6位
     stock_code = str(stock_code).zfill(6)
     
-    # 查找该股票的所有财务文件
+    # 优先读取新格式 financial_main_em.csv
+    new_file = FINANCIAL_DIR / "chuangye_full" / "financial_main_em.csv"
+    if new_file.exists():
+        try:
+            df = pd.read_csv(new_file)
+            # SECUCODE列格式: "300001.SZ" 或 "600519.SH"
+            # 从SECUCODE提取股票代码进行匹配
+            df['code_clean'] = df['SECUCODE'].astype(str).str.extract(r'(\d+)')[0].str.zfill(6)
+            df = df[df['code_clean'] == stock_code]
+            
+            if df.empty:
+                return None
+            
+            # 获取最新报告期
+            latest_period = df['REPORT_DATE'].max()
+            df = df[df['REPORT_DATE'] == latest_period]
+            
+            if df.empty:
+                return None
+            
+            row = df.iloc[0]
+            
+            result = {}
+            
+            # ROE (净资产收益率) - ROEJQ 是加权平均
+            if pd.notna(row.get('ROEJQ')):
+                result['roe'] = float(row['ROEJQ'])
+            
+            # 毛利率 (MLR = 毛利率)
+            if pd.notna(row.get('MLR')):
+                result['gross_margin'] = float(row['MLR'])
+            
+            # 营业收入 (TOTALOPERATEREVE = 营业总收入, 单位元)
+            if pd.notna(row.get('TOTALOPERATEREVE')):
+                revenue = float(row['TOTALOPERATEREVE'])
+                result['revenue'] = revenue / 10000  # 转换为万元
+            
+            # 净利润 (PARENTNETPROFIT = 归母净利润, 单位元)
+            if pd.notna(row.get('PARENTNETPROFIT')):
+                profit = float(row['PARENTNETPROFIT'])
+                result['net_profit'] = profit / 10000  # 转换为万元
+            
+            # 资产负债率 (ZCFZL)
+            if pd.notna(row.get('ZCFZL')):
+                result['debt_ratio'] = float(row['ZCFZL'])
+            
+            # 基本每股收益 (EPSJB)
+            if pd.notna(row.get('EPSJB')):
+                result['basic_eps'] = float(row['EPSJB'])
+            
+            # 每股净资产 (BPS)
+            if pd.notna(row.get('BPS')):
+                result['book_value_per_share'] = float(row['BPS'])
+            
+            # 流动比率 (LD = 流动比率)
+            if pd.notna(row.get('LD')):
+                result['current_ratio'] = float(row['LD'])
+            
+            # 速动比率 (SD = 速动比率)
+            if pd.notna(row.get('SD')):
+                result['quick_ratio'] = float(row['SD'])
+            
+            # 扣非净利润 (KCFJCXSYJLR = 扣非归母净利润)
+            if pd.notna(row.get('KCFJCXSYJLR')):
+                result['deducted_profit'] = float(row['KCFJCXSYJLR']) / 10000
+            
+            # 经营现金流 (XJJL = 现金及等价物, 近似)
+            if pd.notna(row.get('MGJYXJJE')):  # 每股经营现金流
+                result['operating_cash_flow_per_share'] = float(row['MGJYXJJE'])
+            
+            result['report_period'] = str(latest_period)
+            result['stock_name'] = str(row.get('SECURITY_NAME_ABBR', ''))
+            
+            return result
+            
+        except Exception as e:
+            print(f"读取新格式失败: {e}")
+            # 继续尝试旧格式
+    
+    # 旧格式 fallback: a_stock_financial_new_batch*.csv
     pattern = str(FINANCIAL_DIR / "a_stock_financial_new_batch*.csv")
     files = glob.glob(pattern)
+    
+    if not files:
+        return None
     
     # 读取所有文件
     all_data = []
@@ -111,9 +194,6 @@ def get_financial_data_for_buffett(stock_code: str) -> Dict:
     
     if data is None:
         return {}
-    
-    # 转换为巴菲特公式需要的格式 (单位: 万元)
-    # 注意: 原始数据可能就是万元单位
     
     result = {}
     

@@ -7,7 +7,7 @@ K线: Sina/EastMoney (可用)
 import akshare as ak
 import pandas as pd
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timedelta
 import requests
 import json
 import time
@@ -142,6 +142,46 @@ def fetch_kline_sina(symbol: str) -> pd.DataFrame:
         return pd.DataFrame()
 
 
+def fetch_kline_tencent(symbol: str, days: int = 90) -> pd.DataFrame:
+    """使用腾讯证券API获取K线数据 - akshare stock_zh_a_hist_tx"""
+    try:
+        # 腾讯证券格式: sz000001 (深市/创业板), sh600000 (沪市/科创板)
+        if symbol.startswith('6'):
+            tx_symbol = f'sh{symbol}'
+        else:
+            tx_symbol = f'sz{symbol}'
+        
+        end_date = datetime.now().strftime('%Y%m%d')
+        start_date = (datetime.now() - timedelta(days=days+30)).strftime('%Y%m%d')
+        
+        df = ak.stock_zh_a_hist_tx(
+            symbol=tx_symbol,
+            start_date=start_date,
+            end_date=end_date,
+            adjust='qfq'
+        )
+        
+        # 转换列名以保持兼容 (腾讯接口返回amount而非volume)
+        df = df.rename(columns={
+            'date': 'date', 
+            'open': 'open', 
+            'high': 'high', 
+            'low': 'low', 
+            'close': 'close', 
+            'amount': 'volume'
+        })
+        
+        # 只保留需要的列和最近90天
+        df = df[['date', 'open', 'high', 'low', 'close', 'volume']]
+        if len(df) > days:
+            df = df.tail(days)
+        
+        return df
+        
+    except Exception as e:
+        return pd.DataFrame()
+
+
 def fetch_financial_akshare(symbol: str) -> dict:
     """使用akshare获取财务数据"""
     try:
@@ -235,9 +275,9 @@ def update_all_a_stocks(batch_size: int = 50, start: int = 0):
         idx = start + i
         print(f"\n[{idx+1}/{total}] {code} {name}...")
         
-        # 获取K线 (EastMoney)
+        # 获取K线 (腾讯证券)
         try:
-            df = fetch_kline_eastmoney(code)
+            df = fetch_kline_tencent(code)
             if not df.empty:
                 stock_file = STOCKS_DIR / f"{code}.csv"
                 df.to_csv(stock_file, index=False)

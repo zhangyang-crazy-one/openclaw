@@ -177,18 +177,25 @@ class DataSource:
         return self.cache.get(cache_key)
     
     def _get_history_akshare(self, stock_code: str, days: int) -> pd.DataFrame:
-        """akshare获取历史数据"""
+        """akshare获取历史数据 - 切换到腾讯证券"""
         from datetime import datetime, timedelta
         end_date = datetime.now().strftime('%Y%m%d')
         start_date = (datetime.now() - timedelta(days=days+30)).strftime('%Y%m%d')
         
-        df = ak.stock_zh_a_hist(
-            symbol=stock_code,
-            period='daily',
+        # 腾讯证券接口 (stock_zh_a_hist_tx) - 替代东方财富
+        # 格式: sz000001 (深市/创业板), sh600000 (沪市/科创板)
+        tx_symbol = self._to_tencent_symbol(stock_code)
+        
+        df = ak.stock_zh_a_hist_tx(
+            symbol=tx_symbol,
             start_date=start_date,
             end_date=end_date,
             adjust='qfq'
         )
+        
+        # 转换列名以保持兼容
+        df = df.rename(columns={'date': '日期', 'open': '开盘', 'close': '收盘', 
+                                 'high': '最高', 'low': '最低', 'amount': '成交额'})
         
         return df.tail(days) if len(df) > days else df
     
@@ -262,6 +269,15 @@ class DataSource:
             return f'sz.{stock_code}'
         else:
             return f'sz.{stock_code}'
+    
+    def _to_tencent_symbol(self, stock_code: str) -> str:
+        """转换为腾讯证券格式: sz000001 / sh600000"""
+        if stock_code.startswith('6'):
+            return f'sh{stock_code}'
+        elif stock_code.startswith(('3', '0')):
+            return f'sz{stock_code}'
+        else:
+            return f'sz{stock_code}'
     
     def cache_data(self, key: str, data: any):
         """缓存数据"""
