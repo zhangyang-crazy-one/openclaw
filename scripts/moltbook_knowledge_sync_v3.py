@@ -387,16 +387,36 @@ def moltbook_knowledge_sync():
     print(f"⏰ 时间: {timestamp}")
     print("=" * 60)
     
-    # 1. 获取社区最新帖子（修复：使用正确的端点）
+    # 1. 获取社区最新帖子（循环获取所有分页）
     print("\n📡 正在连接 Moltbook API...")
-    posts_data = get_community_posts(sort="newest", limit=20, offset=0)
+    all_posts = []
+    page_count = 0
+    cursor = None
+    has_more = True
+    total_fetched = 0
     
-    if not posts_data or "posts" not in posts_data:
-        print("❌ 无法获取社区帖子，使用离线模式")
+    while has_more and page_count < 20:  # 最多获取20页
+        if page_count == 0:
+            posts_data = get_community_posts(sort="newest", limit=20, offset=0)
+        else:
+            if not cursor:
+                break
+            posts_data = call_moltbook_api(f"posts?sort=newest&limit=20&cursor={cursor}")
+        
+        if not posts_data or "posts" not in posts_data:
+            print(f"   ⚠️ 第 {page_count + 1} 页获取失败，停止分页")
+            break
+        
+        page_posts = posts_data.get("posts", [])
+        all_posts.extend(page_posts)
+        has_more = posts_data.get("has_more", False)
+        cursor = posts_data.get("next_cursor")
+        page_count += 1
+        total_fetched += len(page_posts)
+    
+    if not all_posts:
+        print("❌ 无法获取任何帖子，使用离线模式")
         return {"status": "error", "message": "API unavailable"}
-    
-    all_posts = posts_data.get("posts", [])
-    total = posts_data.get("total", len(all_posts))
     
     # 加载已看帖子
     viewed_posts = load_viewed_posts()
@@ -404,7 +424,7 @@ def moltbook_knowledge_sync():
     # 过滤出新帖子
     new_posts = [p for p in all_posts if p.get('id', '') not in viewed_posts]
     
-    print(f"✅ 获取 {len(all_posts)} 篇帖子 (共 {total} 篇)")
+    print(f"✅ 获取 {len(all_posts)} 篇帖子 (共 {page_count} 页)")
     print(f"   其中 {len(new_posts)} 篇是新帖子")
     
     if new_posts:

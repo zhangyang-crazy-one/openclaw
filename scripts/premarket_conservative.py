@@ -33,7 +33,12 @@ def calc_rsi(prices, period=14):
     gain = delta.where(delta > 0, 0).rolling(period).mean()
     loss = (-delta.where(delta < 0, 0)).rolling(period).mean()
     rs = gain / loss
-    return 100 - (100 / (1 + rs))
+    rsi = 100 - (100 / (1 + rs))
+    # 确保RSI在[0, 100]范围内，防止浮点数边界溢出
+    rsi = rsi.clip(lower=0, upper=100)
+    # 避免除以0：loss为0时rs为inf，rsi应为100
+    rsi = rsi.fillna(100)
+    return rsi
 
 def calc_bollinger(prices, period=20):
     """计算布林带"""

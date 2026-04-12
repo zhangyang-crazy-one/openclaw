@@ -59,6 +59,10 @@ def calculate_rsi(close: pd.Series, period: int = 14) -> pd.Series:
     
     rs = avg_gain / avg_loss.replace(0, np.nan)
     rsi = 100 - (100 / (1 + rs))
+    # 确保RSI在[0, 100]范围内，防止浮点数边界溢出
+    rsi = rsi.clip(lower=0, upper=100)
+    # avg_loss为0时rs为nan，填充为100（全是上涨）
+    rsi = rsi.fillna(100)
     return rsi
 
 
