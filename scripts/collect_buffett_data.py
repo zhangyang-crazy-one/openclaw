@@ -58,11 +58,11 @@ def get_buffett_data(code):
         # 长期借款 (Long-term borrowings)  
         data['long_debt'] = latest.get('长期借款', 0) or 0
         
-        # 流动资产 (Current assets)
-        data['current_assets'] = latest.get('流动资产', 0) or 0
+        # 流动资产 (Current assets) - 修复：字段名是'流动资产合计'不是'流动资产'
+        data['current_assets'] = latest.get('流动资产合计', 0) or 0
         
-        # 流动负债 (Current liabilities)
-        data['current_liabilities'] = latest.get('流动负债', 0) or 0
+        # 流动负债 (Current liabilities) - 修复：字段名是'流动负债合计'不是'流动负债'
+        data['current_liabilities'] = latest.get('流动负债合计', 0) or 0
         
         # 总资产 (Total assets)
         data['total_assets'] = latest.get('资产总计', 0) or 0
@@ -70,20 +70,101 @@ def get_buffett_data(code):
         # 总负债 (Total liabilities)
         data['total_liabilities'] = latest.get('负债合计', 0) or 0
         
-        # 所有者权益 (Equity)
-        data['equity'] = latest.get('所有者权益合计', 0) or 0
+        # 所有者权益 (Equity) - 修复：字段名是'所有者权益(或股东权益)合计'
+        data['equity'] = latest.get('所有者权益(或股东权益)合计', 0) or 0
         
-        # 利息支出 (Interest expense) - 可能需要从现金流量表获取
-        data['interest_expense'] = latest.get('利息支出', 0) or 0
+        # 利息支出 (Interest expense) - 暂时设为0，后面从东方财富补充
+        data['interest_expense'] = 0
         
-        # 营业收入 (Revenue)
-        data['revenue'] = latest.get('营业总收入', 0) or latest.get('营业收入', 0) or 0
+        # 营业收入 (Revenue) - 新浪API可能没有，用0
+        data['revenue'] = 0
         
-        # 营业利润 (Operating profit)
-        data['operating_profit'] = latest.get('营业利润', 0) or 0
+        # 营业利润 (Operating profit) - 新浪API没有，从东方财富接口获取
+        data['operating_profit'] = 0  # 默认0，后面从东方财富补充
         
-        # 净利润 (Net income)
-        data['net_income'] = latest.get('净利润', 0) or latest.get('归属净利润', 0) or 0
+        # 净利润 (Net income) - 新浪API可能没有
+        data['net_income'] = latest.get('归属母公司净利润', 0) or 0
+        
+        # 从东方财富接口获取计算后的指标
+        try:
+            suffix = 'sz' if code.startswith('000') or code.startswith('001') or code.startswith('002') or code.startswith('300') else 'sh'
+            em_df = ak.stock_financial_abstract(symbol=f"{suffix}{code}")
+            if em_df is not None and len(em_df) > 0:
+                # 获取最新一期日期
+                dates = [c for c in em_df.columns if c not in ['选项', '指标']]
+                latest_date = sorted(dates, reverse=True)[0]
+                
+            # 如果东方财富没有利息支出，尝试同花顺利润表
+                if data['interest_expense'] == 0:
+                    try:
+                        ths_df = ak.stock_financial_benefit_ths(symbol=code)
+                        if ths_df is not None and len(ths_df) > 0:
+                            # 优先用"利息支出"（银行），其次用"其中：利息费用"（非银行）
+                            if '利息支出' in ths_df.columns:
+                                ie_val = ths_df['利息支出'].iloc[0]
+                                if ie_val and not pd.isna(ie_val) and ie_val != '-':
+                                    # 处理 "818.42亿" 格式
+                                    if isinstance(ie_val, str):
+                                        ie_val = ie_val.replace('亿', '').replace(',', '')
+                                        ie_val = float(ie_val) * 1e8
+                                    data['interest_expense'] = abs(float(ie_val))
+                            elif '其中：利息费用' in ths_df.columns:
+                                ie_val = ths_df['其中：利息费用'].iloc[0]
+                                if ie_val and not pd.isna(ie_val) and ie_val != '-':
+                                    # 处理 "1.14亿" 格式
+                                    if isinstance(ie_val, str):
+                                        ie_val = ie_val.replace('亿', '').replace(',', '')
+                                        ie_val = float(ie_val) * 1e8
+                                    data['interest_expense'] = abs(float(ie_val))
+                    except Exception as ths_err:
+                        pass  # 静默失败，继续使用默认值0
+                
+                # 1. 获取营业收入 (Revenue)
+                rev_row = em_df[em_df['指标'] == '营业总收入']
+                if len(rev_row) > 0:
+                    revenue = rev_row[latest_date].values[0]
+                    if revenue and not pd.isna(revenue):
+                        if isinstance(revenue, str):
+                            revenue = float(revenue)
+                        data['revenue'] = float(revenue)
+                
+                # 2. 获取净利润
+                ni_row = em_df[em_df['指标'] == '归母净利润']
+                if len(ni_row) > 0:
+                    net_income = ni_row[latest_date].values[0]
+                    if net_income and not pd.isna(net_income) and data['net_income'] == 0:
+                        if isinstance(net_income, str):
+                            net_income = float(net_income)
+                        data['net_income'] = float(net_income)
+                
+                # 3. 计算营业利润 = 营业收入 * 营业利润率
+                op_row = em_df[em_df['指标'] == '营业利润率']
+                if len(op_row) > 0:
+                    op_margin = op_row[latest_date].values[0]
+                    if op_margin and not pd.isna(op_margin):
+                        if isinstance(op_margin, str):
+                            op_margin = float(op_margin.replace('%', ''))
+                        op_margin = float(op_margin)
+                        # 东方财富返回的是百分比，如29.43表示29.43%
+                        if data['revenue'] > 0:
+                            data['operating_profit'] = data['revenue'] * (op_margin / 100)
+                
+                # 4. 用流动比率验证/更新流动资产
+                cr_row = em_df[em_df['指标'] == '流动比率']
+                if len(cr_row) > 0:
+                    cr = cr_row[latest_date].values[0]
+                    if cr and not pd.isna(cr):
+                        if isinstance(cr, str):
+                            cr = float(cr)
+                        cr = float(cr)
+                        if cr > 0 and data['current_liabilities'] > 0:
+                            # 用东方财富的流动比率验证新浪数据
+                            em_current_assets = cr * data['current_liabilities']
+                            # 如果差异太大，用东方财富的值
+                            if data['current_assets'] == 0 or abs(data['current_assets'] - em_current_assets) / em_current_assets > 0.1:
+                                data['current_assets'] = em_current_assets
+        except Exception as em_err:
+            print(f"    东方财富补充数据失败: {em_err}")
         
         return data
         
@@ -219,7 +300,7 @@ def run(start_idx=0, batch_count=0, limit=0):
         
         if data:
             results.append(data)
-            print(f"✅")
+            print(f"✅ revenue={data['revenue']:.0f} op={data['operating_profit']:.0f}")
         else:
             failed.append(code)
             print(f"❌")

@@ -16,6 +16,51 @@ KNOWLEDGE_DB = Path.home() / ".config" / "deepseeker" / "knowledge.json"
 # 已看帖子记录
 VIEWED_POSTS_FILE = Path.home() / ".config" / "deepseeker" / "moltbook_viewed_posts.json"
 
+def sync_to_graphiti(analysis_result: dict) -> dict:
+    """同步分析结果到 Graphiti 知识图谱"""
+    import requests
+    
+    posts_analyzed = analysis_result.get('posts_analyzed', 0)
+    concepts = analysis_result.get('concepts', [])
+    topics = analysis_result.get('top_topics', [])
+    top_posts = analysis_result.get('top_posts', [])
+    
+    # 构建消息内容
+    content_parts = []
+    content_parts.append(f"Moltbook 社区探索: 分析了 {posts_analyzed} 篇新帖子")
+    
+    if top_posts:
+        post_titles = [p.get('title', '?')[:40] for p in top_posts[:3]]
+        content_parts.append(f"热门帖子: {' | '.join(post_titles)}")
+    
+    if topics:
+        topic_names = list(topics.keys())[:3]
+        content_parts.append(f"热门话题: {', '.join(topic_names)}")
+    
+    content = " | ".join(content_parts)
+    
+    try:
+        response = requests.post(
+            "http://localhost:8000/messages",
+            json={
+                "group_id": "moltbot",
+                "messages": [
+                    {
+                        "role": "assistant",
+                        "role_type": "assistant",
+                        "content": content
+                    }
+                ]
+            },
+            timeout=30
+        )
+        if response.status_code in (200, 202):
+            return {"status": "success", "graphiti_response": "queued"}
+        else:
+            return {"status": "error", "code": response.status_code}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 def load_credentials():
     """加载 Molbook API 凭证"""
     creds_path = Path.home() / ".config" / "moltbook" / "credentials.json"
@@ -565,6 +610,19 @@ def moltbook_knowledge_sync():
     }
     print(json.dumps(result, ensure_ascii=False, indent=2))
     print("---OUTPUT_END---")
+    
+    # 8. 同步到 Graphiti 知识图谱
+    print("\n🔄 正在同步到 Graphiti...")
+    graphiti_result = sync_to_graphiti({
+        'posts_analyzed': len(new_posts),
+        'concepts': list(all_concepts),
+        'top_topics': topics,
+        'top_posts': all_posts[:5]
+    })
+    if graphiti_result.get('status') == 'success':
+        print("   ✅ Graphiti 同步成功")
+    else:
+        print(f"   ⚠️ Graphiti 同步失败: {graphiti_result}")
     
     return result
 

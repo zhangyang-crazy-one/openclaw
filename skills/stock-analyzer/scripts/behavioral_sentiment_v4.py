@@ -17,13 +17,40 @@ import json
 import os
 import sys
 import subprocess
+import signal
 from datetime import datetime
 from pathlib import Path
+
+# akshare API超时保护 (10秒)
+AKSHARE_TIMEOUT = 10
+
+def timeout_handler(signum, frame):
+    raise TimeoutError("akshare API call timed out")
+
+def timeout_call(func, timeout_secs=AKSHARE_TIMEOUT, *args, **kwargs):
+    """带超时的函数调用"""
+    old_handler = signal.signal(signal.SIGALRM, timeout_handler)
+    signal.alarm(timeout_secs)
+    try:
+        result = func(*args, **kwargs)
+    finally:
+        signal.alarm(0)
+        signal.signal(signal.SIGALRM, old_handler)
+    return result
 
 # 配置
 DATA_DIR = Path("/home/liujerry/金融数据")
 PYTHON_BIN = "/home/liujerry/moltbot/openclaw_py/bin/python"
 REPORT_DIR = DATA_DIR / "reports"
+
+# 代理配置
+PROXY = os.environ.get("HTTP_PROXY") or os.environ.get("http_proxy") or None
+if not PROXY:
+    PROXY = "http://127.0.0.1:7897"
+PROXIES = {
+    "http": PROXY,
+    "https": PROXY,
+}
 
 
 def log(msg, level="INFO"):
@@ -57,10 +84,30 @@ def try_multiple_sources(sources, source_names):
     source_names: ["akshare", "baostock", ...]
     """
     import time
+    import signal
+    
+    class TimeoutError(Exception):
+        pass
+    
+    def timeout_handler(signum, frame):
+        raise TimeoutError("Function call timed out")
     
     for i, (func, args, kwargs) in enumerate(sources):
         try:
             name = source_names[i] if i < len(source_names) else f"数据源{i+1}"
+            log(f"尝试数据源: {name}...", "INFO")
+            
+            # 为akshare设置短超时 (10秒)
+            if "akshare" in name.lower():
+                old_handler = signal.signal(signal.SIGALRM, timeout_handler)
+                signal.alarm(10)  # 10秒超时
+                try:
+                    result = func(*args, **kwargs)
+                finally:
+                    signal.alarm(0)
+                    signal.signal(signal.SIGALRM, old_handler)
+            else:
+                result = func(*args, **kwargs)
             log(f"尝试数据源: {name}...", "INFO")
             result = func(*args, **kwargs)
             if result is not None:
@@ -150,7 +197,7 @@ def get_market_sentiment():
     def source_akshare():
         import akshare as ak
         try:
-            stock_zh_a_spot_em = ak.stock_zh_a_spot_em()
+            stock_zh_a_spot_em = timeout_call(ak.stock_zh_a_spot_em)
             
             up_count = len(stock_zh_a_spot_em[stock_zh_a_spot_em['涨跌幅'] > 0])
             down_count = len(stock_zh_a_spot_em[stock_zh_a_spot_em['涨跌幅'] < 0])
@@ -278,7 +325,7 @@ def get_market_sentiment():
             "fs": "m:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23",
             "fields": "f1,f2,f3,f4,f12,f13"
         }
-        resp = requests.get(url, params=params, timeout=30)
+        resp = requests.get(url, params=params, timeout=30, proxies=PROXIES)
         data = resp.json()
         
         if data.get('data') and data['data'].get('diff'):
@@ -298,14 +345,13 @@ def get_market_sentiment():
             }
         return None
     
-    # 尝试多个数据源
+    # 尝试多个数据源 (按可靠性排序)
     sources = [
-        (source_akshare, (), {}),
-        (source_akshare_hist, (), {}),
-        (source_baostock, (), {}),
-        (source_sina, (), {})
+        (source_baostock, (), {}),  # baostock最可靠
+        (source_akshare, (), {}),   # akshare其次
+        (source_sina, (), {}),      # sina API不稳定
     ]
-    source_names = ["akshare", "akshare-hist", "baostock", "sina"]
+    source_names = ["baostock", "akshare", "sina"]
     
     result = try_multiple_sources(sources, source_names)
     
@@ -324,7 +370,11 @@ def get_fund_flow():
     def source_akshare_market():
         import akshare as ak
         
-        df = ak.stock_market_fund_flow()
+        try:
+            df = timeout_call(ak.stock_market_fund_flow)
+        except (TimeoutError, Exception) as e:
+            log(f"  ⚠️ source_akshare_market 超时/失败: {type(e).__name__}", "WARNING")
+            return None
         if df is None or len(df) == 0:
             return None
         
@@ -354,7 +404,11 @@ def get_fund_flow():
     def source_akshare_hsgt():
         import akshare as ak
         
-        df = ak.stock_hsgt_fund_flow_summary_em()
+        try:
+            df = timeout_call(ak.stock_hsgt_fund_flow_summary_em)
+        except (TimeoutError, Exception) as e:
+            log(f"  ⚠️ source_akshare_hsgt 超时/失败: {type(e).__name__}", "WARNING")
+            return None
         if df is None or len(df) == 0:
             return None
         
@@ -379,7 +433,11 @@ def get_fund_flow():
     def source_akshare_industry():
         import akshare as ak
         
-        df = ak.stock_fund_flow_industry()
+        try:
+            df = timeout_call(ak.stock_fund_flow_industry)
+        except (TimeoutError, Exception) as e:
+            log(f"  ⚠️ source_akshare_industry 超时/失败: {type(e).__name__}", "WARNING")
+            return None
         if df is None or len(df) == 0:
             return None
         
@@ -421,7 +479,11 @@ def get_institutional_behavior():
     def source_lhb():
         import akshare as ak
         
-        df = ak.stock_lhb_stock_statistic_em()
+        try:
+            df = timeout_call(ak.stock_lhb_stock_statistic_em)
+        except (TimeoutError, Exception) as e:
+            log(f"  ⚠️ source_lhb 超时/失败: {type(e).__name__}", "WARNING")
+            return None
         if df is None or len(df) == 0:
             return None
         
@@ -452,7 +514,11 @@ def get_institutional_behavior():
     def source_margin():
         import akshare as ak
         
-        df = ak.stock_margin_account_info()
+        try:
+            df = timeout_call(ak.stock_margin_account_info)
+        except (TimeoutError, Exception) as e:
+            log(f"  ⚠️ source_margin 超时/失败: {type(e).__name__}", "WARNING")
+            return None
         if df is None or len(df) == 0:
             return None
         

@@ -14,20 +14,33 @@ CONFIG_DIR = Path("/home/liujerry/文档/programs/openclaw-private-config")
 
 def sync_to_graphiti(posts: list) -> dict:
     """同步到知识图谱"""
+    import requests
     # 调用Graphiti API
     try:
-        result = subprocess.run(
-            ["curl", "-s", "-X", "POST", "http://localhost:8000/messages",
-             "-H", "Content-Type: application/json",
-             "-d", json.dumps({
-                 "group_id": "moltbook_sync",
-                 "messages": [{"role": "assistant", "content": f"Moltbook同步: {len(posts)}篇帖子"}]
-             })],
-            capture_output=True,
-            text=True,
+        # 构建消息内容
+        content_parts = []
+        for i, post in enumerate(posts[:10]):  # 限制10条
+            content_parts.append(f"#{i+1}: {post.get('title', 'No title')}")
+        content = f"Moltbook帖子同步 ({len(posts)}篇): " + " | ".join(content_parts)
+        
+        response = requests.post(
+            "http://localhost:8000/messages",
+            json={
+                "group_id": "moltbot",
+                "messages": [
+                    {
+                        "role": "assistant",
+                        "role_type": "assistant",
+                        "content": content
+                    }
+                ]
+            },
             timeout=30
         )
-        return {"status": "success", "posts_synced": len(posts)}
+        if response.status_code in (200, 202):
+            return {"status": "success", "posts_synced": len(posts)}
+        else:
+            return {"status": "error", "code": response.status_code, "body": response.text[:200]}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 

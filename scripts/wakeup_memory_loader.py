@@ -4,7 +4,6 @@
 从 Graphiti 提取近7天记忆，构建苏醒上下文
 """
 import subprocess
-import re
 from datetime import datetime, timedelta, timezone
 
 NEO4J_AUTH = ("neo4j", "graphiti_memory_2026")
@@ -15,27 +14,29 @@ def cypher(query):
     result = subprocess.run(
         ["docker", "exec", "neo4j", "bin/cypher-shell",
          "-u", "neo4j", "-p", "graphiti_memory_2026",
-         "--format=verbose", query],
+         query],
         capture_output=True, text=True, timeout=30
     )
     return result.stdout
 
-def parse(output):
-    """解析 verbose 格式输出，过滤 header row"""
+def parse(output, skip_header=True, strip_quotes=True):
+    """解析标准 cypher 输出
+    - skip_header: 跳过第一行（列名）
+    - strip_quotes: 去掉首尾引号
+    """
     lines = output.strip().split('\n')
     rows = []
     for line in lines:
         line = line.strip()
-        if not line or line.startswith('+') or line.startswith('| +'):
+        if not line:
             continue
-        if ' rows' in line or 'ready to start' in line:
-            continue
-        parts = [p.strip() for p in line.split('|')[1:-1]]
-        # 去掉首尾引号
-        parts = [re.sub(r'^"|"\s*$', '', p) for p in parts]
-        # 过滤 header row (包含 . 的列名)
-        if parts and not any('.' in p for p in parts):
+        parts = [p.strip() for p in line.split('\t')]
+        if parts and parts[0]:
+            if strip_quotes:
+                parts = [p.strip('"') for p in parts]
             rows.append(parts)
+    if skip_header and rows:
+        rows = rows[1:]  # 跳过 header
     return rows
 
 def get_recent_episodes(days=7):
@@ -59,7 +60,7 @@ def get_recent_entities(days=7, limit=40):
 def get_topic_trends(days=7):
     """近N天讨论主题趋势"""
     q = f"WITH datetime() - duration('P{days}D') as cutoff MATCH (e:Episodic) WHERE e.created_at >= cutoff RETURN e.group_id, count(e) as cnt ORDER BY cnt DESC LIMIT 8"
-    rows = parse(cypher(q))
+    rows = parse(cypher(q), strip_quotes=False)
     return [{'group': r[0], 'count': r[1]} for r in rows if len(r) >= 2]
 
 def get_memory_files(days=7):
