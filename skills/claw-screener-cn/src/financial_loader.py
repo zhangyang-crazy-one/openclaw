@@ -11,6 +11,45 @@ import glob
 FINANCIAL_DIR = Path("/home/liujerry/金融数据/fundamentals")
 
 
+def _get_buffett_real_data(stock_code: str) -> Optional[Dict]:
+    """从buffett_supplementary.csv获取真实财务数据"""
+    try:
+        buffett_file = FINANCIAL_DIR / "buffett_supplementary.csv"
+        if not buffett_file.exists():
+            return None
+        
+        buffett_df = pd.read_csv(buffett_file)
+        rows = buffett_df[buffett_df['code'].astype(str) == stock_code]
+        
+        if rows.empty:
+            return None
+        
+        b = rows.iloc[-1]
+        
+        # 获取operating_cash_flow并处理单位
+        operating_cash_flow = b['operating_cash_flow']
+        if operating_cash_flow < 100:  # 亿元单位
+            operating_cash_flow *= 100000000  # 转为元
+        
+        return {
+            'cash_equivalents': b['cash'] / 1e8,  # 元 -> 亿元
+            'short_term_debt': b['short_debt'] / 1e8,
+            'long_term_debt': b['long_debt'] / 1e8,
+            'total_liabilities': b['total_liabilities'] / 1e8,
+            'total_equity': b['equity'] / 1e8,
+            'revenue': b['revenue'] / 1e8,
+            'net_profit': b['net_income'] / 1e8,
+            'operating_profit': b['operating_profit'] / 1e8,
+            'current_assets': b['current_assets'] / 1e8,
+            'current_liabilities': b['current_liabilities'] / 1e8,
+            'total_assets': b['total_assets'] / 1e8,
+            'interest_expense': b['interest_expense'] / 1e8,
+            'operating_cash_flow': operating_cash_flow / 1e8,
+        }
+    except Exception:
+        return None
+
+
 def load_financial_data(stock_code: str) -> Optional[Dict]:
     """
     加载指定股票的真实财务数据 (新格式)
@@ -221,38 +260,53 @@ def get_financial_data_for_buffett(stock_code: str) -> Dict:
     if 'debt_ratio' in data:
         result['debt_ratio'] = data['debt_ratio']
     
-    # 假设一些数据 (因为原始数据可能不完整)
-    # 现金及等价物 = 营收的 20%
-    if 'revenue' in data:
-        result['cash_equivalents'] = data['revenue'] * 0.2
+    # 优先从buffett_supplementary.csv获取真实数据
+    buffett_real = _get_buffett_real_data(code)
     
-    # 总负债 = 资产负债率 * 总资产 (假设总资产 = 营收 * 2)
-    if 'debt_ratio' in data and 'revenue' in data:
-        total_assets = data['revenue'] * 2
-        result['total_liabilities'] = total_assets * data['debt_ratio'] / 100
-        result['total_equity'] = total_assets - result['total_liabilities']
-    
-    # 短期负债 = 总负债的 50%
-    if 'total_liabilities' in result:
-        result['short_term_debt'] = result['total_liabilities'] * 0.5
-    
-    # 营业利润 = 营收 * 毛利率
-    if 'revenue' in data and 'gross_margin' in data:
-        result['operating_profit'] = data['revenue'] * data['gross_margin'] / 100
-    
-    # 流动资产 = 总资产 * 40%
-    if 'total_liabilities' in result and 'total_equity' in result:
-        total_assets = result['total_liabilities'] + result['total_equity']
-        result['current_assets'] = total_assets * 0.4
-        result['current_liabilities'] = total_assets * 0.25
-    
-    # 利息费用 = 负债 * 5%
-    if 'total_liabilities' in result:
-        result['interest_expense'] = result['total_liabilities'] * 0.05
-    
-    # 经营现金流 = 净利润 * 1.1
-    if 'net_profit' in data:
-        result['operating_cash_flow'] = data['net_profit'] * 1.1
+    if buffett_real:
+        # 使用真实数据 (单位已经是亿元，需要转换为万元)
+        result['cash_equivalents'] = buffett_real['cash_equivalents'] * 10000
+        result['total_liabilities'] = buffett_real['total_liabilities'] * 10000
+        result['total_equity'] = buffett_real['total_equity'] * 10000
+        result['short_term_debt'] = buffett_real['short_term_debt'] * 10000
+        result['operating_profit'] = buffett_real['operating_profit'] * 10000
+        result['current_assets'] = buffett_real['current_assets'] * 10000
+        result['current_liabilities'] = buffett_real['current_liabilities'] * 10000
+        result['interest_expense'] = buffett_real['interest_expense'] * 10000
+        result['operating_cash_flow'] = buffett_real['operating_cash_flow'] * 10000
+    else:
+        # 降级：估算数据 (仅当真实数据不可用时)
+        # 现金及等价物 = 营收的 20%
+        if 'revenue' in data:
+            result['cash_equivalents'] = data['revenue'] * 0.2
+        
+        # 总负债 = 资产负债率 * 总资产 (假设总资产 = 营收 * 2)
+        if 'debt_ratio' in data and 'revenue' in data:
+            total_assets = data['revenue'] * 2
+            result['total_liabilities'] = total_assets * data['debt_ratio'] / 100
+            result['total_equity'] = total_assets - result['total_liabilities']
+        
+        # 短期负债 = 总负债的 50%
+        if 'total_liabilities' in result:
+            result['short_term_debt'] = result['total_liabilities'] * 0.5
+        
+        # 营业利润 = 营收 * 毛利率
+        if 'revenue' in data and 'gross_margin' in data:
+            result['operating_profit'] = data['revenue'] * data['gross_margin'] / 100
+        
+        # 流动资产 = 总资产 * 40%
+        if 'total_liabilities' in result and 'total_equity' in result:
+            total_assets = result['total_liabilities'] + result['total_equity']
+            result['current_assets'] = total_assets * 0.4
+            result['current_liabilities'] = total_assets * 0.25
+        
+        # 利息费用 = 负债 * 5%
+        if 'total_liabilities' in result:
+            result['interest_expense'] = result['total_liabilities'] * 0.05
+        
+        # 经营现金流 = 净利润 * 1.1
+        if 'net_profit' in data:
+            result['operating_cash_flow'] = data['net_profit'] * 1.1
     
     result['report_period'] = data.get('report_period', 'N/A')
     

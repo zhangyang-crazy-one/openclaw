@@ -137,7 +137,7 @@ A股股票综合分析工具，结合技术分析与价值投资分析，为投�
 
 ## 数据源
 
-- **价格数据**: 本地CSV文件 (`/home/liujerry/金融数据/stocks_clean/`)
+- **价格数据**: 本地CSV文件 (`/home/liujerry/金融数据/stocks/`)
 - **财务数据**: akshare API + 本地缓存
 
 ## 使用方法

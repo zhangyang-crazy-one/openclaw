@@ -11,7 +11,7 @@ import akshare as ak
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
 
-STOCK_DIR = "/home/liujerry/金融数据/stocks_clean"
+STOCK_DIR = "/home/liujerry/金融数据/stocks"
 OUTPUT_DIR = "/home/liujerry/金融数据/screening_results"
 
 def get_chi_next_stocks():

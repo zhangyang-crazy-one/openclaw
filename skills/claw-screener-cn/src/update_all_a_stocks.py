@@ -214,6 +214,11 @@ def fetch_financial_akshare(symbol: str) -> dict:
                 except:
                     return 0
             
+            # 总股本: 从 EPS 反推 (akshare 不直接返回总股本)
+            eps_val = parse_val(latest.get('基本每股收益', 0))
+            net_profit_val = parse_val(latest.get('净利润', 0))
+            total_share_val = (net_profit_val / eps_val) if (eps_val > 0 and net_profit_val > 0) else 0
+
             return {
                 'code': f"sh.{symbol}" if symbol.startswith('6') else f"sz.{symbol}",
                 'pubDate': datetime.now().strftime("%Y-%m-%d"),
@@ -224,7 +229,7 @@ def fetch_financial_akshare(symbol: str) -> dict:
                 'netProfit': parse_val(latest.get('净利润', 0)),
                 'epsTTM': parse_val(latest.get('基本每股收益', 0)),
                 'MBRevenue': parse_val(latest.get('营业总收入', 0)),
-                'totalShare': 0,
+                'totalShare': total_share_val,
                 'liqaShare': 0,
             }
     except:
@@ -277,12 +282,35 @@ def update_all_a_stocks(batch_size: int = 50, start: int = 0):
         
         # 获取K线 (腾讯证券)
         try:
-            df = fetch_kline_tencent(code)
+            df = fetch_kline_tencent(code, days=720)
             if not df.empty:
                 stock_file = STOCKS_DIR / f"{code}.csv"
-                df.to_csv(stock_file, index=False)
+                
+                # 追加模式：读取已有数据，合并去重
+                if stock_file.exists():
+                    try:
+                        existing = pd.read_csv(stock_file)
+                        if 'date' in existing.columns:
+                            existing['date'] = existing['date'].astype(str)
+                            df['date'] = df['date'].astype(str)
+                            # 合并并去重（保留新的）
+                            combined = pd.concat([existing, df])
+                            combined = combined.drop_duplicates(subset='date', keep='last')
+                            combined = combined.sort_values('date')
+                            combined.to_csv(stock_file, index=False)
+                            new_rows = len(combined) - len(existing)
+                            print(f"   ✅ K线: {new_rows} 新增, 累计 {len(combined)} 条")
+                        else:
+                            df.to_csv(stock_file, index=False)
+                            print(f"   ✅ K线(新建): {len(df)} 条")
+                    except Exception as e:
+                        # 文件损坏时回退为覆盖写入
+                        df.to_csv(stock_file, index=False)
+                        print(f"   ⚠️ K线(覆盖): {len(df)} 条 (已有文件异常: {e})")
+                else:
+                    df.to_csv(stock_file, index=False)
+                    print(f"   ✅ K线(新文件): {len(df)} 条")
                 success_kline += 1
-                print(f"   ✅ K线: {len(df)} 条")
             else:
                 print(f"   ❌ K线: 无数据")
         except Exception as e:
@@ -294,7 +322,7 @@ def update_all_a_stocks(batch_size: int = 50, start: int = 0):
             if fin:
                 existing_financial[fin['code']] = fin
                 success_financial += 1
-                print(f"   ✅ 财务: ROE={fin.get('roeAvg', 0)*100:.1f}%")
+                print(f"   ✅ 财务: ROE={fin.get('roeAvg', 0)*100:.1f}% totalShare={fin.get('totalShare', 0):.0f}")
             else:
                 print(f"   ❌ 财务: 无数据")
         except Exception as e:

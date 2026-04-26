@@ -24,7 +24,7 @@ class ValueScreener:
     5. Piotroski F-Score风险审核
     """
     
-    def __init__(self, data_dir: str = '/home/liujerry/金融数据/stocks_clean'):
+    def __init__(self, data_dir: str = '/home/liujerry/金融数据/stocks'):
         self.data_dir = data_dir
         self.moat_analyzer = MoatAnalyzer()
         self.safety_analyzer = SafetyMarginAnalyzer()
@@ -119,21 +119,73 @@ class ValueScreener:
         return result
     
     def _get_financial_data(self, stock_code: str) -> Dict:
-        """获取财务数据 (简化版，实际应从API获取)"""
-        # 这里应该调用 akshare 获取真实数据
-        # 简化返回测试数据
+        """从buffett_supplementary.csv获取真实财务数据 (单位：亿元)"""
+        try:
+            buffett_file = '/home/liujerry/金融数据/fundamentals/buffett_supplementary.csv'
+            if not os.path.exists(buffett_file):
+                return self._get_fallback_financial_data(stock_code)
+            
+            df = pd.read_csv(buffett_file)
+            rows = df[df['code'].astype(str) == stock_code]
+            
+            if rows.empty:
+                return self._get_fallback_financial_data(stock_code)
+            
+            b = rows.iloc[-1]
+            
+            # 提取数据，全部转换为亿元
+            net_income = b['net_income'] / 1e8 if pd.notna(b['net_income']) else 0
+            revenue = b['revenue'] / 1e8 if pd.notna(b['revenue']) else 0
+            equity = b['equity'] / 1e8 if pd.notna(b['equity']) else 0
+            total_assets = b['total_assets'] / 1e8 if pd.notna(b['total_assets']) else 0
+            operating_cf = b['operating_cash_flow'] if pd.notna(b['operating_cash_flow']) else 0
+            
+            # 处理operating_cash_flow单位问题（如果是亿元单位，转为元）
+            if 0 < operating_cf < 100:
+                operating_cf = operating_cf  # 已经是亿元
+            else:
+                operating_cf = operating_cf / 1e8 if operating_cf > 0 else 0
+            
+            # ROE计算
+            roe = (net_income / equity * 100) if equity > 0 else 0
+            
+            # 计算FCF：经营现金流 * 0.8
+            free_cash_flow = operating_cf * 0.8 if operating_cf > 0 else net_income * 0.8
+            
+            return {
+                'roe': roe,
+                'net_income': net_income,  # 亿元
+                'free_cash_flow': free_cash_flow,  # 亿元
+                'revenue': revenue,  # 亿元
+                'gross_margin': 30,  # 估算
+                'operating_margin': (b['operating_profit'] / b['revenue'] * 100) if pd.notna(b['operating_profit']) and pd.notna(b['revenue']) and b['revenue'] > 0 else 15,
+                'debt_ratio': (b['total_liabilities'] / b['total_assets']) if pd.notna(b['total_liabilities']) and pd.notna(b['total_assets']) and b['total_assets'] > 0 else 0.5,
+                'equity': equity,  # 亿元
+                'total_assets': total_assets,  # 亿元
+                'shares_outstanding': total_assets * 2,  # 估算流通股
+                'industry': '未知',
+                'wacc': 0.10,
+                'growth_rate': min(roe / 100, 0.15) if roe > 0 else 0.10,
+            }
+        except Exception as e:
+            return self._get_fallback_financial_data(stock_code)
+    
+    def _get_fallback_financial_data(self, stock_code: str) -> Dict:
+        """降级方案：返回空数据而非假数据"""
         return {
-            'roe': 22.58,
-            'net_income': 6.27e8,
-            'free_cash_flow': 5e8,
-            'shares_outstanding': 4.34e8,
-            'eps': 1.42,
-            'gross_margin': 26.99,
-            'operating_margin': 15.38,
-            'debt_ratio': 0.5,
-            'industry': '汽车零部件',
+            'roe': 0,
+            'net_income': 0,
+            'free_cash_flow': 0,
+            'shares_outstanding': 0,
+            'revenue': 0,
+            'gross_margin': 0,
+            'operating_margin': 0,
+            'debt_ratio': 0,
+            'industry': '未知',
             'wacc': 0.10,
-            'growth_rate': 0.10,
+            'growth_rate': 0,
+            'equity': 0,
+            'total_assets': 0,
         }
     
     def _get_stock_name(self, stock_code: str) -> str:

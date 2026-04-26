@@ -86,32 +86,152 @@ def analyze_stock_technical(fetcher: AStockDataFetcher, stock_code: str, name: s
     }
 
 
+def _get_long_term_equity_investment(stock_code: str) -> float:
+    """从balance.csv获取长期股权投资数据"""
+    import pandas as pd
+    try:
+        # balance.csv的code是纯数字（如795代表300795，1313代表301313）
+        code_str = str(stock_code)
+        if code_str.startswith('300') or code_str.startswith('301'):
+            code_int = int(code_str[3:])  # 300795 -> 795, 301313 -> 1313
+        else:
+            code_int = int(code_str)
+        balance_df = pd.read_csv('/home/liujerry/金融数据/fundamentals/chuangye_full/balance.csv')
+        rows = balance_df[balance_df['code'] == code_int]
+        if rows.empty:
+            return 0
+        latest = rows.sort_values('report_date', ascending=False).iloc[0]
+        lt_eq = latest.get('长期股权投资', 0)
+        return lt_eq / 1e8 if pd.notna(lt_eq) and lt_eq > 0 else 0
+    except:
+        return 0
+
+def get_buffett_data_for_screening(stock_code: str) -> dict:
+    """从buffett_supplementary.csv获取真实财务数据用于筛选"""
+    import pandas as pd
+    
+    result = {
+        'cash_equivalents': 0,
+        'short_term_debt': 0,
+        'long_term_debt': 0,
+        'total_debt': 0,
+        'total_liabilities': 0,
+        'total_equity': 0,
+        'net_profit': 0,
+        'revenue': 0,
+        'operating_profit': 0,
+        'current_assets': 0,
+        'current_liabilities': 0,
+        'total_assets': 0,
+        'interest_expense': 0,
+        'cash_from_operations': 0,
+        'capex': 0,
+        'long_term_equity_investment': 0,
+        'has_real_data': False
+    }
+    
+    try:
+        buffett_df = pd.read_csv('/home/liujerry/金融数据/fundamentals/buffett_supplementary.csv')
+        rows = buffett_df[buffett_df['code'].astype(str) == stock_code]
+        
+        if rows.empty:
+            return result
+        
+        b = rows.iloc[-1]
+        
+        # 转换单位：从元转换为亿元 (A股财务数据单位是元)
+        cash = b['cash']
+        short_debt = b['short_debt']
+        long_debt = b['long_debt']
+        total_liabilities = b['total_liabilities']
+        equity = b['equity']
+        revenue = b['revenue']
+        net_income = b['net_income']
+        operating_profit = b['operating_profit']
+        current_assets = b['current_assets']
+        current_liabilities = b['current_liabilities']
+        total_assets = b['total_assets']
+        interest_expense = b['interest_expense']
+        operating_cash_flow = b['operating_cash_flow']
+        
+        # 如果operating_cash_flow是亿元单位而不是元
+        if operating_cash_flow < 100:
+            operating_cash_flow *= 100000000
+        
+        # 转换为亿元 (原数据是元)
+        result = {
+            'cash_equivalents': cash / 1e8,
+            'short_term_debt': short_debt / 1e8 if pd.notna(short_debt) else 0,
+            'long_term_debt': long_debt / 1e8 if pd.notna(long_debt) else 0,
+            'total_debt': (0 if pd.isna(short_debt) else short_debt + (0 if pd.isna(long_debt) else long_debt)) / 1e8,
+            'total_liabilities': total_liabilities / 1e8,
+            'total_equity': equity / 1e8,
+            'net_profit': net_income / 1e8,
+            'revenue': revenue / 1e8,
+            'operating_profit': operating_profit / 1e8,
+            'current_assets': current_assets / 1e8 if pd.notna(current_assets) else 0,
+            'current_liabilities': current_liabilities / 1e8 if pd.notna(current_liabilities) else 0,
+            'total_assets': total_assets / 1e8,
+            'interest_expense': interest_expense / 1e8 if pd.notna(interest_expense) else 0,
+            'cash_from_operations': operating_cash_flow / 1e8,
+            'capex': net_income / 1e8 * 0.2,  # 估算：资本支出约为净利润20%
+            'long_term_equity_investment': _get_long_term_equity_investment(stock_code),  # 从balance.csv获取
+            'has_real_data': True
+        }
+        
+    except Exception as e:
+        pass
+    
+    return result
+
+
 def analyze_stock_fundamental_wrapper(fetcher: AStockDataFetcher, stock_code: str) -> dict:
-    """分析股票基本面"""
+    """分析股票基本面 - 使用真实Buffett数据"""
     # 获取财务数据
     financial_data = fetcher.get_financial_data(stock_code)
     
     if financial_data is None:
         return None
     
-    # 转换为巴菲特公式需要的格式
-    # A股财务数据通常单位是万元
-    data = {
-        'cash_equivalents': financial_data.get('total_assets', 0) * 0.1 if financial_data.get('total_assets') else 0,  # 估算
-        'short_term_debt': 0,
-        'total_debt': 0,
-        'total_liabilities': financial_data.get('total_assets', 0) * 0.4 if financial_data.get('total_assets') else 0,  # 估算
-        'total_equity': financial_data.get('total_assets', 0) * 0.6 if financial_data.get('total_assets') else 0,  # 估算
-        'net_profit': financial_data.get('net_profit', 0),
-        'revenue': financial_data.get('revenue', 0),
-        'operating_profit': financial_data.get('net_profit', 0) * 1.2,  # 估算
-        'current_assets': financial_data.get('total_assets', 0) * 0.3 if financial_data.get('total_assets') else 0,  # 估算
-        'current_liabilities': financial_data.get('total_assets', 0) * 0.2 if financial_data.get('total_assets') else 0,  # 估算
-        'total_assets': financial_data.get('total_assets', 0),
-        'interest_expense': 0,
-        'cash_from_operations': financial_data.get('net_profit', 0) * 1.1,  # 估算
-        'capex': financial_data.get('net_profit', 0) * 0.2,  # 估算
-    }
+    # 优先使用buffett_supplementary.csv的真实数据
+    buffett = get_buffett_data_for_screening(stock_code)
+    
+    if buffett['has_real_data']:
+        # 使用真实数据
+        data = {
+            'cash_equivalents': buffett['cash_equivalents'],
+            'short_term_debt': buffett['short_term_debt'],
+            'total_debt': buffett['total_debt'],
+            'total_liabilities': buffett['total_liabilities'],
+            'total_equity': buffett['total_equity'],
+            'net_profit': buffett['net_profit'],
+            'revenue': buffett['revenue'],
+            'operating_profit': buffett['operating_profit'],
+            'current_assets': buffett['current_assets'],
+            'current_liabilities': buffett['current_liabilities'],
+            'total_assets': buffett['total_assets'],
+            'interest_expense': buffett['interest_expense'],
+            'cash_from_operations': buffett['cash_from_operations'],
+            'capex': buffett['capex'],
+        }
+    else:
+        # 降级：使用原始估算（仅当真实数据不可用时）
+        data = {
+            'cash_equivalents': financial_data.get('total_assets', 0) * 0.1 if financial_data.get('total_assets') else 0,
+            'short_term_debt': 0,
+            'total_debt': 0,
+            'total_liabilities': financial_data.get('total_assets', 0) * 0.4 if financial_data.get('total_assets') else 0,
+            'total_equity': financial_data.get('total_assets', 0) * 0.6 if financial_data.get('total_assets') else 0,
+            'net_profit': financial_data.get('net_profit', 0),
+            'revenue': financial_data.get('revenue', 0),
+            'operating_profit': financial_data.get('net_profit', 0) * 1.2,
+            'current_assets': financial_data.get('total_assets', 0) * 0.3 if financial_data.get('total_assets') else 0,
+            'current_liabilities': financial_data.get('total_assets', 0) * 0.2 if financial_data.get('total_assets') else 0,
+            'total_assets': financial_data.get('total_assets', 0),
+            'interest_expense': 0,
+            'cash_from_operations': financial_data.get('net_profit', 0) * 1.1,
+            'capex': financial_data.get('net_profit', 0) * 0.2,
+        }
     
     # 简化分析 - 使用ROE作为主要指标
     roe = financial_data.get('roe', 0)

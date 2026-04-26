@@ -8,7 +8,7 @@ import pandas as pd
 import baostock as bs
 import akshare as ak
 
-STOCK_DIR = "/home/liujerry/金融数据/stocks_clean"
+STOCK_DIR = "/home/liujerry/金融数据/stocks"
 OUTPUT_DIR = "/home/liujerry/金融数据/screening_results"
 
 def get_financial_data(code):

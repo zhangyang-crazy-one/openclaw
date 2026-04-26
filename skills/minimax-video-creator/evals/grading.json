@@ -1,0 +1,61 @@
+{
+  "skill_name": "minimax-video-creator",
+  "eval_date": "2026-04-21",
+  "overall_pass_rate": "100%",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "帮我做一个关于勇敢小猫咪冒险的短视频，60秒左右",
+      "result": "PASS",
+      "assertions": [
+        { "assertion": "技能首先要求生成角色参考（Phase 0）", "status": "pass" },
+        { "assertion": "脚本包含起承转合的故事结构", "status": "pass" },
+        { "assertion": "旁白文案形成连贯的故事", "status": "pass" },
+        { "assertion": "所有场景图使用 img2img", "status": "pass" }
+      ],
+      "issues": [
+        {
+          "severity": "medium",
+          "location": "Quick Start 第3步",
+          "description": "命令直接使用 --script 参数，可能让用户跳过 Phase 0 角色参考生成",
+          "suggestion": "在第3步前增加提示：'在执行此步骤前，确保已完成 Phase 0 的角色参考生成'"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "我想做一个童话故事风格的动画视频，讲述一个小狐狸找朋友的故事",
+      "result": "PASS",
+      "assertions": [
+        { "assertion": "Phase 0.5 童话故事弧线设计被执行", "status": "pass" },
+        { "assertion": "旁白角色（narrator character）被单独生成", "status": "pass" },
+        { "assertion": "主角角色使用角色参考确保一致性", "status": "pass" },
+        { "assertion": "使用 FairyTaleNarrator 组件", "status": "pass" },
+        { "assertion": "故事结构为三幕式", "status": "pass" }
+      ],
+      "issues": []
+    },
+    {
+      "id": 3,
+      "prompt": "为什么我生成的视频里，每一幕的猫咪看起来都不一样？",
+      "result": "PASS",
+      "assertions": [
+        { "assertion": "识别出问题：缺少角色参考图导致每场景生成不同角色", "status": "pass" },
+        {
+          "assertion": "提供解决方案：先生成角色参考图（三视图），然后所有场景使用 img2img",
+          "status": "pass"
+        },
+        { "assertion": "说明 img2img 的 image_url 参数用法", "status": "pass" }
+      ],
+      "issues": []
+    }
+  ],
+  "summary": {
+    "total_evals": 3,
+    "passed": 3,
+    "failed": 0,
+    "critical_issues": 0,
+    "medium_issues": 1,
+    "recommendation": "技能整体质量良好，可投入使用。建议修复 Quick Start 的步骤顺序提示问题。"
+  }
+}

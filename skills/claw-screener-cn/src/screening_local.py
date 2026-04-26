@@ -27,7 +27,7 @@ WATCHLIST = [
     ('300487', '蓝晓科技'),  # 2026-03-17 新增
 ]
 
-DATA_DIR = Path("/home/liujerry/金融数据/stocks_clean")
+DATA_DIR = Path("/home/liujerry/金融数据/stocks")
 
 
 def calculate_williams_r(high, low, close, period=14):

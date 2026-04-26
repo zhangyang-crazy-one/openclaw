@@ -26,37 +26,13 @@ WATCHLIST = [
     ('300926', '博俊科技'),
 ]
 
-DATA_DIR = Path("/home/liujerry/金融数据/stocks_clean")
-BACKUP_DATA_DIR = Path("/home/liujerry/金融数据/stocks_backup")
+DATA_DIR = Path("/home/liujerry/金融数据/stocks")
 FINANCIAL_DIR = Path("/home/liujerry/金融数据/fundamentals/chuangye_full")
 
 
 def get_stock_data_path(code: str) -> Path:
-    """获取股票数据路径，优先使用最新数据"""
-    primary = DATA_DIR / f"{code}.csv"
-    backup = BACKUP_DATA_DIR / f"{code}.csv"
-    
-    # 检查哪个数据更新
-    if primary.exists() and backup.exists():
-        # 读取两个文件的最新日期
-        try:
-            df_primary = pd.read_csv(primary)
-            df_backup = pd.read_csv(backup)
-            
-            if 'date' in df_primary.columns and 'date' in df_backup.columns:
-                primary_date = pd.to_datetime(df_primary['date'].max())
-                backup_date = pd.to_datetime(df_backup['date'].max())
-                
-                if backup_date > primary_date:
-                    return backup
-        except:
-            pass
-    
-    if backup.exists():
-        return backup
-    elif primary.exists():
-        return primary
-    return primary  # 返回主路径（即使不存在）
+    """获取股票数据路径"""
+    return DATA_DIR / f"{code}.csv"
 
 sys.path.insert(0, __file__.rsplit('/', 1)[0])
 
@@ -101,12 +77,20 @@ def load_financial_data(stock_code: str) -> dict:
                 # 营业收入: 亿元
                 if 'MBRevenue' in row and pd.notna(row['MBRevenue']):
                     result['revenue'] = float(row['MBRevenue'])
-                # 总股本: 股
-                if 'totalShare' in row and pd.notna(row['totalShare']):
-                    result['total_shares'] = float(row['totalShare'])  # 已经是股
+                # 总股本: 股 (profit.csv中 hardcoded 为0，从 EPS 反推)
+                if 'totalShare' in row and pd.notna(row['totalShare']) and float(row['totalShare']) > 0:
+                    result['total_shares'] = float(row['totalShare'])
+                elif 'epsTTM' in row and pd.notna(row['epsTTM']) and float(row['epsTTM']) > 0 \
+                     and 'netProfit' in row and pd.notna(row['netProfit']) and float(row['netProfit']) > 0:
+                    # EPS = netProfit / totalShares => totalShares = netProfit / EPS
+                    result['total_shares'] = float(row['netProfit']) / float(row['epsTTM'])
+                else:
+                    result['total_shares'] = 100000000  # fallback 1亿股
                 # 流通股本: 股
-                if 'liqaShare' in row and pd.notna(row['liqaShare']):
+                if 'liqaShare' in row and pd.notna(row['liqaShare']) and float(row['liqaShare']) > 0:
                     result['float_shares'] = float(row['liqaShare'])
+                else:
+                    result['float_shares'] = result.get('total_shares', 100000000) * 0.8  # 估算80%流通
                 # 报告期
                 if 'pubDate' in row and pd.notna(row['pubDate']):
                     result['report_date'] = str(row['pubDate'])
@@ -117,77 +101,109 @@ def load_financial_data(stock_code: str) -> dict:
 
 
 def get_buffett_format(stock_code: str) -> dict:
-    """获取巴菲特公式格式"""
-    data = load_financial_data(stock_code)
+    """获取巴菲特公式格式 - 使用真实数据从buffett_supplementary.csv"""
+    import pandas as pd
     
-    if not data:
-        return {}
-    
-    # 单位转换: 亿元 -> 元
     result = {}
     
-    # 现金 (营收的20%)
-    result['CashAndCashEquivalentsAtCarryingValue'] = {'value': data.get('revenue', 0) * 0.2 * 100000000, 'end_date': data.get('report_date', '2025-09-30'), 'form': '10-K'}
-    # 短期负债 (营收的10%)
-    result['ShortTermDebt'] = {'value': data.get('revenue', 0) * 0.1 * 100000000, 'end_date': data.get('report_date', '2025-09-30'), 'form': '10-K'}
-    # 长期负债 (营收的15%)
-    result['LongTermDebt'] = {'value': data.get('revenue', 0) * 0.15 * 100000000, 'end_date': data.get('report_date', '2025-09-30'), 'form': '10-K'}
-    # 总负债 (营收的25%)
-    result['Liabilities'] = {'value': data.get('revenue', 0) * 0.25 * 100000000, 'end_date': data.get('report_date', '2025-09-30'), 'form': '10-K'}
-    
-    # 所有者权益 (使用ROE反推)
-    roe = data.get('roe', 0)
-    net_profit = data.get('net_profit', 0)
-    if roe > 0 and net_profit > 0:
-        equity = (net_profit / (roe / 100)) * 100000000
-    else:
-        equity = data.get('revenue', 0) * 0.5 * 100000000
-    result['StockholdersEquity'] = {'value': equity, 'end_date': data.get('report_date', '2025-09-30'), 'form': '10-K'}
-    
-    # 净利润 (亿元 -> 元)
-    result['NetIncomeLoss'] = {'value': data.get('net_profit', 0) * 100000000, 'end_date': data.get('report_date', '2025-09-30'), 'form': '10-K'}
-    # 营业收入 (亿元 -> 元)
-    result['Revenues'] = {'value': data.get('revenue', 0) * 100000000, 'end_date': data.get('report_date', '2025-09-30'), 'form': '10-K'}
-    
-    # 营业利润
-    if data.get('operating_margin'):
-        operating_profit = data.get('revenue', 0) * data.get('operating_margin', 0) / 100
-    else:
-        operating_profit = data.get('net_profit', 0) * 1.2
-    result['OperatingIncomeLoss'] = {'value': operating_profit * 100000000, 'end_date': data.get('report_date', '2025-09-30'), 'form': '10-K'}
-    
-    # 流动资产
-    result['CurrentAssets'] = {'value': data.get('revenue', 0) * 0.3 * 100000000, 'end_date': data.get('report_date', '2025-09-30'), 'form': '10-K'}
-    # 流动负债
-    result['CurrentLiabilities'] = {'value': data.get('revenue', 0) * 0.15 * 100000000, 'end_date': data.get('report_date', '2025-09-30'), 'form': '10-K'}
-    # 总资产
-    result['Assets'] = {'value': data.get('revenue', 0) * 0.8 * 100000000, 'end_date': data.get('report_date', '2025-09-30'), 'form': '10-K'}
-    # 利息费用
-    result['InterestExpense'] = {'value': data.get('revenue', 0) * 0.01 * 100000000, 'end_date': data.get('report_date', '2025-09-30'), 'form': '10-K'}
-    # 经营现金流
-    result['CashFlowFromContinuingOperatingActivities'] = {'value': data.get('net_profit', 0) * 1.1 * 100000000, 'end_date': data.get('report_date', '2025-09-30'), 'form': '10-K'}
-    # 自由现金流
-    result['FreeCashFlow'] = {'value': data.get('net_profit', 0) * 0.8 * 100000000, 'end_date': data.get('report_date', '2025-09-30'), 'form': '10-K'}
+    try:
+        # 从buffett_supplementary.csv读取真实数据
+        buffett_df = pd.read_csv('/home/liujerry/金融数据/fundamentals/buffett_supplementary.csv')
+        rows = buffett_df[buffett_df['code'].astype(str) == stock_code]
+        
+        if rows.empty:
+            print(f"  [警告] 300181不在buffett_supplementary.csv中")
+            return {}
+        
+        # 获取最新一条数据
+        b = rows.iloc[-1]
+        
+        # 获取报告日期
+        report_date = str(b['report_date'])[:10] if pd.notna(b['report_date']) else '2025-09-30'
+        
+        # 现金 (元)
+        cash = b['cash']
+        # 短期负债 (元)
+        short_debt = b['short_debt']
+        # 长期负债 (元)
+        long_debt = b['long_debt']
+        # 总负债 (元)
+        liabilities = b['total_liabilities']
+        # 所有者权益 (元)
+        equity = b['equity']
+        # 流动资产 (元)
+        current_assets = b['current_assets']
+        # 流动负债 (元)
+        current_liabilities = b['current_liabilities']
+        # 总资产 (元)
+        total_assets = b['total_assets']
+        # 营业收入 (元)
+        revenue = b['revenue']
+        # 净利润 (元)
+        net_income = b['net_income']
+        # 营业利润 (元)
+        operating_profit = b['operating_profit']
+        # 利息支出 (元)
+        interest_expense = b['interest_expense']
+        # 经营现金流 - 关键发现：buffett_supplementary.csv中所有字段单位不一致！
+        # cash/revenue/net_income/equity等: 单位是元
+        # operating_cash_flow: 单位是亿元（不是元），需要×1e8转换
+        # 验证：300750(宁德) NI=722亿, OCF=1332亿(1332亿经营现金流合理，OCF/NI=184%)
+        operating_cash_flow = b['operating_cash_flow']
+        if pd.isna(operating_cash_flow) or operating_cash_flow == 0:
+            operating_cash_flow = 0
+        else:
+            # 统一视为亿元，转换为元
+            operating_cash_flow = operating_cash_flow * 1e8
+        
+        # 映射到FinancialData格式
+        result['CashAndCashEquivalentsAtCarryingValue'] = {'value': cash, 'end_date': report_date, 'form': '10-K'}
+        result['ShortTermDebt'] = {'value': short_debt, 'end_date': report_date, 'form': '10-K'}
+        result['LongTermDebt'] = {'value': long_debt, 'end_date': report_date, 'form': '10-K'}
+        result['Liabilities'] = {'value': liabilities, 'end_date': report_date, 'form': '10-K'}
+        result['StockholdersEquity'] = {'value': equity, 'end_date': report_date, 'form': '10-K'}
+        result['NetIncomeLoss'] = {'value': net_income, 'end_date': report_date, 'form': '10-K'}
+        result['Revenues'] = {'value': revenue, 'end_date': report_date, 'form': '10-K'}
+        result['OperatingIncomeLoss'] = {'value': operating_profit, 'end_date': report_date, 'form': '10-K'}
+        result['CurrentAssets'] = {'value': current_assets, 'end_date': report_date, 'form': '10-K'}
+        result['CurrentLiabilities'] = {'value': current_liabilities, 'end_date': report_date, 'form': '10-K'}
+        result['Assets'] = {'value': total_assets, 'end_date': report_date, 'form': '10-K'}
+        result['InterestExpense'] = {'value': interest_expense, 'end_date': report_date, 'form': '10-K'}
+        result['CashFlowFromContinuingOperatingActivities'] = {'value': operating_cash_flow, 'end_date': report_date, 'form': '10-K'}
+        result['FreeCashFlow'] = {'value': operating_cash_flow * 0.8, 'end_date': report_date, 'form': '10-K'}
+        
+    except Exception as e:
+        print(f"  [错误] get_buffett_format读取失败: {e}")
+        return {}
     
     return result
 
 
 def calculate_dcf(financial_data: dict, price: float) -> dict:
     """计算DCF估值 (单位: 亿元)"""
-    # 净利润 (亿元)
-    net_profit = financial_data.get('net_profit', 0)
+    # 优先使用真实的经营现金流数据
+    cash_flow_data = financial_data.get('CashFlowFromContinuingOperatingActivities', {})
+    if cash_flow_data:
+        operating_cash_flow = cash_flow_data.get('value', 0)
+        # 转换单位：元 -> 亿元
+        fcf_yi = operating_cash_flow / 1e8 if operating_cash_flow > 0 else 0
+    else:
+        # 降级：使用净利润估算
+        net_profit = financial_data.get('net_profit', 0)
+        fcf_yi = net_profit * 0.8
+    
+    if fcf_yi <= 0:
+        return {'error': '现金流数据不足'}
+    
     # 总股本 (股)
     total_shares = financial_data.get('total_shares', 100000000)
     
-    if net_profit <= 0 or total_shares <= 0:
-        return {'error': '数据不足'}
-    
-    # 假设 FCF = 净利润的80%
-    fcf = net_profit * 0.8
-    
     # 增长率 (基于ROE)
     roe = financial_data.get('roe', 10)
-    growth = min(max(roe / 100, -0.05), 0.20)
+    # 如果ROE是百分比形式(如15)而不是小数形式(如0.15)，自动转换
+    if roe > 1:
+        roe = roe / 100
+    growth = min(max(roe, -0.05), 0.20)
     
     # 参数
     discount_rate = 0.10
@@ -195,7 +211,7 @@ def calculate_dcf(financial_data: dict, price: float) -> dict:
     
     # 10年现金流折现
     pv = 0
-    projected_fcf = fcf
+    projected_fcf = fcf_yi
     
     for year in range(1, 11):
         projected_fcf *= (1 + growth)
@@ -209,6 +225,8 @@ def calculate_dcf(financial_data: dict, price: float) -> dict:
     intrinsic_equity = pv + discounted_terminal
     # 每股价值 (元)
     shares_yi = total_shares / 100000000  # 亿股
+    if shares_yi <= 0:
+        shares_yi = 1.0  # 默认1亿股避免除零
     intrinsic_per_share = intrinsic_equity / shares_yi
     
     # 上涨空间
@@ -232,7 +250,7 @@ def calculate_dcf(financial_data: dict, price: float) -> dict:
         rating = "N/A"
     
     return {
-        'fcf_yi': round(fcf, 2),
+        'fcf_yi': round(fcf_yi, 2),
         'growth_rate': round(growth * 100, 2),
         'intrinsic_per_share': round(intrinsic_per_share, 2),
         'current_price': price,
@@ -468,3 +486,52 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+def add_dividend_screening():
+    """将分红评分集成到筛选系统"""
+    import pandas as pd
+    from pathlib import Path
+    import sys
+    sys.path.insert(0, str(Path(__file__).parent))
+    from dividend_screener import DividendScreener
+    
+    screener = DividendScreener()
+    
+    # 读取股票列表
+    financial_dir = Path("/home/liujerry/金融数据/fundamentals/chuangye_full")
+    profit_file = financial_dir / "profit.csv"
+    
+    df_profit = pd.read_csv(profit_file)
+    stock_codes = df_profit['code'].unique()
+    
+    results = []
+    for code in stock_codes:
+        code_str = str(code).split('.')[-1]  # 去掉 sh. sz. 前缀
+        div_data = screener.get_dividend_data(code_str)
+        if div_data['has_dividend_history']:
+            results.append({
+                'code': code_str,
+                'dividend_score': div_data['dividend_score'],
+                'consecutive_years': div_data['consecutive_years'],
+                'dividend_yield': div_data['dividend_yield'],
+                'last_dividend': div_data['last_dividend'],
+                'pass': div_data['pass_screening']
+            })
+    
+    df_result = pd.DataFrame(results)
+    df_result = df_result.sort_values('dividend_score', ascending=False)
+    
+    output_file = Path("/home/liujerry/金融数据/screening_results/dividend_screening_latest.csv")
+    df_result.to_csv(output_file, index=False)
+    print(f"分红筛选完成，共{len(df_result)}只有分红记录的股票")
+    print(f"通过筛选: {df_result['pass'].sum()}只")
+    print(f"结果保存: {output_file}")
+    return df_result
+
+if __name__ == "__main__":
+    # 修复：有两个 __main__ 块！第二个会覆盖第一个。
+    # 默认跑主分析流程（14只自选股），而非全量分红筛选
+    main()
+    # 需要全量分红筛选时请取消注释下面这行：
+    # add_dividend_screening()

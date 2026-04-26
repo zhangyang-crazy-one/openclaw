@@ -1,0 +1,41 @@
+{
+  "skill_name": "minimax-video-creator",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "帮我做一个关于勇敢小猫咪冒险的短视频，60秒左右",
+      "expected_output": "应该生成完整的视频脚本，包含角色参考生成、场景描述、旁白文案、BGM提示词",
+      "files": [],
+      "assertions": [
+        "技能首先要求生成角色参考（Phase 0），而不是直接生成场景图",
+        "脚本包含起承转合的故事结构",
+        "旁白文案形成连贯的故事，不是简单的场景描述",
+        "所有场景图使用 img2img 基于角色参考生成"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "我想做一个童话故事风格的动画视频，讲述一个小狐狸找朋友的故事",
+      "expected_output": "应该使用童话故事工作流，包含旁白角色设计、三幕式故事结构、浮动旁白叠加层",
+      "files": [],
+      "assertions": [
+        "Phase 0.5 童话故事弧线设计被执行",
+        "旁白角色（narrator character）被单独生成",
+        "主角角色使用角色参考确保一致性",
+        "使用 FairyTaleNarrator 组件添加浮动旁白叠加层",
+        "故事结构为三幕式：Once Upon a Time → The Journey → Happily Ever After"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "为什么我生成的视频里，每一幕的猫咪看起来都不一样？",
+      "expected_output": "应该识别出角色一致性问题并提供解决方案",
+      "files": [],
+      "assertions": [
+        "识别出问题：缺少角色参考图导致每场景生成不同角色",
+        "提供解决方案：先生成角色参考图（三视图），然后所有场景使用 img2img",
+        "说明 img2img 的 image_url 参数用法"
+      ]
+    }
+  ]
+}

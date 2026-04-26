@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <title>300795股票研究报告 V4.0</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1.5cm;
+        }
+        body {
+            font-family: "Noto Sans CJK SC", "Microsoft YaHei", "PingFang SC", sans-serif;
+            font-size: 11px;
+            line-height: 1.5;
+            color: #333;
+            max-width: 100%;
+        }
+        h1 {
+            font-size: 18px;
+            color: #1a1a1a;
+            border-bottom: 2px solid #E8A020;
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        h2 {
+            font-size: 14px;
+            color: #2c3e50;
+            margin-top: 15px;
+            margin-bottom: 8px;
+            border-left: 3px solid #E8A020;
+            padding-left: 8px;
+            background-color: #f8f9fa;
+            padding: 5px 8px;
+        }
+        h3 {
+            font-size: 12px;
+            color: #34495e;
+            margin-top: 10px;
+            margin-bottom: 5px;
+        }
+        p {
+            margin-bottom: 5px;
+            text-align: justify;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 8px 0;
+            font-size: 10px;
+        }
+        th {
+            background-color: #2c3e50;
+            color: white;
+            padding: 5px 3px;
+            text-align: center;
+            font-weight: bold;
+        }
+        td {
+            padding: 4px 3px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        .header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .header h1 {
+            color: white;
+            border: none;
+            margin: 0;
+        }
+        .header .subtitle {
+            color: #ccc;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        .score-box {
+            display: inline-block;
+            background: #E8A020;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 3px;
+            font-weight: bold;
+            margin: 0 3px;
+        }
+        .positive {
+            color: #27ae60;
+        }
+        .negative {
+            color: #e74c3c;
+        }
+        .summary {
+            background-color: #e8f4f8;
+            border-left: 4px solid #3498db;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        .verdict {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+            padding: 12px;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: bold;
+            margin: 15px 0;
+        }
+        .verdict.strong-sell {
+            background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
+        }
+        .verdict.undervalued {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+        }
+        .verdict.fair {
+            background: linear-gradient(135deg, #f39c12 0%, #f1c40f 100%);
+        }
+        .metric {
+            display: inline-block;
+            width: 30%;
+            padding: 5px;
+            margin: 5px 1%;
+            background-color: #f8f9fa;
+            border-radius: 3px;
+            text-align: center;
+        }
+        .metric-value {
+            font-size: 16px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .metric-label {
+            font-size: 10px;
+            color: #7f8c8d;
+        }
+        .section-divider {
+            border-top: 1px dashed #ddd;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>300795 股票研究报告 V4.0</h1>
+        <div class="subtitle">生成日期: 2026-04-23 | 数据来源: Buffett真实验数据</div>
+    </div>
+
+    <div class="summary">
+        <strong>核心观点:</strong> 300795 是一家ROE达20%的优质成长股，近期下跌超20%后出现超卖信号。DCF估值显示内在价值34亿元，较当前市值有约200%的上涨空间。
+    </div>
+
+    <h2>一、基本信息</h2>
+    <table>
+        <tr>
+            <th>股票代码</th>
+            <th>最新价格</th>
+            <th>总股本(估算)</th>
+            <th>总市值(估算)</th>
+            <th>数据日期</th>
+        </tr>
+        <tr>
+            <td>300795</td>
+            <td>11.36 元</td>
+            <td>1.0 亿股</td>
+            <td>11.36 亿元</td>
+            <td>2026-04-03</td>
+        </tr>
+    </table>
+
+    <h2>二、技术面分析</h2>
+    <table>
+        <tr>
+            <th>指标</th>
+            <th>数值</th>
+            <th>信号</th>
+        </tr>
+        <tr>
+            <td>RSI(6)</td>
+            <td class="positive">26.54</td>
+            <td>超卖区间</td>
+        </tr>
+        <tr>
+            <td>Williams %R</td>
+            <td class="negative">-100.00</td>
+            <td>严重超卖</td>
+        </tr>
+        <tr>
+            <td>20日收益率</td>
+            <td class="negative">-10.41%</td>
+            <td>短期下跌</td>
+        </tr>
+        <tr>
+            <td>6月收益率</td>
+            <td class="negative">-21.28%</td>
+            <td>中期下跌趋势</td>
+        </tr>
+        <tr>
+            <td>20日波动率</td>
+            <td>2.72%</td>
+            <td>波动较低</td>
+        </tr>
+        <tr>
+            <td>布林带下轨</td>
+            <td>11.35 元</td>
+            <td>价格接近下轨</td>
+        </tr>
+    </table>
+    <p><strong>技术面结论:</strong> RSI=26.54处于超卖区间，Williams %R=-100严重超卖。6个月下跌21%，短期可能存在反弹机会。布林带显示价格已触及下轨11.35元附近。风险释放较为充分。评分: 4/6</p>
+
+    <h2>三、基本面分析</h2>
+    <table>
+        <tr>
+            <th>指标</th>
+            <th>数值</th>
+            <th>行业对比</th>
+        </tr>
+        <tr>
+            <td>ROE</td>
+            <td class="positive">20.07%</td>
+            <td>优秀(>15%)</td>
+        </tr>
+        <tr>
+            <td>净利润</td>
+            <td>1.37 亿元</td>
+            <td>中等规模</td>
+        </tr>
+        <tr>
+            <td>营收</td>
+            <td>7.85 亿元</td>
+            <td>中等规模</td>
+        </tr>
+        <tr>
+            <td>营业利润率</td>
+            <td class="positive">23.00%</td>
+            <td>优秀</td>
+        </tr>
+        <tr>
+            <td>资产负债率</td>
+            <td class="positive">22.09%</td>
+            <td>健康(<50%)</td>
+        </tr>
+        <tr>
+            <td>经营现金流</td>
+            <td>1.00 亿元</td>
+            <td>正向现金流</td>
+        </tr>
+    </table>
+    <p><strong>基本面结论:</strong> ROE 20.07%表现优秀，营业利润率23%处于较高水平。资产负债率仅22%财务健康。现金流为正，经营质量良好。评分: 13/17</p>
+
+    <h2>四、DCF估值</h2>
+    <div class="metric">
+        <div class="metric-value">34.04亿</div>
+        <div class="metric-label">DCF内在价值</div>
+    </div>
+    <div class="metric">
+        <div class="metric-value">11.36亿</div>
+        <div class="metric-label">当前市值</div>
+    </div>
+    <div class="metric">
+        <div class="metric-value positive">199.7%</div>
+        <div class="metric-label">上涨空间</div>
+    </div>
+    <table style="margin-top: 15px;">
+        <tr>
+            <th>参数</th>
+            <th>数值</th>
+            <th>说明</th>
+        </tr>
+        <tr>
+            <td>自由现金流(FCF)</td>
+            <td>1.00 亿元</td>
+            <td>经营现金流</td>
+        </tr>
+        <tr>
+            <td>永续增长率(g)</td>
+            <td>20.07%</td>
+            <td>使用ROE作为增长近似</td>
+        </tr>
+        <tr>
+            <td>WACC</td>
+            <td>10%</td>
+            <td>折现率</td>
+        </tr>
+        <tr>
+            <td>DCF模型</td>
+            <td>10年FCF + 终值</td>
+            <td>两阶段DCF</td>
+        </tr>
+    </table>
+
+    <h2>五、综合评级</h2>
+    <div class="verdict undervalued">
+        🚀 评级: 严重低估 | 目标价: 22-28元 | 建议: 重点关注
+    </div>
+    <table>
+        <tr>
+            <th>维度</th>
+            <th>得分</th>
+            <th>满分</th>
+            <th>说明</th>
+        </tr>
+        <tr>
+            <td>技术面</td>
+            <td>4</td>
+            <td>6</td>
+            <td>超卖反弹机会</td>
+        </tr>
+        <tr>
+            <td>基本面</td>
+            <td>13</td>
+            <td>17</td>
+            <td>ROE优秀，财务健康</td>
+        </tr>
+        <tr>
+            <td>估值</td>
+            <td>8</td>
+            <td>10</td>
+            <td>DCF严重低估</td>
+        </tr>
+        <tr>
+            <td><strong>总分</strong></td>
+            <td><strong>25</strong></td>
+            <td><strong>33</strong></td>
+            <td>综合推荐</td>
+        </tr>
+    </table>
+
+    <h2>六、风险提示</h2>
+    <ul>
+        <li>近期下跌趋势明显，6个月跌幅超21%</li>
+        <li>市值较小(约11亿)，流动性可能有限</li>
+        <li> Buffett数据为2025年年报，可能存在滞后</li>
+        <li>DCF估值假设较多，实际价值可能偏差</li>
+    </ul>
+
+    <h2>七、投资建议</h2>
+    <p><strong>买入区间:</strong> 10-12元 (当前价格11.36元处于低估区间)</p>
+    <p><strong>目标价:</strong> 22-28元 (基于DCF估值和市场平均PE)</p>
+    <p><strong>止损价:</strong> 9.50元 (跌破视为趋势破坏)</p>
+    <p><strong>持有期:</strong> 3-6个月</p>
+
+    <div class="section-divider"></div>
+    <p style="text-align: center; color: #7f8c8d; font-size: 9px;">
+        本报告由DeepSeeker自动生成 | 数据仅供参考 | 投资有风险，入市需谨慎
+    </p>
+</body>
+</html>

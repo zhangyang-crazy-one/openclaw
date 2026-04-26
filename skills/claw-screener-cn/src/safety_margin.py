@@ -52,7 +52,7 @@ class SafetyMarginAnalyzer:
             return result
         
         # 1. DCF估值
-        dcf_value = self._calculate_dcf(financial_data)
+        dcf_value = self._calculate_dcf(financial_data, stock_code)
         result['dcf_value'] = dcf_value
         result['details']['DCF'] = f"内在价值 = {dcf_value:.2f}元"
         
@@ -87,7 +87,45 @@ class SafetyMarginAnalyzer:
         
         return result
     
-    def _calculate_dcf(self, data: Dict) -> float:
+    def _get_buffett_real_data(self, stock_code: str) -> Dict:
+        """从buffett_supplementary.csv获取真实财务数据"""
+        try:
+            import os
+            buffett_file = '/home/liujerry/金融数据/fundamentals/buffett_supplementary.csv'
+            if not os.path.exists(buffett_file):
+                return {}
+            
+            df = pd.read_csv(buffett_file)
+            rows = df[df['code'].astype(str) == stock_code]
+            
+            if rows.empty:
+                return {}
+            
+            b = rows.iloc[-1]
+            
+            # 获取经营现金流
+            operating_cf = b['operating_cash_flow'] if pd.notna(b['operating_cash_flow']) else 0
+            # 处理单位：如果值小于100，认为是亿元单位，转为元
+            if 0 < operating_cf < 100:
+                operating_cf *= 1e8
+            
+            net_income = b['net_income'] if pd.notna(b['net_income']) else 0
+            
+            # 计算真实FCF：经营现金流 * 0.8 (简化)
+            real_fcf = operating_cf * 0.8 if operating_cf > 0 else net_income * 0.8
+            
+            return {
+                'free_cash_flow': real_fcf,
+                'net_income': net_income,
+                'revenue': b['revenue'] if pd.notna(b['revenue']) else 0,
+                'equity': b['equity'] if pd.notna(b['equity']) else 0,
+                'total_assets': b['total_assets'] if pd.notna(b['total_assets']) else 0,
+                'operating_profit': b['operating_profit'] if pd.notna(b['operating_profit']) else 0,
+            }
+        except:
+            return {}
+
+    def _calculate_dcf(self, data: Dict, stock_code: str = None) -> float:
         """
         DCF现金流折现估值
         
@@ -99,8 +137,14 @@ class SafetyMarginAnalyzer:
         wacc = data.get('wacc', 0.10)  # 默认10%
         g = data.get('perpetual_growth', 0.025)  # 2.5%
         
-        # 使用自由现金流或净利润估算
+        # 使用自由现金流或从buffett数据获取
         fcff = data.get('free_cash_flow', 0)
+        if not fcff and stock_code:
+            # 尝试从buffett_supplementary.csv获取真实数据
+            buffett_data = self._get_buffett_real_data(stock_code)
+            if buffett_data:
+                fcff = buffett_data.get('free_cash_flow', 0)
+        
         if not fcff:
             net_income = data.get('net_income', 0)
             # 简化估算FCF = 净利润 * 0.8

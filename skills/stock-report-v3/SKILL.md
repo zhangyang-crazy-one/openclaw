@@ -621,7 +621,7 @@ else:
 
 ## 数据来源
 
-- K线数据: /home/liujerry/金融数据/stocks_clean/{code}.csv
+- K线数据: /home/liujerry/金融数据/stocks/{code}.csv
 - 财务数据: /home/liujerry/金融数据/fundamentals/chuangye_full/profit.csv
 - 公司信息: akshare stock_individual_info_em
 - 长期股权投资: 东方财富网页面截图提取 (见上文)
