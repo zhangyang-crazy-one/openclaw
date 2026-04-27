@@ -2293,3 +2293,142 @@ _Last updated: 2026-04-25 06:18_
 2. 或确认Neo4j安装路径并手动启动
 
 _Last updated: 2026-04-26 06:13_
+
+## 06:13 每日知识图谱同步 (2026-04-27 周一) ❌
+
+### 执行结果
+
+- Graphiti API: ✅ 服务运行中 (端口8000)
+- Neo4j: ❌ **DOWN** — 连接被拒绝 (127.0.0.1:7687)
+- 搜索: ❌ 无法执行 — Neo4j不可用
+
+### 错误详情
+
+```
+neo4j.exceptions.ServiceUnavailable: Couldn't connect to localhost:7687
+(reason [Errno 111] Connect call failed ('127.0.0.1', 7687))
+```
+
+### 尝试恢复
+
+- ❌ sudo systemctl restart neo4j — 需要认证
+- Neo4j进程: 未运行
+
+### 系统状态
+
+- Graphiti: ⚠️ 运行中但Neo4j DOWN
+- Neo4j: ❌ **DOWN** — 需要人工sudo重启
+- Moltbook: 待检查
+
+_Last updated: 2026-04-27 06:13_
+
+## 06:15 每日知识图谱同步 (2026-04-27 周一) ⚠️
+
+### 执行结果
+
+- ✅ Moltbook知识同步: 10条帖子已同步
+- ✅ Graphiti服务: 运行中
+- ✅ Messages API: 已加入队列
+- ❌ **Neo4j: 完全关闭** — 需要sudo重启
+
+### Neo4j故障详情
+
+- Neo4j进程: 未运行
+- Docker: 无法访问Docker daemon
+- 错误: `Couldn't connect to localhost:7687`
+- 影响: Graphiti无法写入/读取知识图谱
+
+### 尝试恢复
+
+- ❌ sudo systemctl restart neo4j — 需要认证
+- ❌ docker exec neo4j — Docker daemon未运行
+
+### 系统状态
+
+- **Neo4j: ❌ DOWN** — 需要人工sudo重启
+- Graphiti: ⚠️ 运行中但Neo4j不可用
+- Moltbook: ✅ 同步成功 (10条)
+
+_Last updated: 2026-04-27 06:15_
+
+## 🚨 紧急警报：知识图谱数据完全丢失 (2026-04-27 07:15)
+
+### 关键发现
+
+| 日期      | Episodes | Entities  | 变化                      |
+| --------- | -------- | --------- | ------------------------- |
+| 04-24     | 3483     | 37105     | 历史新高                  |
+| 04-25     | 3632     | 37466     | +149/+361                 |
+| 04-26     | 4086     | **39770** | +454/+2304 (最大单日增长) |
+| **04-27** | **0**    | **0**     | **⚠️ 完全清零**           |
+
+### 故障分析
+
+**时间线:**
+
+- 04-26 06:13: Neo4j首次报告DOWN (连接被拒绝)
+- 04-26 全天: 知识图谱仍显示39770条 (早晨仪式记录)
+- 04-27 06:13: 知识图谱=0 (早晨仪式发现)
+- 04-27 07:15: Neo4j仍未运行
+
+**可能原因:**
+
+1. Neo4j崩溃后重启，重启时数据库被重置
+2. Graphiti缓存数据在Neo4j宕机期间丢失
+3. 数据目录损坏或被清除
+
+**当前状态:**
+
+- Neo4j进程: ❌ **不存在** (端口7687未监听)
+- Graphiti: ⚠️ 运行中但无法连接Neo4j
+- 数据: ❌ **可能永久丢失**
+
+### 需要人工介入
+
+1. **检查Neo4j安装位置和启动方式**
+2. **验证数据是否可恢复**
+3. **考虑重建知识图谱策略**
+
+### 系统状态
+
+- **Neo4j: ❌ 完全关闭且进程不存在**
+- Graphiti: ⚠️ 运行中但Neo4j不可用
+- 数据: ❌ **39770条记录疑似永久丢失**
+
+_Last updated: 2026-04-27 07:15_
+
+### Docker/Neo4j 故障根因
+
+**Neo4j架构:** Docker容器运行 (docker-compose-neo4j.yml)
+**故障链条:**
+
+1. Neo4j运行在Docker容器中
+2. Docker daemon需要root权限启动
+3. 当前用户无法sudo
+4. Docker daemon未运行 → Neo4j无法启动
+5. 知识图谱数据在Docker volume中，可能已丢失
+
+**验证:**
+
+```bash
+# Docker组但daemon未运行
+$ groups liujerry
+liujerry : liujerry adm cdrom sudo dip plugdev users lpadmin docker ollama
+
+$ docker ps
+Cannot connect to the Docker daemon at unix:///var/run/docker.sock.
+
+$ cat /tmp/dockerd.log
+dockerd needs to be started with root privileges.
+```
+
+**恢复步骤 (需要sudo):**
+
+```bash
+sudo systemctl start docker
+docker ps  # 确认Neo4j容器
+# 如果容器存在: docker start <neo4j_container>
+# 如果需要重建: cd ~/graphiti/mcp_server/docker && docker-compose up -d
+```
+
+_Last updated: 2026-04-27 07:20_
