@@ -79,7 +79,7 @@ def call_moltbook_api(endpoint, max_retries=3):
     for attempt in range(max_retries):
         cmd = [
             "curl", "-s", "-w", "%{http_code}",
-            "-x", "http://127.0.0.1:7897",
+            # "-x", "http://127.0.0.1:7897",  # 注释掉: Clash代理导致TLS握手失败
             f"https://www.moltbook.com/api/v1/{endpoint}",
             "-H", f"Authorization: Bearer {creds['api_key']}"
         ]

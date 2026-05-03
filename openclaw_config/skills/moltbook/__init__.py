@@ -48,49 +48,134 @@ def get_api_key():
 
 
 def make_request(method, endpoint, data=None, params=None):
-    """Make an authenticated request to Moltbook API"""
+    """Make an authenticated request to Moltbook API using curl (for proxy compatibility)"""
+    import subprocess
+    import json
+    
     api_key = get_api_key()
     if not api_key:
         return {"error": "No API key found. Please configure Moltbook credentials."}
     
     url = f"{API_BASE}{endpoint}"
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
-    }
+    
+    # Build curl command
+    cmd = [
+        'curl', '-s', '-X', method.upper(),
+        '-x', 'http://127.0.0.1:7897',  # Use proxy
+        '-H', f'Authorization: Bearer {api_key}',
+        '-H', 'Content-Type: application/json'
+    ]
+    
+    # Add query params for GET requests
+    if params and method.upper() == "GET":
+        for k, v in params.items():
+            cmd.extend(['--data-urlencode', f'{k}={v}'])
+    
+    # Add JSON body for POST/PATCH/DELETE
+    if data and method.upper() in ["POST", "PATCH", "DELETE"]:
+        cmd.extend(['-d', json.dumps(data)])
+    
+    cmd.append(url)
     
     try:
-        if method.upper() == "GET":
-            response = requests.get(url, headers=headers, params=params, timeout=15)
-        elif method.upper() == "POST":
-            response = requests.post(url, headers=headers, json=data, timeout=15)
-        elif method.upper() == "DELETE":
-            response = requests.delete(url, headers=headers, timeout=15)
-        elif method.upper() == "PATCH":
-            response = requests.patch(url, headers=headers, json=data, timeout=15)
-        else:
-            return {"error": f"Unknown method: {method}"}
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
         
-        if response.status_code in [200, 201]:
-            return response.json() if response.text else {"success": True}
-        else:
-            return {
-                "error": response.text[:500],
-                "status_code": response.status_code
-            }
+        # Try to parse as JSON
+        try:
+            return json.loads(result.stdout)
+        except json.JSONDecodeError:
+            if result.returncode == 0:
+                return {"success": True, "raw": result.stdout[:500]}
+            else:
+                return {"error": result.stderr[:500] if result.stderr else "Unknown error"}
+    except subprocess.TimeoutExpired:
+        return {"error": "Request timeout"}
     except Exception as e:
         return {"error": str(e)}
 
 
 # Post functions
+def _parse_challenge_answer(challenge_text):
+    """Parse numbers from challenge text (handles word numbers like 'twenty four' -> 24)"""
+    import re
+    
+    word_map = {
+        'zero': 0, 'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5,
+        'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10,
+        'eleven': 11, 'twelve': 12, 'thirteen': 13, 'fourteen': 14, 'fifteen': 15,
+        'sixteen': 16, 'seventeen': 17, 'eighteen': 18, 'nineteen': 19,
+        'twenty': 20, 'thirty': 30, 'forty': 40, 'fifty': 50,
+        'sixty': 60, 'seventy': 70, 'eighty': 80, 'ninety': 90
+    }
+    
+    text_lower = challenge_text.lower()
+    words = text_lower.split()
+    
+    numbers = []
+    i = 0
+    while i < len(words):
+        # Extract alphabetic characters from word
+        w = re.sub(r'[^a-z]', '', words[i])
+        if w in word_map:
+            val = word_map[w]
+            # Check for compound numbers: tens (20,30,etc.) + unit (1-9)
+            if val >= 20 and val < 100 and i + 1 < len(words):
+                next_w = re.sub(r'[^a-z]', '', words[i + 1])
+                if next_w in word_map and word_map[next_w] < 10:
+                    numbers.append(val + word_map[next_w])
+                    i += 2
+                    continue
+            numbers.append(val)
+        i += 1
+    
+    return numbers
+
+
 def create_post(submolt, title, content=None, url=None):
-    """Create a new post"""
+    """Create a new post - handles verification challenges automatically"""
     data = {"submolt": submolt, "title": title}
     if content:
         data["content"] = content
     if url:
         data["url"] = url
-    return make_request("POST", "/posts", data=data)
+    
+    response = make_request("POST", "/posts", data=data)
+    
+    # Handle verification challenge if present
+    if response.get("success") and response.get("post", {}).get("verification"):
+        verification = response["post"]["verification"]
+        verification_code = verification.get("verification_code")
+        challenge_text = verification.get("challenge_text", "")
+        
+        if verification_code and challenge_text:
+            numbers = _parse_challenge_answer(challenge_text)
+            
+            # Determine operation from challenge text
+            text_lower = challenge_text.lower()
+            if 'multiply' in text_lower or 'multiplied' in text_lower or 'times' in text_lower:
+                # Multiplication - multiply all numbers
+                answer = numbers[0] * numbers[1] if len(numbers) >= 2 else 0
+            elif 'gains' in text_lower or 'adds' in text_lower or 'receives' in text_lower or 'increased' in text_lower:
+                # Addition - sum all numbers
+                answer = sum(numbers) if numbers else 0
+            elif 'loses' in text_lower or 'subtract' in text_lower or 'decreased' in text_lower:
+                # Subtraction - first minus rest
+                answer = numbers[0] - sum(numbers[1:]) if len(numbers) >= 1 else 0
+            elif 'divided' in text_lower:
+                # Division
+                answer = numbers[0] // numbers[1] if len(numbers) >= 2 and numbers[1] != 0 else 0
+            else:
+                # Default: sum of first two numbers
+                answer = sum(numbers[:2]) if len(numbers) >= 2 else (numbers[0] if numbers else 0)
+            
+            # Submit verification
+            verify_data = {
+                "verification_code": verification_code,
+                "answer": answer
+            }
+            make_request("POST", "/verify", data=verify_data)
+    
+    return response
 
 
 def get_posts(limit=25, sort="hot", submolt=None, author=None):
