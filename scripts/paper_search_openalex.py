@@ -45,7 +45,7 @@ def search_openalex(query, max_results=10, min_citations=0, year_range=None):
         url = f"https://api.openalex.org/works?filter={filter_str}&per_page={max_results}&sort=cited_by_count:desc"
         
         result = subprocess.run(
-            ["curl", "-s", "--max-time", "30", url],
+            ["curl", "-s", "-x", "http://127.0.0.1:7897", "--max-time", "30", url],
             capture_output=True,
             text=True,
             timeout=35

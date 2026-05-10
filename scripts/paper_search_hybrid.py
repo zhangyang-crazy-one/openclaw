@@ -63,7 +63,7 @@ def search_arxiv(query, max_results=15):
     try:
         url = f"https://export.arxiv.org/api/query?search_query=all:{quote_plus(query)}&max_results={max_results}&sortBy=submittedDate&sortOrder=descending"
         result = subprocess.run(
-            ["curl", "-s", "--max-time", "15", url],
+            ["curl", "-s", "-x", "http://127.0.0.1:7897", "--max-time", "15", url],
             capture_output=True,
             text=True,
             timeout=20
@@ -119,7 +119,7 @@ def get_citations_from_openalex(doi_or_title, max_retries=2):
                 url = f"https://api.openalex.org/works?filter=title.search:{quote_plus(doi_or_title[:50])}&per_page=1"
             
             result = subprocess.run(
-                ["curl", "-s", "--max-time", "10", url],
+                ["curl", "-s", "-x", "http://127.0.0.1:7897", "--max-time", "10", url],
                 capture_output=True,
                 text=True,
                 timeout=15
@@ -175,7 +175,7 @@ def search_openalex_hot(query, max_results=5):
         url = f"https://api.openalex.org/works?filter=title.search:{quote_plus(query)},publication_year:2023|2024|2025|2026&per_page={max_results}&sort=cited_by_count:desc"
         
         result = subprocess.run(
-            ["curl", "-s", "--max-time", "15", url],
+            ["curl", "-s", "-x", "http://127.0.0.1:7897", "--max-time", "15", url],
             capture_output=True,
             text=True,
             timeout=20
