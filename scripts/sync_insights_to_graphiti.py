@@ -1,84 +1,140 @@
 #!/usr/bin/env python3
+"""Sync memory/insights/*.json files to Graphiti knowledge graph.
+
+Reuses API pattern from sync_memory_to_graphiti.py.
 """
-同步insights JSON文件到知识图谱
-"""
-import os
 import json
-import uuid
-from datetime import datetime
-from pathlib import Path
+import sys
+import hashlib
 import requests
+from pathlib import Path
+from datetime import datetime, timezone
 
 GRAPHITI_API = "http://localhost:8000"
-INSIGHTS_DIR = Path("/home/liujerry/moltbot/memory/insights")
+INSIGHTS_DIR = Path('/home/liujerry/moltbot/memory/insights')
+STATE_FILE = Path('/home/liujerry/moltbot/memory/.insights_sync_state.json')
+GROUP_ID = "memory_insights_sync"
 
-def extract_json_summary(filepath):
-    """从JSON文件提取摘要用于实体创建"""
-    try:
-        with open(filepath, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        
-        # 提取关键词
-        keywords = []
-        if 'keywords' in data:
-            keywords = data['keywords'][:10] if isinstance(data['keywords'], list) else []
-        elif 'topic' in data:
-            keywords = [data['topic']]
-        
-        # 提取摘要
-        summary = ""
-        if 'summary' in data:
-            summary = data['summary'][:500]
-        elif 'title' in data:
-            summary = str(data.get('title', ''))[:500]
-        
-        return {
-            'keywords': keywords,
-            'summary': summary,
-            'filename': filepath.name
-        }
-    except Exception as e:
-        return {'keywords': [], 'summary': str(filepath), 'filename': filepath.name}
 
-def sync_insights_to_graphiti():
-    """同步insights目录下的JSON文件到知识图谱"""
-    json_files = list(INSIGHTS_DIR.glob("*.json"))
-    print(f"发现 {len(json_files)} 个insights JSON文件")
-    
-    synced = 0
-    skipped = 0
-    
-    for json_file in json_files:
-        # 提取摘要
-        info = extract_json_summary(json_file)
-        
-        # 创建实体节点
-        entity_data = {
-            "uuid": str(uuid.uuid4()),
-            "group_id": "moltbot",
-            "name": info['filename'],
-            "summary": info['summary'][:500] if info['summary'] else info['filename'],
-        }
-        
+def load_state():
+    if STATE_FILE.exists():
         try:
-            response = requests.post(
-                f"{GRAPHITI_API}/entity-node",
-                json=entity_data,
-                timeout=30
-            )
-            if response.status_code == 201:
-                synced += 1
-                if synced % 50 == 0:
-                    print(f"  已同步 {synced} 个文件...")
-            else:
-                skipped += 1
-        except Exception as e:
-            skipped += 1
-    
-    print(f"✅ Insights同步完成: {synced} 个成功, {skipped} 个跳过")
-    return synced
+            return json.loads(STATE_FILE.read_text())
+        except Exception:
+            return {}
+    return {}
 
-if __name__ == "__main__":
-    print(f"=== 同步Insights到知识图谱 - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ===")
-    count = sync_insights_to_graphiti()
-    print(f"完成: {count} 个insights文件已同步")
+
+def save_state(state):
+    STATE_FILE.write_text(json.dumps(state, indent=2, ensure_ascii=False))
+
+
+def file_hash(path: Path) -> str:
+    st = path.stat()
+    return hashlib.md5(f"{st.st_size}:{st.st_mtime}:{st.st_ino}".encode()).hexdigest()
+
+
+def build_episode_body(data: dict, fname: str) -> str:
+    parts = [f"[insights/{fname}]"]
+    parts.append(f"source: {data.get('source', 'unknown')}")
+    ts = data.get('timestamp', '')
+    if ts:
+        parts.append(f"timestamp: {ts}")
+
+    if 'concepts' in data:
+        concepts = data.get('concepts', [])
+        if concepts:
+            names = [c.get('name', '') for c in concepts if c.get('name')]
+            parts.append(f"concepts ({len(concepts)}): {', '.join(names[:25])}")
+        relations = data.get('relations', [])
+        if relations:
+            rels = [f"{r.get('from','')}-{r.get('type','?')}-{r.get('to','')}" for r in relations]
+            parts.append(f"relations ({len(relations)}): {', '.join(rels[:15])}")
+        if 'summary' in data:
+            parts.append(f"summary: {str(data['summary'])[:500]}")
+        if 'key_findings' in data:
+            parts.append(f"key_findings: {str(data['key_findings'])[:500]}")
+    elif 'findings' in data:
+        findings = data.get('findings', {})
+        for section, content in findings.items():
+            if isinstance(content, dict):
+                keys = list(content.keys())[:10]
+                parts.append(f"findings.{section}: {', '.join(keys)}")
+            elif isinstance(content, list):
+                parts.append(f"findings.{section}: {len(content)} items")
+            else:
+                parts.append(f"findings.{section}: {str(content)[:200]}")
+    else:
+        for k, v in list(data.items())[:8]:
+            if isinstance(v, (str, int, float)):
+                parts.append(f"{k}: {v}")
+            elif isinstance(v, list):
+                parts.append(f"{k}: [{len(v)} items]")
+            elif isinstance(v, dict):
+                parts.append(f"{k}: {{{len(v)} keys}}")
+
+    return "\n".join(parts)
+
+
+def post_message(name: str, body: str, source: str) -> bool:
+    """POST to Graphiti /messages endpoint."""
+    msg = {
+        "content": body,
+        "role_type": "user",
+        "role": "memory",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "source_description": source,
+        "name": name[:120],
+    }
+    payload = {"group_id": GROUP_ID, "messages": [msg]}
+    try:
+        r = requests.post(f"{GRAPHITI_API}/messages", json=payload, timeout=30)
+        return r.status_code in (200, 202)
+    except Exception as e:
+        print(f"    ❌ POST error: {e}", file=sys.stderr)
+        return False
+
+
+def main():
+    state = load_state()
+    new_state = dict(state)
+    added = 0
+    skipped = 0
+    failed = 0
+
+    json_files = sorted(INSIGHTS_DIR.glob('*.json'))
+    print(f"Found {len(json_files)} JSON files in insights/")
+    print(f"Already processed: {len(state)}")
+
+    for i, fpath in enumerate(json_files, 1):
+        fh = file_hash(fpath)
+        if state.get(fpath.name) == fh:
+            skipped += 1
+            continue
+        try:
+            data = json.loads(fpath.read_text())
+            body = build_episode_body(data, fpath.name)
+            ok = post_message(fpath.stem, body, f"insights:{fpath.name}")
+            if ok:
+                new_state[fpath.name] = fh
+                added += 1
+            else:
+                failed += 1
+        except Exception as e:
+            failed += 1
+            print(f"  ❌ {fpath.name}: {e}", file=sys.stderr)
+
+        if i % 100 == 0:
+            print(f"  ... {i}/{len(json_files)} (added={added}, failed={failed})")
+            save_state(new_state)  # periodic save
+
+    save_state(new_state)
+    print(f"\n=== Insights sync done ===")
+    print(f"  Added: {added}")
+    print(f"  Skipped (unchanged): {skipped}")
+    print(f"  Failed: {failed}")
+    return 0 if failed == 0 else 1
+
+
+if __name__ == '__main__':
+    sys.exit(main())

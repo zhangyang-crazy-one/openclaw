@@ -90,26 +90,36 @@ def extract_key_sections(content):
     for line in lines:
         line = line.strip()
         
-        if '晨间反思' in line or 'Morning Session' in line:
+        if '晨间反思' in line or 'Morning Session' in line or '## Morning' in line or '## 晨间' in line:
             current_section = "morning_reflection"
-        elif '工作完成' in line or 'Work Completed' in line:
+        elif '## Work Completed' in line or '## 工作完成' in line or '## 任务完成' in line or '完成的任务' in line or '## 已完成' in line:
             current_section = "tasks_completed"
-        elif '洞察' in line or 'Insights' in line or '三问' in line:
+        elif '## Insights' in line or '## 关键洞察' in line or '## 洞察' in line or '三问' in line or 'Iron Law' in line:
             current_section = "insights"
-        elif '问题' in line or 'Problems' in line:
+        elif '## Failures' in line or '## 失败' in line or '## 问题' in line or '## 错误' in line or 'Failures & Errors' in line or 'Errors' in line:
             current_section = "problems"
-        elif '探索' in line or 'Exploration' in line:
+        elif '## Exploration' in line or '## 探索' in line or '## Learning' in line or '## 学习' in line:
             current_section = "explorations"
-        elif '晚间总结' in line or 'Evening Summary' in line:
+        elif '## Evening' in line or '## 晚间' in line or '## 总结' in line or 'Evening Summary' in line or '自我反思' in line:
             current_section = "evening_summary"
         elif line.startswith('###'):
+            # 3 级标题不重置 — 让下属内容继续归属当前 2 级 section
+            pass
+        elif line.startswith('##') and current_section and isinstance(sections.get(current_section), str):
+            # 2 级标题但未匹配到任何已知 section 类型, 重置避免污染
             current_section = None
         elif line.startswith('[') and line.endswith(']'):
             # 任务状态标记
             continue
         elif current_section and line:
             if isinstance(sections[current_section], list):
-                if line.startswith('-') or line.startswith('*'):
+                # 过滤掉 todo 复选框行 (- [ ] / - [x])，它们是待办不是已完成洞察
+                if re.match(r'^-\s*\[[ xX]\]\s*', line):
+                    continue
+                if line.startswith('-') or line.startswith('*') or re.match(r'^\d+\.', line):
+                    # 过滤掉 bold-key 风格 (e.g. **时间**: 23:25) — 这是子标题不是列表项
+                    if re.match(r'^\s*[-*]?\s*\*\*[^*]+\*\*\s*[:：]', line):
+                        continue
                     sections[current_section].append(line)
             else:
                 sections[current_section] += line + "\n"
@@ -193,6 +203,16 @@ def compile_weekly_report(week_str, daily_files):
 ---
 """
     
+    def _strip_bullet(s):
+        """去掉行首的 - / 1. 等列表标记，避免和外部编号重复。
+        注意: 不要动行首的 * / ** (可能是 Markdown bold 标记)"""
+        s = s.strip()
+        # 只去掉 - 或 • 开头
+        s = re.sub(r'^[•-]\s+', '', s)
+        # 1. 2. 形式
+        s = re.sub(r'^\d+\.\s+', '', s)
+        return s.strip()
+
     # 洞察汇总
     report += f"""
 ## 💡 本周洞察汇总
@@ -201,9 +221,15 @@ def compile_weekly_report(week_str, daily_files):
 
 """
     
-    for i, insight in enumerate(all_insights[:20], 1):
+    seen = set()
+    counter = 0
+    for insight in all_insights[:20]:
         if isinstance(insight, str) and len(insight) > 10:
-            report += f"{i}. {insight}\n"
+            cleaned = _strip_bullet(insight)
+            if cleaned and cleaned not in seen:
+                seen.add(cleaned)
+                counter += 1
+                report += f"{counter}. {cleaned}\n"
     
     # 问题汇总
     report += f"""
@@ -212,24 +238,36 @@ def compile_weekly_report(week_str, daily_files):
 """
     
     if all_problems:
-        for i, problem in enumerate(all_problems[:10], 1):
+        seen = set()
+        counter = 0
+        for problem in all_problems[:10]:
             if isinstance(problem, str) and len(problem) > 10:
-                report += f"{i}. {problem}\n"
+                cleaned = _strip_bullet(problem)
+                if cleaned and cleaned not in seen:
+                    seen.add(cleaned)
+                    counter += 1
+                    report += f"{counter}. {cleaned}\n"
     else:
         report += "本周无重大问题。\n"
     
-    # 任务汇总
+    # 任务汇总 (重新计数去重后, 以免 header 数字和列表不一致)
+    deduped_tasks = []
+    seen_t = set()
+    for task in all_tasks:
+        if isinstance(task, str) and len(task) > 10:
+            tc = task.replace('[x]', '').replace('[ ]', '').replace('✅', '').replace('❌', '').strip()
+            tc = _strip_bullet(tc)
+            if tc and tc not in seen_t:
+                seen_t.add(tc)
+                deduped_tasks.append(tc)
+    
     report += f"""
-## ✅ 任务完成汇总 ({total_tasks} 项)
+## ✅ 任务完成汇总 ({len(deduped_tasks)} 项)
 
 """
     
-    for i, task in enumerate(all_tasks[:30], 1):
-        if isinstance(task, str) and len(task) > 10:
-            # 清理任务标记
-            task_clean = task.replace('[x]', '').replace('[ ]', '').replace('✅', '').replace('❌', '').strip()
-            if task_clean:
-                report += f"{i}. {task_clean}\n"
+    for i, task_clean in enumerate(deduped_tasks[:30], 1):
+        report += f"{i}. {task_clean}\n"
     
     # 主题分析
     report += f"""
@@ -383,13 +421,18 @@ def main():
     
     lines = report.split('\n')
     in_summary = False
+    separator_count = 0
     for line in lines:
         if '本周概览' in line:
             in_summary = True
+            continue
         if in_summary and line.startswith('|'):
             print(line)
-        if in_summary and '---' in line and line.count('-') > 5:
-            break
+        # 用两个连续 --- 之间的内容来界定概览区
+        if in_summary and line.strip() == '---':
+            separator_count += 1
+            if separator_count >= 2:
+                break
     
     print(f"\n✅ 周报编译完成: {output_file}")
     print(f"📖 查看: cat {output_file}")
