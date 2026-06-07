@@ -26,47 +26,86 @@ EM_HEADERS = {
 
 def get_a_stock_codes() -> list:
     """获取A股股票代码列表"""
-    try:
-        df = ak.stock_info_a_code_name()
-        codes = []
-        for _, row in df.iterrows():
-            code = row['code']
-            if code.startswith('6') or code.startswith('0') or code.startswith('3'):
-                codes.append((code, row['name']))
-        return codes
-    except Exception as e:
-        print(f"获取股票列表失败: {e}")
-        return [(f"{i:06d}", f"股票{i}") for i in range(1, 100)]
+    # 多源 fallback
+    sources = [
+        lambda: ak.stock_info_a_code_name(),
+        lambda: ak.stock_zh_a_spot_em(),
+    ]
+    for i, src in enumerate(sources):
+        try:
+            df = src()
+            codes = []
+            for _, row in df.iterrows():
+                code = str(row['code']).zfill(6)
+                name = row.get('name', '')
+                if code.startswith(('6', '0', '3')):
+                    codes.append((code, name))
+            if codes:
+                if i > 0:
+                    print(f"   (使用备用数据源 #{i+1}, 取得 {len(codes)} 只)")
+                return codes
+        except Exception as e:
+            print(f"   数据源 #{i+1} 失败: {type(e).__name__}: {e}")
+            continue
+    # 全部失败 — 用硬编码范围作为最后兜底 (深市主板+中小板+创业板+沪市主板+科创板)
+    print("   全部数据源失败,使用硬编码范围兜底")
+    fallback = []
+    for code in list(range(1, 3001)) + list(range(300001, 302000)) + list(range(600000, 605000)) + list(range(688000, 689000)):
+        fallback.append((f"{code:06d}", f""))
+    return fallback
 
 
 def fetch_kline_eastmoney(symbol: str) -> pd.DataFrame:
     """使用东方财富API获取K线数据"""
     try:
-        # EastMoney: 沪市(6xxxxx)=1, 深市(0/3xxxxx)=0
+        # 优先用 web.ifzq.gtimg.cn (腾讯前复权K线，稳定，~321行/2年)
+        if symbol.startswith('6'):
+            prefix = 'sh'
+        else:
+            prefix = 'sz'
+        qq_url = f"https://web.ifzq.gtimg.cn/appstock/app/fqkline/get"
+        qq_params = {"param": f"{prefix}{symbol},day,,,320,qfq"}
+        qq_resp = requests.get(qq_url, params=qq_params, headers=EM_HEADERS, timeout=10)
+        if qq_resp.status_code == 200:
+            data = qq_resp.json()
+            sec_data = data.get("data", {}).get(f"{prefix}{symbol}", {})
+            klines = sec_data.get("qfqday", [])
+            if klines:
+                records = []
+                for line in klines:
+                    if len(line) >= 6:
+                        records.append({
+                            'date': line[0],
+                            'open': float(line[1]),
+                            'close': float(line[2]),
+                            'high': float(line[3]),
+                            'low': float(line[4]),
+                            'volume': int(float(line[5])),
+                        })
+                if records:
+                    df = pd.DataFrame(records)
+                    return df[['date', 'open', 'high', 'low', 'close', 'volume']]
+
+        # Fallback: EastMoney (可能被风控)
         market = 1 if symbol.startswith('6') else 0
-        
         url = f"https://push2his.eastmoney.com/api/qt/stock/kline/get"
         params = {
             "secid": f"{market}.{symbol}",
             "fields1": "f1,f2,f3,f4,f5,f6",
             "fields2": "f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61",
-            "klt": "101",   # 日K线
-            "fqt": "1",     # 前复权
+            "klt": "101",
+            "fqt": "1",
             "beg": "0",
             "end": "20500101",
-            "lmt": "90"     # 最近90天
+            "lmt": "90",
         }
-        
         response = requests.get(url, params=params, headers=EM_HEADERS, timeout=10)
         if response.status_code != 200:
             return pd.DataFrame()
-        
         data = response.json()
         klines = data.get("data", {}).get("klines", [])
         if not klines:
             return pd.DataFrame()
-        
-        # 解析K线数据: date,open,close,high,low,volume,amount,...
         records = []
         for line in klines:
             parts = line.split(',')
@@ -79,16 +118,12 @@ def fetch_kline_eastmoney(symbol: str) -> pd.DataFrame:
                     'low': float(parts[4]),
                     'volume': int(parts[5]),
                 })
-        
         if not records:
             return pd.DataFrame()
-        
         df = pd.DataFrame(records)
-        # 只保留需要的列
         df = df[['date', 'open', 'high', 'low', 'close', 'volume']]
-        
         return df
-        
+
     except Exception as e:
         return pd.DataFrame()
 
@@ -280,9 +315,11 @@ def update_all_a_stocks(batch_size: int = 50, start: int = 0):
         idx = start + i
         print(f"\n[{idx+1}/{total}] {code} {name}...")
         
-        # 获取K线 (腾讯证券)
-        try:
+        # 获取K线 (EastMoney 优先，失败则腾讯)
+        df = fetch_kline_eastmoney(code)
+        if df.empty:
             df = fetch_kline_tencent(code, days=720)
+        try:
             if not df.empty:
                 stock_file = STOCKS_DIR / f"{code}.csv"
                 

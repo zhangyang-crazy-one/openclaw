@@ -162,9 +162,16 @@ def get_hot_posts(limit=20):
     data = call_moltbook_api(endpoint)
     return data
 
-def filter_posts_by_identity(posts, identity_name="DeepSeeker"):
-    """按身份筛选帖子（可选，用于只看特定身份的帖子）"""
-    # 如果想只看某个身份的帖子，可以用这个过滤
+def get_credentials():
+    creds_path = Path.home() / ".config" / "moltbook" / "credentials.json"
+    if creds_path.exists():
+        with open(creds_path) as f:
+            return json.load(f)
+    return {}
+
+def filter_posts_by_identity(posts, identity_name=None):
+    if identity_name is None:
+        identity_name = get_credentials().get("agent_name", "infiniteseeker")
     return [p for p in posts if p.get('author', {}).get('name') == identity_name]
 
 def get_concepts_from_content(title, content):

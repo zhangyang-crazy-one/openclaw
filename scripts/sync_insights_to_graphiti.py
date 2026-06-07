@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""同步insights JSON文件到知识图谱 (使用entity-node和messages API)"""
+"""
+同步insights JSON文件到知识图谱
+"""
+import os
 import json
 import uuid
 from datetime import datetime
@@ -8,79 +11,74 @@ import requests
 
 GRAPHITI_API = "http://localhost:8000"
 INSIGHTS_DIR = Path("/home/liujerry/moltbot/memory/insights")
-GROUP_ID = "moltbot"
 
-def create_entity(name, entity_type="concept", group_id=GROUP_ID):
-    """创建单个实体"""
-    data = {
-        "uuid": str(uuid.uuid4()),
-        "group_id": group_id,
-        "name": name,
-        "entity_type": entity_type,
-        "summary": f"从insights探索结果中提取的概念: {name}",
-    }
+def extract_json_summary(filepath):
+    """从JSON文件提取摘要用于实体创建"""
     try:
-        resp = requests.post(f"{GRAPHITI_API}/entity-node", json=data, timeout=15)
-        return resp.status_code == 201
-    except:
-        return False
-
-def create_episode(insight_data, group_id=GROUP_ID):
-    """创建Episode记录"""
-    source = insight_data.get("source", "unknown")
-    timestamp = insight_data.get("timestamp", datetime.now().isoformat())
-    concepts = insight_data.get("concepts", [])
-    relations = insight_data.get("relations", [])
-    
-    concept_names = [c.get("name", "") for c in concepts if c.get("name")]
-    relation_strs = [f"{r.get('from','')} --{r.get('type','relates_to')}--> {r.get('to','')}" for r in relations]
-    
-    messages = [{
-        "content": f"探索来源: {source}\n时间: {timestamp}\n概念: {', '.join(concept_names)}\n关系: {'; '.join(relation_strs)}",
-        "role_type": "user",
-        "role": "insight",
-        "timestamp": timestamp,
-        "source_description": f"insight:{source}"
-    }]
-    
-    data = {"group_id": group_id, "messages": messages}
-    try:
-        resp = requests.post(f"{GRAPHITI_API}/messages", json=data, timeout=15)
-        return resp.status_code == 202
-    except:
-        return False
-
-files = sorted(INSIGHTS_DIR.glob("*.json"))
-print(f"发现 {len(files)} 个insights JSON文件")
-
-entities_created = 0
-episodes_created = 0
-skipped = 0
-
-for i, f in enumerate(files):
-    try:
-        data = json.load(open(f))
-        if not isinstance(data, dict):
-            skipped += 1
-            continue
+        with open(filepath, 'r', encoding='utf-8') as f:
+            data = json.load(f)
         
-        concepts = data.get("concepts", [])
-        for c in concepts:
-            name = c.get("name", "")
-            if name and create_entity(name, c.get("type", "concept")):
-                entities_created += 1
+        # 提取关键词
+        keywords = []
+        if 'keywords' in data:
+            keywords = data['keywords'][:10] if isinstance(data['keywords'], list) else []
+        elif 'topic' in data:
+            keywords = [data['topic']]
         
-        if create_episode(data):
-            episodes_created += 1
+        # 提取摘要
+        summary = ""
+        if 'summary' in data:
+            summary = data['summary'][:500]
+        elif 'title' in data:
+            summary = str(data.get('title', ''))[:500]
         
-        if (i+1) % 50 == 0:
-            print(f"  进度: {i+1}/{len(files)} (实体:{entities_created}, Episodes:{episodes_created})")
-            
+        return {
+            'keywords': keywords,
+            'summary': summary,
+            'filename': filepath.name
+        }
     except Exception as e:
-        print(f"  ⚠️ {f.name}: {e}")
+        return {'keywords': [], 'summary': str(filepath), 'filename': filepath.name}
 
-print(f"\n✅ insights同步完成:")
-print(f"   - 文件处理: {len(files)} 个")
-print(f"   - 新增实体: {entities_created} 个")
-print(f"   - 新增Episodes: {episodes_created} 个")
-print(f"   - 跳过(无效): {skipped} 个")
+def sync_insights_to_graphiti():
+    """同步insights目录下的JSON文件到知识图谱"""
+    json_files = list(INSIGHTS_DIR.glob("*.json"))
+    print(f"发现 {len(json_files)} 个insights JSON文件")
+    
+    synced = 0
+    skipped = 0
+    
+    for json_file in json_files:
+        # 提取摘要
+        info = extract_json_summary(json_file)
+        
+        # 创建实体节点
+        entity_data = {
+            "uuid": str(uuid.uuid4()),
+            "group_id": "moltbot",
+            "name": info['filename'],
+            "summary": info['summary'][:500] if info['summary'] else info['filename'],
+        }
+        
+        try:
+            response = requests.post(
+                f"{GRAPHITI_API}/entity-node",
+                json=entity_data,
+                timeout=30
+            )
+            if response.status_code == 201:
+                synced += 1
+                if synced % 50 == 0:
+                    print(f"  已同步 {synced} 个文件...")
+            else:
+                skipped += 1
+        except Exception as e:
+            skipped += 1
+    
+    print(f"✅ Insights同步完成: {synced} 个成功, {skipped} 个跳过")
+    return synced
+
+if __name__ == "__main__":
+    print(f"=== 同步Insights到知识图谱 - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ===")
+    count = sync_insights_to_graphiti()
+    print(f"完成: {count} 个insights文件已同步")
