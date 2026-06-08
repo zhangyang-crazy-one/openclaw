@@ -80,7 +80,7 @@ _最后更新: 2026-06-07 19:20 (P0: cron冻结7天发现)_
 - **Cron运行成功 ≠ 数据已更新——必须验证数据新鲜度**
 - **Proxy/硬件故障需要人工介入，不是所有问题都能自我解决**
 - **监控发现问题 ≠ 监控系统能修复——需要建立闭环反馈机制**
-- **数据源API变更检测**: 多个独立指标同时出现"历史首次"变化时，优先检查数据源
+  | **健康诊断的多信号原则**: 单一信号缺失(如 jobs.json 文件不存在) ≠ 系统停摆。必须同时验证进程状态、API状态、运行时日志、执行记录，才能判断系统健康。OpenClaw cron 引擎从 SQLite 加载状态，磁盘 JSON 文件非必需。\n| 数据源API变更检测: 多个独立指标同时出现"历史首次"变化时，优先检查数据源
 - **健康报告是 starting point 不是终点** — 看到 "error N 次" 必须查 `~/.openclaw/cron/runs/*.jsonl` 找真实错误，3 个 error 可能是 3 种完全不同的根因
 - **OpenClaw cron vs 系统 crontab 是两套** — 87 个 jobs 在 `~/.openclaw/cron/jobs.json`，19 个 active 在 `crontab -l`，健康报告只覆盖前者
 - **调度器在跑 ≠ 时间在动** — "running"标签只是心跳, 必须验证 lastRunAtMs 是否在更新, 否则是分布式系统最阴险的失败
@@ -115,9 +115,8 @@ acpx claaude sessions close <session-name>
 - [x] ~~300创业板SIGTERM修复~~ — ✅ 50只/批，10批次，0失败
 - [ ] **Proxy SSL周期性故障** — ⚠️ 缺乏自动修复机制
 - [ ] **Moltbook v3 API** — ⚠️ 持续不稳定
-- [ ] **🚨 P0 Cron引擎冻结7天** (06-07发现) — 2026-05-31 13:04后无任何cron run, jobs.json缺失仅.migrated存在, root cause待sudo诊断
-- [ ] **Graphiti Worker DOWN** (06-07) — 8000端口refused, cron冻结伴随服务停止
-- [ ] **memory_search embedding DOWN** (06-07) — node-llama-cpp missing
+      |- [ ] **🚨 P0 Cron引擎冻结7天** (06-07发现) — ✅ **误判，引擎从未冻结** (2026-06-08 07:10 已纠偏)
+      |- [ ] **Graphiti Worker DOWN** (06-07) — ✅ **误判，实际 healthy**
 
 ---
 
