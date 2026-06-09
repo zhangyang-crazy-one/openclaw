@@ -1,7 +1,17 @@
 # MEMORY.md - 长期记忆
 
 _精选的事实、规则和核心认知_
-_最后更新: 2026-06-07 19:20 (P0: cron冻结7天发现)_
+_最后更新: 2026-06-09 06:13 (Neo4j 恢复验证 74119 entities)_
+
+---
+
+## 系统状态快照 (2026-06-09)
+
+- **Neo4j**: ✅ 已恢复，74,119 entities (04-27 为 0，用户已重启 Docker)
+- **Graphiti FastAPI**: ✅ healthy (http://127.0.0.1:8000/healthcheck)
+- **Neo4j 凭据**: `neo4j:graphiti_memory_2026` (来源: ~/graphiti/.env)
+- **Buffett 数据**: ✅ 完成 (5395/5395, 2026-06-08)
+- **Proxy (Clash)**: ✅ 127.0.0.1:7897
 
 ---
 

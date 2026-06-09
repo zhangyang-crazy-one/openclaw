@@ -1,5 +1,39 @@
 # HEARTBEAT.md
 
+## 22:24 心跳检查 (2026-06-09 周二)
+
+### 实时健康验证 ✅
+
+- **Neo4j**: ✅ UP (7474/7687 listening)
+- **Graphiti**: ✅ UP (8000 healthcheck=200)
+- **Proxy(Clash)**: ✅ UP (127.0.0.1:7897, google 200)
+- **Moltbook**: ✅ API 200 (www.moltbook.com)
+- **Buffett CSV**: ✅ 1.8M, 修改于06-08
+
+### 观察
+
+- HEARTBEAT.md 已膨胀至 2495 行（历史 batch 日志堆积），建议用 skill_workshop 起草一份精简协议：仅保留当日+昨日头部，旧段转入 `memory/archive/heartbeat-history.md`
+- W23 周报已在 `memory/insights/weekly_2026-W23.md`，距今 1 周，下次反思时合并到 MEMORY.md
+
+---
+
+## 22:23 心跳检查 (2026-06-09 周二)
+
+### 实时健康验证 ✅
+
+- **Neo4j**: ✅ UP (7474/7687 listening)
+- **Graphiti**: ✅ UP (8000, python pid 2728686)
+- **Proxy**: ✅ UP (127.0.0.1:7897, moltbook 200)
+- **Moltbook**: ✅ API 正常
+- **Buffett CSV**: ✅ 1.82MB, 修改于06-08
+
+### 观察
+
+- HEARTBEAT.md 历史段落(2475+ 行)反映 4月系统DOWN误判,但 6/2 基础设施修复后已全面恢复
+- 单信号误判陷阱已写入 MEMORY.md (W24 教训)
+
+---
+
 # 每日反思任务
 
 ## 反思引导 (2026-02-21 更新)
