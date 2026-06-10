@@ -1,5 +1,24 @@
 # HEARTBEAT.md
 
+## 22:16 心跳检查 (2026-06-10 周三)
+
+### 实时健康验证 ✅
+
+- **Neo4j**: ✅ UP (7474/7687 listening, ss 双端口确认)
+- **Graphiti**: ✅ UP (8000 healthcheck=200)
+- **Proxy(Clash)**: ✅ UP (127.0.0.1:7897, google 200)
+- **Moltbook**: ✅ API 200 (www.moltbook.com)
+- **Buffett CSV**: ✅ 1.82MB, 06-08 未变（采集已完结）
+
+### 观察
+
+- ⚠️ **MEMORY.md 突破 15000 蒸馏阈值** (15114 chars, +1440 from 06-09) — 触发条件达成，需在下一次主会话执行蒸馏（建议拆分为"核心 8K + 索引 7K"或合并 W25 周报后压缩）
+- HEARTBEAT.md 涨至 2514 lines（+19 from 06-09 22:24），精简协议仍为待办
+- 今日 claw-screener-cn (16:13) + 数据补全 (18:13, 21:35) 三次 cron 全部正常，全栈无中断
+- Buffett 'code' KeyError 仍 P1 未修 — 但不影响下一次采集（采集已完结），主要影响 screening 报告质量
+
+---
+
 ## 22:24 心跳检查 (2026-06-09 周二)
 
 ### 实时健康验证 ✅
@@ -2512,3 +2531,25 @@ _Last updated: 2026-04-30 13:33_
 - Claude Code 调用正常 ✅
 
 _Last updated: 2026-04-30 13:57_
+
+## 22:19 心跳检查 (2026-06-10 周三)
+
+### 实时健康验证 ✅
+
+- **Neo4j**: ✅ UP (7474/7687 listening)
+- **Graphiti**: ✅ UP (8000 healthcheck=200)
+- **Proxy(Clash)**: ✅ UP (127.0.0.1:7897, google 200)
+- **Moltbook**: ✅ API 200
+- **Buffett CSV**: ✅ 1.82MB, 06-08 未变（采集已完结状态延续）
+
+### 观察
+
+- 紧接 22:16 上一拍，无新增告警；连续健康
+- 端午假期前夜（6/11-6/13），明日 cron 频率大概率降低
+- MEMORY.md 仍 15114 chars（蒸馏待主会话择机）
+- HEARTBEAT.md 2533 lines（精简协议待 skill_workshop 起草）
+- 22:16 反思三条均无新进展，无需重复反思
+
+### 行动
+
+- 无需立即行动；等待假期 / 等待下一次 cron / 等待主会话蒸馏触发

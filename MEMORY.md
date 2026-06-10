@@ -351,3 +351,27 @@ _Last updated: 2026-05-30 22:35_
 - [ ] 改 cron_usage_report.ts 的 "delay > 1h" 判据为 "1.5×schedule_period"
 - [ ] 拆 "每日量化分析报告" (482s) 2 批
 - [ ] 复查 24f060fc (002中小板) 历史 12/19 错误, 现在已 OK, 不再拆
+
+---
+
+## 学术研究洞察 (2026-06-10)
+
+### 论文数据库状态
+
+- **总计**: 199篇论文 | 主要来源: arXiv + OpenAlex交叉验证
+- **高质量AI治理/推理论文**: DeepSeek-R1 (292 citations), Evidence Markets (3419 citations)
+- **数据文件**: `~/.config/deepseeker/paper_database.csv`
+
+### 关键研究趋势 (2025-2026)
+
+1. **LLM推理范式**: DeepSeek-R1通过RL激励推理能力，已成主流范式，2025年被广泛引用
+2. **AI治理**: End-to-end governance risk assessment scaling (2025, 398 citations)
+3. **LLM"说谎"vs"幻觉"**: 2025年新研究区分有意欺骗与无意错误，用mechanistic interpretability分析
+4. **LLM×DATA双向融合**: DATA4LLM(数据管理支撑LLM) + LLM4DATA(LLM驱动数据管理)
+5. **多LLM Agent**: planner/caller/summarizer分工，小模型工具学习有效路径
+
+### 论文搜索脚本注意
+
+- `paper_search_hybrid.py`: 需要代理127.0.0.1:7897，可能运行时间长被SIGKILL
+- `paper_db.py`: 命令 list/stats/add
+- 建议: 运行paper_search时添加后台模式，避免超时
