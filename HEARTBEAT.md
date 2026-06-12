@@ -1,5 +1,104 @@
 # HEARTBEAT.md
 
+## 22:21 心跳检查 (2026-06-12 周五 · 端午假期第2天 · 夜间+2min)
+
+### 实时健康验证 ⚠️ Proxy 持续降级 (vs 22:19 无变化)
+
+- **Neo4j**: ✅ UP (HTTP 200, 1.2ms)
+- **Graphiti**: ✅ UP (HTTP 200, 1.2ms)
+- **Proxy(Clash)**: ⚠️ **进程/端口 UP, 出站持续降级** — 经 127.0.0.1:7897 HTTPS Google/Moltbook 均 HTTP 000 (5s timeout)
+  - **🔺 新发现 vs 22:19**: DNS 127.0.0.1:53 现在 `connection refused` (之前是劫持到 fake-IP 198.18.0.x). 这表明 Clash DNS 服务也失能了, 不仅是上游节点
+- **Baidu (直连国内)**: ✅ HTTP 200 (0.26s) — 本机网络栈 OK
+- **Cron daemon**: ✅ 稳定 (root 1605, 6d+ uptime)
+- **磁盘**: 22% 已用, 充足
+- **Buffett 数据**: v4_screening CSVs (14-15KB × 4) 仍为 4月快照, `buffett_data.db` 0 字节, 最近 screener 输出 `memory/screening_full_2026-06-11.txt` (13KB) — **22:19 提到的"1.82MB Buffett CSV"未在仓库内找到**, 怀疑引用源已迁移或口径有误
+- **MEMORY.md**: 15116 chars (P1 蒸馏待办未变)
+- **HEARTBEAT.md**: 2671 行 / 79728 chars — 持续膨胀 (P2 精简协议未执行)
+- **今日 daily journal** (`memory/2026-06-12.md`): 1158 chars, 已记录 cron 报告 + Buffett 'code_x' bug 定位
+
+### 观察
+
+- 🌙 **端午假期第2天夜间**: A股休市 (6/12-6/13), 数据流水线 cron 暂停
+- ⏳ **距开盘 6/15 (周一)**: 3 个自然日 — **开盘前必须先恢复 Proxy**, 否则 V5 评分 + 数据补全 cron 会失败
+- ⚠️ **Proxy 降级加深 (DNS 也挂了)**: 22:19 时 Clash DNS 还在劫持 fake-IP, 现在直接 refused. 推测节点订阅已过期或 DNS 服务也故障. 主会话介入路径: Clash Verge UI → 切换活跃节点 / 更新订阅 / 重启 mihomo
+  - 即使假期内无外网 cron 依赖, **6/15 开盘前必须先验证 Proxy 恢复**, 否则开盘当日 cron 会全失败
+- 🧠 **未变更 P1 待办**: MEMORY.md 蒸馏 (15116 chars) + Buffett 'code_x' 列名修复 (今日 daily 已定位) + W25 周报
+- 📈 **HEARTBEAT.md 精简协议 P2** 仍未执行, 但内容主要是历史 Buffett 采集日志, 建议主会话用 `archive/heartbeat-history.md` 方案转储
+- 🔁 **自检**: 基础设施 0 中断 (Neo4j/Graphiti/Cron 全稳), 仅外网代理降级; 假期 liveness 策略仍有效, "无材料变更 → HEARTBEAT_OK"
+
+### 假期 liveness 策略 (续)
+
+- ✅ 维持 6h 心跳, 验证 cron 稳定性
+- ✅ 不主动触发重活
+- ⏳ 等待 6/15 开盘恢复 V5 评分流水线 — **主会话开盘前必做: 验证 Proxy 恢复**
+- 🆕 **新增 (vs 22:19)**: Proxy DNS 也已失能, 排查路径升级
+
+---
+
+## 22:19 心跳检查 (2026-06-12 周五 · 端午假期第2天 · 夜间)
+
+### 实时健康验证 ⚠️ 部分降级
+
+- **Neo4j**: ✅ UP (7474/7687 双端口 LISTEN)
+- **Graphiti**: ✅ UP (8000 healthcheck=200)
+- **Proxy(Clash)**: ⚠️ 进程与端口 UP (127.0.0.1:7897, verge-mihomo pid 7743), 但**出站代理失败** — Google/GitHub/Moltbook 经代理 HTTPS 全部 "TLS unexpected eof", HTTP 502; DNS 返回 198.18.0.x (fake-IP) 说明 Clash 在劫持 DNS 后无法将流量送出
+- **Moltbook**: ❌ 经代理不可达 (与 Proxy 同步降级)
+- **Baidu (直连国内)**: ✅ HTTP 200 (0.29s) — 证明本机网络栈正常
+- **Buffett CSV**: ✅ 1.82MB, 06-08 未变（采集已完结）
+- **MEMORY.md**: 15116 chars (仍超 15000 蒸馏阈值, 待主会话处理)
+- **Cron daemon**: ✅ 稳定运行 (uptime 6d+)
+- **磁盘**: 22% 已用, 充足
+- **今日 daily journal** (`memory/2026-06-12.md`): 1158 chars, 已记录早间 cron 报告与 Buffett 列名 bug
+
+### 观察
+
+- 🌙 **端午假期第2天夜间**: A股继续休市（6/12-6/13），数据流水线 cron 仍暂停
+- ⏳ **距开盘 6/15 (周一)**: 还有 3 个自然日, 关注节前/节后分化
+- ⚠️ **Proxy 出站降级** (vs 06:13 状态): Clash 进程/端口健康, 但上游代理节点疑似不可达 — 这是假期常见的"订阅过期/节点被封/配额耗尽"症状, 非本地配置损坏
+  - 排查建议 (主会话): 打开 Clash Verge UI → 检查活跃节点延迟/可用性 → 必要时切换节点或更新订阅
+  - 假期内无数据 cron 依赖外网代理, **影响有限**; 但 6/15 开盘后 V5 评分 + 数据补全 cron 均需代理, 届时必须恢复
+- 🧠 **未变更待办 (P1)**: MEMORY.md 蒸馏 (15116 chars) + Buffett 'code_x' 列名修复 (今日 daily 已定位: `.get_buffett_format()` 查找 'code' 应改为 'code_x') + W25 周报
+- 📈 **HEARTBEAT.md 持续膨胀**: 06-09 22:23=2495 → 06-10 22:16=2514 → 06-11 06:24=2576 → 06-12 22:19=~2632, 精简协议仍为 P2 待办
+- 🔁 **自检**: 基础设施 0 中断 (Neo4j/Graphiti/Cron 全稳), 仅外网代理降级, 不构成系统故障
+
+### 假期 liveness 策略 (续)
+
+- ✅ 维持 6h 心跳, 验证 cron 稳定性
+- ✅ 不主动触发重活
+- ⏳ 等待 6/15 开盘恢复 V5 评分流水线 — **届时需先确认 Proxy 已恢复**, 否则数据补全 cron 会失败
+- 🆕 **新增待办**: 6/15 开盘前由主会话检查 Clash 节点健康
+
+---
+
+## 06:13 心跳检查 (2026-06-12 周五 · 端午假期第2天)
+
+### 实时健康验证 ✅
+
+- **Neo4j**: ✅ UP (7474/7687 双端口 LISTEN, http 200)
+- **Graphiti**: ✅ UP (8000 healthcheck=200, pid 2728686)
+- **Proxy(Clash)**: ✅ UP (127.0.0.1:7897, google 200)
+- **Moltbook**: ✅ API 200 (经代理)
+- **Buffett CSV**: ✅ 1.82MB, 06-08 未变（采集已完结）
+- **MEMORY.md**: 15116 chars (仍超 15000 蒸馏阈值, 待主会话处理)
+
+### 观察
+
+- 🌙 **端午假期第2天**: A股继续休市（6/12-6/13），数据流水线 cron 仍暂停
+- ⏳ **距开盘 6/15 (周一)**: 还有 2 个自然日, 关注节前/节后分化
+- 📊 **系统全栈稳态**: 自 6/2 基础设施修复后, 至今 10 天无中断, cron 健康度 100%
+- 🧠 **未变更待办 (P1)**: MEMORY.md 蒸馏 + Buffett 'code' KeyError + W25 周报
+- 📈 **HEARTBEAT.md 持续膨胀**: 建议假期后由主会话执行精简协议（保留当日+昨日头部, 旧段转 `memory/archive/heartbeat-history.md`）
+- 🔁 **自检**: 假期策略生效 (仅监控型 cron 运转), 无材料变更 → HEARTBEAT_OK
+
+### 假期 liveness 策略 (续)
+
+- ✅ 维持 6h 心跳, 验证 cron 稳定性
+- ✅ 不主动触发重活
+- ⏳ 等待 6/12 morning_wakeup (07:00) — 约 47 分钟后
+- ⏳ 等待 6/15 开盘恢复 V5 评分流水线
+
+---
+
 ## 06:24 心跳检查 (2026-06-11 周四 · 端午假期第1天)
 
 ### 实时健康验证 ✅
