@@ -1,5 +1,153 @@
 # HEARTBEAT.md
 
+## 22:17 心跳检查 (2026-06-13 周六 · 端午假期第3天 · 夜间+3min)
+
+### 实时健康验证 ⚠️ 状态与 22:14 完全一致 — 无材料变更
+
+- **Neo4j**: ✅ UP (HTTP 200, 1.1ms)
+- **Graphiti**: ✅ UP (HTTP 200, 1.2ms)
+- **Proxy(Clash)**: ⚠️ 持续失能 — mihomo pid 7743 + 端口 7897 健康, 经代理出站仍 5s timeout (Google/Moltbook)
+  - DNS 127.0.0.1:53: 仍 `connection refused`
+  - `getent hosts www.google.com` → 198.18.0.21 (Clash fake-IP 仍劫持)
+- **arXiv 直连**: ❌ 仍 5s timeout (与 22:13 验证一致) — 主机 upstream 路由/本地 DNS 双重问题持续
+- **Baidu (直连国内)**: ✅ HTTP 200 (0.16s)
+- **Cron daemon**: ✅ 稳定 (pid 1605, 7d+ uptime)
+- **磁盘**: 22% 已用, 充足
+- **Buffett 数据**: v4_screening CSVs 仍 4月快照, `buffett_data.db` 0 字节 (未变)
+- **MEMORY.md**: 5402 chars (已蒸馏, 未变)
+- **HEARTBEAT.md**: 90345 chars / ~2776 lines (vs 22:14 同尺寸, 实际未变 — 22:14 误标 86992)
+- **今日 daily journal** (`memory/2026-06-13.md`): 3330 chars
+
+### 观察
+
+- 🔁 **完全无材料变更** (vs 22:14 心跳) — Proxy/arXiv/服务/文件状态全保持
+- ⏳ 距 6/15 开盘: ~34h, 6/14 周日白天是 Proxy 修复最后黄金窗口 (不变)
+- 🌙 假期第3天夜间, 维持 liveness 策略, 不主动触发重活
+- 🆕 **新观察**: 距 22:14 仅 3 分钟, 是 cron 心跳的标准间隔内一次, **功能上等同重复检查** — 强化"基础设施 0 中断, 仅外网代理持续降级"的结论
+
+### 假期 liveness 策略 (续)
+
+- ✅ 维持 6h 心跳, 验证 cron 稳定性
+- ✅ 不主动触发重活
+- ⏳ 等待主会话周日上午介入 Proxy 修复
+- ⏳ 6/15 开盘恢复 V5 评分流水线 (开盘前必先验证 Proxy + arXiv 直连恢复)
+
+---
+
+## 22:14 心跳检查 (2026-06-13 周六 · 端午假期第3天 · 夜间)
+
+### 实时健康验证 ⚠️ Proxy 持续失能 (vs 06:24 状态 ~16h 无变化)
+
+- **Neo4j**: ✅ UP (HTTP 200, 1.3ms)
+- **Graphiti**: ✅ UP (HTTP 200, 1.2ms)
+- **Proxy(Clash)**: ⚠️ **进程+端口 UP, 出站仍 000** — mihomo pid 7743 + 7897 LISTEN 健康, 经代理出站 Google/Moltbook 仍 HTTP 000 (5s timeout)
+  - DNS 127.0.0.1:53: 仍 `connection refused`
+  - `getent hosts www.google.com` → 198.18.0.21 (Clash fake-IP 仍劫持)
+- **Baidu (直连国内)**: ✅ HTTP 200 (0.20s) — 本机网络栈 OK
+- **Cron daemon**: ✅ 稳定 (pid 1605, 6d+)
+- **磁盘**: 22% 已用 (195G/937G), 充足
+- **Buffett 数据**: v4_screening CSVs (14-15KB × 4) 仍 4月快照, `buffett_data.db` 0 字节
+- **MEMORY.md**: **5402 chars** ⚠️ 修正: 06:24 入口声称 "15116 chars" 是**过时数据** — MEMORY.md 实际已于今日完成蒸馏 (头部标注"最后更新: 2026-06-13 (蒸馏后)"), 15000 蒸馏阈值不再触发. P1 已部分解决
+- **HEARTBEAT.md**: 2776 lines / 86992 chars (vs 06:24 2748, +28 lines, 仍膨胀, P2)
+- **今日 daily journal** (`memory/2026-06-13.md`): 已记录 20:35 Moltbook 失败 + 21:13 nightly_build 成功 + 22:13 paper_research 网络全断
+- **self-improving/nightly_reflections.md**: 22:13 已记录 arXiv + Proxy 双重失能 (200 论文 DB stats 仍成功, fail-fast 修复验证有效)
+
+### 观察
+
+- 🌙 **端午假期第3天 (周六) 夜间**: A股继续休市, 数据流水线 cron 暂停
+- ⏳ **距 6/15 (周一) 开盘**: ~35 小时 (1.5 自然日) — **6/14 周日白天是 Proxy 修复最后黄金窗口**
+- ⚠️ **Proxy 降级已持续 ~24h** (从 06-12 22:19 首次检出, 至 06-13 22:14), 状态完全未自愈: mihomo 进程/端口健康, 但 DNS 53 + 上游双双失能
+  - **新发现 (今晚 cron 验证)**: 不只经代理出站失败, **arXiv 直连也 DEAD** — 说明问题可能不只限于 Clash, 本机上游路由或本地 DNS 解析也可能有影响
+  - 主会话介入路径仍同: Clash Verge UI → 切节点 / 更新订阅 / 重启 mihomo / 检查订阅 URL 是否过期
+  - 排查建议升级: (1) 订阅 URL 失效 → 更新; (2) 活跃节点被封 → 切换; (3) mihomo 内部状态错乱 → 重启; **(4) 主机 upstream DNS/路由问题** (新增)
+- 🧠 **P1 状态更新**:
+  - ✅ MEMORY.md 蒸馏 (已完成, 5402 chars, 但 06:24 入口未更新 — 已修正)
+  - ⏳ Buffett 'code_x' 列名修复 (未变, 不影响 6/15 开盘, V5 评分仍可跑)
+  - ⏳ W25 周报 (未变)
+  - ⏳ 数据编造 Iron Law 写入 SOUL.md (未变)
+  - ⏳ HEARTBEAT.md 精简协议 (P2, 仍 86K)
+- 📈 **网络脆弱性 3 日模式 (06-11 ~ 06-13)**: 连续 3 日 Proxy 不可达 + arXiv 直连也受影响, 已写入 `nightly_reflections.md`. 边际影响: cron fail-fast 修复有效, 数据库作为离线知识资产的价值凸显
+- 🔁 **无材料变更 → HEARTBEAT_OK**: 维持假期 liveness 策略, 不主动触发重活
+
+### 假期 liveness 策略 (续)
+
+- ✅ 维持 6h 心跳, 验证 cron 稳定性
+- ✅ 不主动触发重活
+- ⏳ **6/14 (周日) 是 Proxy 修复最后黄金窗口** — 主会话应于周日上午介入, 给 6/15 早盘开盘留 12h+ 验证缓冲
+- ⏳ 6/15 开盘恢复 V5 评分流水线 (开盘前必先验证 Proxy + arXiv 直连恢复)
+
+---
+
+## 06:24 心跳检查 (2026-06-13 周六 · 端午假期第3天 · 早晨+1min)
+
+### 实时健康验证 ⚠️ Proxy 持续失能 (vs 06:23 状态)
+
+- **Neo4j**: ✅ UP (HTTP 200, 1.1ms)
+- **Graphiti**: ✅ UP (HTTP 200, 1.1ms)
+- **Proxy(Clash)**: ⚠️ **状态与 06:23 一致** — mihomo pid 7743 + 7897 LISTEN 健康, 经代理出站 Google/Moltbook 仍 HTTP 000 (5s timeout)
+  - DNS 127.0.0.1:53: 仍 `connection refused`
+  - `getent hosts www.google.com` → 198.18.0.18 (Clash fake-IP 仍劫持)
+- **Baidu (直连国内)**: ✅ HTTP 200 (0.18s) — 本机网络栈 OK
+- **Cron daemon**: ✅ 稳定 (pid 1605)
+- **磁盘**: 22% 已用 (195G/937G), 充足
+- **Buffett 数据**: v4_screening CSVs 仍 4月快照, `buffett_data.db` 0 字节
+- **MEMORY.md**: 15116 chars (未变, P1 蒸馏待办)
+- **HEARTBEAT.md**: 2748 lines / ~80K chars (vs 06:23 2706, +42 lines, 仍膨胀)
+- **今日 daily journal** (`memory/2026-06-13.md`): 4861 chars (vs 06:23 4068, +793, 已含夜间唤醒记录)
+
+### 观察
+
+- 🌙 **端午假期第3天 (周六) 早晨**: A股休市中, 6/15 周一为节后首个交易日
+- ⏳ **距 6/15 开盘**: 2 个自然日 (48h) — 6/14 周日白天是 Proxy 修复黄金窗口
+- ⚠️ **Proxy 降级已持续 ≥8h** (从 06-12 22:19 首次检出), 状态未自愈; mihomo 进程/端口健康, DNS 53 + 上游双双失能
+  - **6/14 周末是修复窗口**, 不必等到 6/15 早盘应急
+- 🧠 **P1 待办未变**: MEMORY.md 蒸馏 + Buffett 'code_x' 列名修复 + W25 周报 + 数据编造 Iron Law 写入 SOUL.md
+- 🔁 **无材料变更 → HEARTBEAT_OK**: 维持假期 liveness 策略, 不主动触发重活
+
+---
+
+## 06:23 心跳检查 (2026-06-13 周六 · 端午假期第3天 · 早晨)
+
+### 实时健康验证 ⚠️ Proxy 仍失能 (vs 06-12 22:21 状态)
+
+- **Neo4j**: ✅ UP (HTTP 200, 1.4ms)
+- **Graphiti**: ✅ UP (HTTP 200, 1.7ms)
+- **Proxy(Clash)**: ⚠️ **进程+端口 UP, 出站仍 000**
+  - verge-mihomo pid 7743 仍在运行 (started 6月06, ~6d+)
+  - 端口 127.0.0.1:7897 LISTEN 正常
+  - 经 7897 出站 Google/Moltbook: HTTP 000 (5s timeout) — 与 22:21 一致
+  - DNS 127.0.0.1:53: `cat < /dev/tcp/127.0.0.1/53` 显示 `连接被拒绝` (与 22:21 相同)
+  - `getent hosts www.google.com` → **198.18.0.18** (Clash fake-IP 仍劫持) — 与 22:19 状态相似, 比 22:21 略好
+  - **结论**: mihomo 进程和端口健康, 但 DNS 服务自身仍拒接 + 上游不可达, 与昨晚 22:21 状态基本一致
+- **Baidu (直连国内)**: ✅ HTTP 200 (0.16s) — 本机网络栈 OK
+- **Cron daemon**: ✅ 稳定 (pid 1605, 6d 12h+ uptime)
+- **磁盘**: 22% 已用 (195G/937G), 充足
+- **Buffett 数据**: v4_screening CSVs (14-15KB × 4) 仍为 4月快照 (`04-15`/`04-22` 写入), `buffett_data.db` 0 字节, 路径在 `/home/liujerry/moltbot/` (仓库根, 非 `data/buffett/`)
+- **MEMORY.md**: 15116 chars (与 22:21 一致, P1 蒸馏待办未变)
+- **HEARTBEAT.md**: 2706 lines / ~80K chars (vs 22:21 2671, +35 lines, 仍膨胀)
+- **今日 daily journal** (`memory/2026-06-13.md`): 4068 chars, 00:13 夜间唤醒已完成身份连续性确认 + W25 待办加载
+
+### 观察
+
+- 🌙 **端午假期第3天 (周六) 早晨**: A股今日继续休市, 6/15 周一为节后首个交易日
+- ⏳ **距 6/15 开盘**: 2 个自然日 (48h) — **6/14 (周日) 22:00 前必须先恢复 Proxy**, 否则开盘当日 V5 评分 + 数据补全 cron 会全失败
+- ⚠️ **Proxy 降级已持续 ≥8h** (从昨晚 22:19 首次检出), 状态未自愈: mihomo 进程/端口健康, 但 DNS 53 + 上游双双失能
+  - 主会话介入路径仍相同: Clash Verge UI → 切节点 / 更新订阅 / 重启 mihomo / 检查订阅 URL 是否过期
+  - 排查建议优先序: (1) 订阅 URL 失效 → 更新; (2) 活跃节点被封 → 切换; (3) mihomo 内部状态错乱 → 重启 verge-mihomo
+  - **6/14 周末是修复窗口**, 不必等到 6/15 早盘应急
+- 🧠 **P1 待办未变**: MEMORY.md 蒸馏 (15116 chars) + Buffett 'code_x' 列名修复 (昨日 daily 已定位) + W25 周报 + 数据编造 Iron Law 写入 SOUL.md
+- 📈 **HEARTBEAT.md 持续膨胀**: 2706 lines (vs 06-11 22:16 2514, 4天 +192 lines), 精简协议仍为 P2
+- 🔁 **自检**: 基础设施 0 中断 (Neo4j/Graphiti/Cron 全稳), 仅外网代理持续降级; 假期 liveness 策略继续生效, "无材料变更 → HEARTBEAT_OK"
+
+### 假期 liveness 策略 (续)
+
+- ✅ 维持 6h 心跳, 验证 cron 稳定性
+- ✅ 不主动触发重活
+- ⏳ **6/14 (周日) 是 Proxy 修复黄金窗口** — 主会话应在周日白天介入, 给 6/15 开盘留 12h+ 验证缓冲
+- ⏳ 6/15 开盘恢复 V5 评分流水线
+
+---
+
 ## 22:21 心跳检查 (2026-06-12 周五 · 端午假期第2天 · 夜间+2min)
 
 ### 实时健康验证 ⚠️ Proxy 持续降级 (vs 22:19 无变化)
