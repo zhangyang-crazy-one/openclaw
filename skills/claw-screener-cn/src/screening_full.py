@@ -109,13 +109,30 @@ def get_buffett_format(stock_code: str) -> dict:
     try:
         # 从buffett_supplementary.csv读取真实数据
         buffett_df = pd.read_csv('/home/liujerry/金融数据/fundamentals/buffett_supplementary.csv')
-        rows = buffett_df[buffett_df['code'].astype(str) == stock_code]
+        # buffett code 列实际名为 code_x (int64); screening 调用时传 'sz.000001'/'sh.600001' 或纯数字
+        # 兼容两种格式 (lstrip '0' 让 000001 和 1 都能 match)
+        code_str = str(stock_code)
+        code_int_match = None
+        if code_str.startswith(('sz.', 'sh.')):
+            code_int_match = code_str.split('.', 1)[1]
+        elif code_str.isdigit():
+            code_int_match = code_str
+        if code_int_match:
+            # int 比较 (处理 000001 vs 1 leading zero 不一致)
+            try:
+                code_int = int(code_int_match)
+                rows = buffett_df[buffett_df['code_x'] == code_int]
+            except ValueError:
+                rows = buffett_df[buffett_df['code_x'].astype(str) == code_int_match]
+        else:
+            rows = buffett_df[buffett_df['code_x'].astype(str) == stock_code]
         
         if rows.empty:
-            print(f"  [警告] 300181不在buffett_supplementary.csv中")
+            print(f"  [警告] {code_int_match or stock_code}不在buffett_supplementary.csv中")
             return {}
         
-        # 获取最新一条数据
+        # 获取最新一条数据 (按 report_date 排序取末行, 避免 iloc[-1] 抓到非该 code 的错行)
+        rows = rows.sort_values('report_date')
         b = rows.iloc[-1]
         
         # 获取报告日期

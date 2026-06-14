@@ -1,3 +1,7 @@
+## 2026-06-08 — Heartbeat验证 vs 00:13笔记的确认偏误
+
+凌晨唤醒笔记 (00:13) 把 Graphiti:8000 / Neo4j / memory_search embedding 列入 P0 清单, 但 06:24 实测发现三者全部健康。教训: **P0 标签必须附最近一次实测证据**, 否则只是基于既有焦虑的"假设"。任何 cron 监控 / 健康断言都应可被新一轮 curl/port-check 推翻。
+
 ## 2026-06-07 — weekly_insight_compiler.py section detection
 
 **Bug**: Parser 把 `**时间**:` `**场景**:` 这类 bold-key 子项当成了问题列表项

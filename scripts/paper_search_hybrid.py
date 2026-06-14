@@ -57,20 +57,86 @@ DISCOVERY_DIR.mkdir(parents=True, exist_ok=True)
 MAX_RESULTS_PER_QUERY = 15  # arXiv 每查询获取数量
 YEAR_RANGE = "2024,2025,2026"  # 年份筛选
 
+# ============ 鲁棒性配置 ============
+PROXY_URL = "http://127.0.0.1:7897"
+PROXY_HEALTH_TIMEOUT = 5
+CURL_TIMEOUT = 12
+CURL_RETRIES = 2
+CURL_RETRY_BACKOFF = 1.5
+
+# 状态标记 — 决定 main() 走哪条降级路径
+PROXY_OK = True
+DIRECT_OK = True
+
+
+def check_proxy_health():
+    """探测 proxy 出口是否可用。返回 bool。
+    用 -x + 5s timeout 探测, 如果 proxy 进程/端口死了能快速失败
+    """
+    try:
+        result = subprocess.run(
+            ["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}",
+             "-x", PROXY_URL, "--max-time", str(PROXY_HEALTH_TIMEOUT),
+             "https://www.google.com"],
+            capture_output=True, text=True, timeout=PROXY_HEALTH_TIMEOUT + 2
+        )
+        code = result.stdout.strip()
+        return code.startswith("2") or code.startswith("3")
+    except Exception:
+        return False
+
+
+def check_direct_connectivity():
+    """探测 arXiv 是否可直连 — proxy 死时可能是最后机会"""
+    try:
+        result = subprocess.run(
+            ["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}",
+             "--max-time", "5", "https://export.arxiv.org/api/query?search_query=all:test&max_results=1"],
+            capture_output=True, text=True, timeout=7
+        )
+        return result.stdout.strip().startswith("2")
+    except Exception:
+        return False
+
+
+def curl_with_retry(url, use_proxy=True, timeout=CURL_TIMEOUT, retries=CURL_RETRIES):
+    """带 retry + backoff 的 curl 封装。返回 stdout 或 None。"""
+    for attempt in range(retries + 1):
+        cmd = ["curl", "-s", "--max-time", str(timeout)]
+        if use_proxy:
+            cmd += ["-x", PROXY_URL]
+        cmd.append(url)
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout + 3)
+            out = result.stdout
+            # arXiv 成功: 含 <entry>; 失败: 空或错误 XML
+            # OpenAlex 成功: JSON 无 "error" 字段; 失败: {"error": ...}
+            if out:
+                if "<entry>" in out:
+                    return out
+                if out.strip().startswith("{") and '"error"' not in out[:200]:
+                    return out
+        except subprocess.TimeoutExpired:
+            pass
+        except Exception:
+            pass
+        if attempt < retries:
+            time.sleep(CURL_RETRY_BACKOFF ** attempt)
+    return None
+
 
 def search_arxiv(query, max_results=15):
-    """搜索 arXiv"""
-    try:
-        url = f"https://export.arxiv.org/api/query?search_query=all:{quote_plus(query)}&max_results={max_results}&sortBy=submittedDate&sortOrder=descending"
-        result = subprocess.run(
-            ["curl", "-s", "-x", "http://127.0.0.1:7897", "--max-time", "15", url],
-            capture_output=True,
-            text=True,
-            timeout=20
-        )
-        return result.stdout
-    except Exception as e:
-        return f"Error: {e}"
+    """搜索 arXiv — 优先 proxy, 死了则尝试直连, 都不行返回空字符串"""
+    url = f"https://export.arxiv.org/api/query?search_query=all:{quote_plus(query)}&max_results={max_results}&sortBy=submittedDate&sortOrder=descending"
+    if PROXY_OK:
+        out = curl_with_retry(url, use_proxy=True)
+        if out is not None:
+            return out
+    if DIRECT_OK:
+        out = curl_with_retry(url, use_proxy=False)
+        if out is not None:
+            return out
+    return ""
 
 
 def parse_arxiv_results(xml_content):
@@ -118,18 +184,13 @@ def get_citations_from_openalex(doi_or_title, max_retries=2):
                 # 用标题查询
                 url = f"https://api.openalex.org/works?filter=title.search:{quote_plus(doi_or_title[:50])}&per_page=1"
             
-            result = subprocess.run(
-                ["curl", "-s", "-x", "http://127.0.0.1:7897", "--max-time", "10", url],
-                capture_output=True,
-                text=True,
-                timeout=15
-            )
-            
-            if result.returncode == 0:
-                data = json.loads(result.stdout)
-                if data.get("results"):
-                    return data["results"][0].get("cited_by_count", 0)
-                    
+            out = curl_with_retry(url, use_proxy=PROXY_OK)
+            if out is None:
+                return 0
+            data = json.loads(out)
+            if data.get("results"):
+                return data["results"][0].get("cited_by_count", 0)
+
         except Exception as e:
             if attempt < max_retries - 1:
                 time.sleep(0.5)
@@ -174,17 +235,12 @@ def search_openalex_hot(query, max_results=5):
     try:
         url = f"https://api.openalex.org/works?filter=title.search:{quote_plus(query)},publication_year:2023|2024|2025|2026&per_page={max_results}&sort=cited_by_count:desc"
         
-        result = subprocess.run(
-            ["curl", "-s", "-x", "http://127.0.0.1:7897", "--max-time", "15", url],
-            capture_output=True,
-            text=True,
-            timeout=20
-        )
-        
-        if result.returncode == 0:
-            data = json.loads(result.stdout)
-            papers = []
-            for item in data.get("results", []):
+        out = curl_with_retry(url, use_proxy=PROXY_OK)
+        if out is None:
+            return []
+        data = json.loads(out)
+        papers = []
+        for item in data.get("results", []):
                 # 检查是否已有 arXiv 版本
                 locations = item.get("locations", [])
                 arxiv_url = ""
@@ -210,7 +266,7 @@ def search_openalex_hot(query, max_results=5):
                     "doi": item.get("doi", "").replace("https://doi.org/", ""),
                     "source": "OpenAlex",
                 })
-            return papers
+        return papers
     except Exception as e:
         print(f"    ⚠️ OpenAlex 查询失败: {e}")
     return []
@@ -287,11 +343,47 @@ def load_existing_papers():
     return existing
 
 
+def _write_skip_artifact(reason="proxy_dead"):
+    """网络全断时写一个 skip 文件，让 cron 知道不是脚本 bug"""
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_file = DISCOVERY_DIR / f"papers_{timestamp}.json"
+    skip_data = {
+        "timestamp": timestamp,
+        "status": "skipped",
+        "reason": reason,
+        "proxy_ok": PROXY_OK,
+        "direct_ok": DIRECT_OK,
+        "message": "网络不可用，今日跳过论文采集",
+    }
+    with open(output_file, "w", encoding="utf-8") as f:
+        json.dump(skip_data, f, ensure_ascii=False, indent=2)
+    print(f"📝 skip 记录已写: {output_file}")
+
+
 def main():
+    global PROXY_OK, DIRECT_OK
+    
     print("=" * 60)
     print("📚 学术论文搜索 - arXiv + OpenAlex 交叉验证版")
     print("新策略: arXiv下载 → OpenAlex验证 → 引用数门槛过滤")
     print("=" * 60)
+    
+    # ============ 启动健康检查 (fail-fast) ============
+    print("\n🏥 网络健康探测...")
+    PROXY_OK = check_proxy_health()
+    DIRECT_OK = check_direct_connectivity()
+    print(f"  📡 Proxy (127.0.0.1:7897): {'✅ OK' if PROXY_OK else '❌ DEAD'}")
+    print(f"  🌐 arXiv 直连:            {'✅ OK' if DIRECT_OK else '❌ DEAD'}")
+    
+    if not PROXY_OK and not DIRECT_OK:
+        print("\n⛔ 网络全断，论文搜索本日跳过 (不浪费 cron 预算)")
+        _write_skip_artifact(reason="proxy_dead_and_direct_blocked")
+        return
+    
+    if not PROXY_OK and DIRECT_OK:
+        print("  ⚠️ Proxy 死了，走 arXiv 直连模式 (OpenAlex 阶段将跳过)")
+    elif PROXY_OK and not DIRECT_OK:
+        print("  ⚠️ arXiv 直连被墙，全部走 proxy")
     
     existing = load_existing_papers()
     print(f"\n📋 已存在 {len(existing)} 篇论文")
@@ -331,8 +423,14 @@ def main():
     
     print(f"\n🌐 阶段2: OpenAlex交叉验证")
     
-    # 如果pending_papers为空，说明arXiv论文都已存在，需要从OpenAlex获取
-    if len(pending_papers) == 0:
+    if not PROXY_OK:
+        print("     ⏭️ Proxy 不可用，跳过 OpenAlex 阶段 (引用数验证与热文补充)")
+        # 直接将 pending_papers 当作 qualified (不含 citations, 会在后续 filter 中被过滤)
+        for p in pending_papers:
+            p["cited_by"] = 0
+            p["source"] = "arXiv (无 OpenAlex 验证)"
+            qualified_papers.append(p)
+    elif len(pending_papers) == 0:
         print("     arXiv无新论文，直接从OpenAlex获取...")
         for query in OPENALEX_HOT_QUERIES:
             if len(qualified_papers) >= TARGET_PAPERS_PER_DAY:
@@ -370,7 +468,7 @@ def main():
             time.sleep(0.4)
     
     # 如果引用数不达标，从OpenAlex补充
-    if len(qualified_papers) < TARGET_PAPERS_PER_DAY:
+    if len(qualified_papers) < TARGET_PAPERS_PER_DAY and PROXY_OK:
         needed = TARGET_PAPERS_PER_DAY - len(qualified_papers)
         print(f"\n🔥 阶段3: OpenAlex补充 (需要: {needed}篇)")
         
