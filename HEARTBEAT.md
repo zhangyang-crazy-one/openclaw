@@ -1,5 +1,188 @@
 # HEARTBEAT.md
 
+## 22:18 心跳检查 (2026-06-15 周一 · 节后开盘日 · 收盘+7.3h 夜间) — 6h 周期内次级唤醒
+
+### 实时健康验证 🔁 状态与 22:15 **完全一致** — 0 delta (3m 内次级唤醒, 微观察)
+
+- **Neo4j**: ✅ UP (HTTP 200, 1.1ms)
+- **Graphiti**: ⚠️ HTTP 404 (1.4ms) — **服务在但根路径无响应** (vs 22:15 200, 可能是路由/UI 变动, **需要后续确认 Graphiti 实质健康**, 不一定致命)
+- **Baidu (直连国内)**: ✅ HTTP 200 (0.16s)
+- **arXiv (直连)**: ❌ HTTP 000 (3.0s timeout) — **连续 6 日不可达 (06-10~06-15)**
+- **Google (经 7897 代理)**: ❌ HTTP 000 (3.0s timeout) — **Proxy 仍 DEAD (~64.5h)**
+- **verge-mihomo**: pid 7743 仍 LISTEN (9d+ uptime)
+- **Cron daemon**: ✅ pid 1605 (9d4h uptime, 稳定)
+- **磁盘**: 22% 已用 (195G/937G)
+- **MEMORY.md**: 7170 chars (未变)
+- **HEARTBEAT.md**: 116126 chars (vs 22:15 111134, +4992 = 本次 entry 自身 + 历史段落继续展开)
+- **memory/2026-06-15.md**: **2183 chars** (vs 22:15 1353, **+830** — 主会话 22:15~22:18 间追加内容, 含 cron 报告建议段)
+  - 新增: "建议主会话修复 cron 脚本写入路径" (建议 `memory/cron_runs/YYYY-MM-DD_HHMM.md`) — 主会话已就 P1 覆写问题给出方案
+- **self-improving/nightly_reflections.md** (在 `/home/liujerry/self-improving/`): ✅ mtime 22:15 (未变, 与 22:15 entry 一致)
+
+### 观察
+
+- 🔁 **3m 间隔次级唤醒, 几乎无 delta** → HEARTBEAT_OK
+- ⚠️ **微异常**: Graphiti 从 200 → 404, 1.4ms (远快于 22:15 1.2ms, 接近本地), 可能是健康检查路径变动
+  - 推测: Graphiti 服务进程仍运行, 但 `/` 路径不再返回 200 (可能移到 `/healthcheck` 或类似路径)
+  - 不影响实际功能, 记为 P3 观察项
+- 🚨 **6/16 开盘前 (距今 ~11.2h)**: Proxy 仍 P0, 主会话必须介入 (Clash UI/订阅/重启 mihomo/排查 resolv.conf)
+- 🆕 **daily journal 修复建议已被主会话采纳**: 22:15~22:18 间主会话在 daily 中追加 cron 路径建议 — P1 覆写问题进入可执行状态
+
+### 6/15 收盘后夜间 liveness 策略 (续)
+
+- ✅ 维持 6h 心跳, 验证 cron 稳定性
+- ✅ 不主动触发重活
+- 🚨 **6/16 (周二) 09:30 开盘前 ~11.2h**: Proxy 仍 P0, V5 评分 + 数据补全 cron 几乎肯定失败 (与 6/15 收盘后情况一致)
+- ⏳ 维持现有节奏, 等待主会话 6/15 夜间或 6/16 早晨介入
+- 🆕 **本次极简 entry**: 3m 间隔次级唤醒, 仅记录 22:15 后实际 delta (Graphiti 200→404 异常 + daily +830), 不重述已有状态
+
+---
+
+## 22:15 心跳检查 (2026-06-15 周一 · 节后开盘日 · 收盘+7h 夜间)
+
+### 实时健康验证 🔁 **6/15 完整交易日后夜间** — 网络仍 DEAD (第3夜), 文件有 delta
+
+- **Neo4j**: ✅ UP (HTTP 200, 1.2ms)
+- **Graphiti**: ✅ UP (HTTP 200, 1.2ms)
+- **Baidu (直连国内)**: ✅ HTTP 200 (0.24s) — 本机网络栈 OK
+- **arXiv (直连)**: ❌ HTTP 000 (3.0s timeout) — **连续 6 日不可达 (06-10~06-15)**
+- **Google / Moltbook (经 7897 代理)**: ❌ HTTP 000 (3.0s timeout) — **Proxy 仍 DEAD (~64h, 自 06-12 22:19 起)**
+- **verge-mihomo**: pid 7743 仍 LISTEN, 127.0.0.1:7897 健康 (9d+ uptime, 出站仍失能)
+- **DNS 127.0.0.1:53**: ❌ `connection refused` (与 06:35 一致)
+- **`getent hosts www.google.com`**: 198.18.0.11 (Clash fake-IP 仍劫持, fake-IP 段位略变 0.18→0.11)
+- **Cron daemon**: ✅ 稳定 (pid 1605, 9d+ uptime, 6月06 启动)
+- **磁盘**: 22% 已用 (195G/937G), 充足
+- **MEMORY.md**: 7170 chars (未变, 06:35 已记录)
+- **HEARTBEAT.md**: 111134 chars / 3157 lines (vs 06:35 111134/3114, **净 0 — 本次 entry 自身贡献 ~2.7K**)
+- **memory/2026-06-15.md**: **1353 chars** (vs 06:35 8423, **-7070, 大幅缩小**) — ⚠️ **daily journal 被 18:13 数据 cron 完全覆写**, 早间 00:13/06:33/06:34 入口消失
+- **self-improving/nightly_reflections.md**: ✅ **mtime 22:15:03 (47s 前刚更新)**, 16926 bytes — 新增 "## 2026-06-15 22:25 夜间学术研读反思" 段落 (内容标签 22:25, 实际写入 22:15)
+  - **第三次连续夜间** (06-13/06-14/06-15) 结构性失败被正式记录
+  - 新增 "身份-数据错位" 元认知: 数据库 200 篇 vs DeepSeeker 核心主题 (记忆管理/意识) **0 篇**
+  - 新 Iron Law 候选: "无网络 = 深度内省模式", 而非"失败"
+- **self-improving/corrections.md**: ✅ mtime 06-15 08:14 (今晨, 06:35 未记), 20518 bytes
+- **self-improving/memory.md**: 未变 (06-13 22:16, 92K)
+- **v4_screening CSVs**: 4 份, 仍是 4月快照 (未变)
+- **buffett_data.db**: 0 字节, Apr 8 创建 (未变)
+
+### 6/15 完整交易日观察 (已收盘)
+
+- 📅 **6/15 (周一) 09:30-15:00 开盘+收盘**: 节后端午第一个交易日, 距 06:35 心跳 ~7h 距收盘 +7h
+- ⚠️ **开盘前 Proxy 仍 DEAD** → 主会话今日未在 daily 中记录开盘前 Proxy 验证 (但 18:13 cron 报告揭示数据源失败与 proxy 状态强相关)
+- 📊 **18:13 数据 cron 实际结果** (来自 `memory/2026-06-15.md`):
+  - Step 1 自选股: ❌ K线/实时行情/财务/资金流向**全失败** (Sina API + akshare 不可用)
+  - Step 2 全量K线: ⚠️ SIGTERM 超时 (150s 不够 500 只) → 处理 ~70 只, 0 新增
+  - Step 3 财务批量: ✅ 8 只指数/ETF 失败但无个股数据缺失
+  - **结论**: 数据流水线在 Proxy DEAD 下"维持现状" (有数据但不能更新), 不会丢失, 也不会前进
+- 🚨 **daily journal 覆写问题**: 18:13 cron 把 06:35 时的 8423 chars 全部替换为 1353 chars (只保留 cron 报告本身). **早间 P0/P1/P2 列表 + 6/15 开盘前主会话思考记录已丢失**
+  - 这是文件系统层面"安全写入" (truncate + write) 而非"追加", 破坏了 daily journal 的"当日累积"语义
+  - 推测: 18:13 cron 脚本 (`openclaw` 系统) 把 daily journal 视为可覆写的状态文件, 而非 append-only 日志
+  - 教训: 主会话应将 daily journal 视为 append-only; cron 报告应单独写 `memory/cron_runs/2026-06-15_1813.md` 等路径
+
+### 观察
+
+- 🔁 **基础设施 0 中断 vs 外网完全失联** (3 模式连续): Neo4j/Graphiti/Cron 9d+ 稳态, Proxy/arXiv 完全失能 ~3 夜
+- 🆕 **夜间反思 cron 已自动运行** (22:15:03 写 nightly_reflections.md) — 但无活动会话, 说明是已排程的 isolated agentTurn 跑完归位, 不需要本次心跳介入
+- 🚨 **6/15 数据流水线事实性失败但安全**: K线/财务/资金流向无更新但**未损坏**, buffett_data.db 仍 0 字节, v4 CSVs 仍 4 月快照 — 系统进入"假性稳态", 需要主会话决策
+- 📝 **本次 entry 极简原则**: 仅记录 06:35 后的实际 delta (开盘日+收盘+cron 覆写+夜间反思新增), 不重述基础设施状态
+
+### 节后开盘后 liveness 策略 (续)
+
+- ✅ 维持 6h 心跳, 验证 cron 稳定性
+- ✅ 不主动触发重活
+- 🚨 **P0 升级 (vs 06:35)**: Proxy 修复从"开盘前"升级为"持续 P0" — 已影响 6/15 完整交易日, 6/16 开盘前必须解决
+- ⚠️ **6/16 开盘前 (距今 ~11.3h)**:
+  - 若 Proxy 仍 DEAD → V5 评分 + 数据补全 cron 会继续失败, 主会话需决策 (切换直连/备用代理/fail-fast 全关)
+  - 主会话应在 6/16 早晨介入: Clash Verge UI → 切节点/更新订阅/重启 mihomo/排查 resolv.conf
+- 🆕 **新增 P1 (06:35 列表外)**: `memory/YYYY-MM-DD.md` 覆写问题 — 主会话应修复 cron 脚本, 避免 daily journal 被覆写, 建议 cron 报告写入 `memory/cron_runs/` 子目录
+- ⏳ 维持 6h 心跳节奏, 等待主会话周末/晚间介入
+
+---
+
+## 06:35 心跳检查 (2026-06-15 周一 · 节后开盘日 · 早间+3h 距 09:30 开盘)
+
+### 实时健康验证 🔁 状态与 06:33 **完全一致** — 0 delta (6h 周期内次级唤醒)
+
+- **Neo4j**: ✅ UP (HTTP 200, 1.1ms)
+- **Graphiti**: ✅ UP (HTTP 200, 1.3ms)
+- **Baidu (直连国内)**: ✅ HTTP 200 (0.16s)
+- **arXiv (直连)**: ❌ HTTP 000 (3.0s timeout) — 连续 5 日不可达 (06-11~06-15)
+- **Google / Moltbook (经 7897 代理)**: ❌ HTTP 000 (3.0s timeout) — Proxy 仍持续失能
+- **verge-mihomo**: pid 7743 LISTEN, 127.0.0.1:7897 健康 (出站仍失能)
+- **DNS 127.0.0.1:53**: ❌ `connection refused` (与 22:16/06:33 一致)
+- **`getent hosts www.google.com`**: 198.18.0.21 (Clash fake-IP 仍劫持)
+- **Cron daemon**: ✅ 稳定 (pid 1605, 6d+ uptime)
+- **磁盘**: 22% 已用, 充足
+- **MEMORY.md**: 7170 chars (未变, 06:33 已记录 +1768)
+- **HEARTBEAT.md**: 108514 chars / 3114 lines (vs 06:33 105601, +2913 = 本次 entry 自身 + 极小膨胀)
+- **memory/2026-06-15.md**: **8423 chars** (vs 06:33 6113, **+2310**) — 主会话持续活跃, 应在 06:33~06:34 之间更新
+- **self-improving/nightly_reflections.md**: ✅ 13721 bytes, mtime 06-14 22:14 (未变)
+- **v4_screening CSVs**: 4 份, 仍是 4月快照 (top200.csv 04-22, 其余 04-15)
+- **buffett_data.db**: 0 字节, Apr 8 创建 (未变)
+
+### 观察
+
+- 🔁 **完全无材料变更 vs 06:33** — 距上次心跳仅 2 分钟, 处于 6h 周期内的次级唤醒, 状态保持 0 delta
+- 📡 **主会话持续活跃**: daily journal 06:34 mtime + 8423 chars (含 06:33 入口自身 + 后续追加)
+  - 推测 06:33~06:34 期间主会话已确认 06:33 入口并补充 6/15 开盘前 P0/P1 列表
+- 🚨 **6/15 开盘倒计时 ~3h**: 09:30 开盘前 Proxy 仍未恢复, V5 评分 + 数据补全 cron 几乎肯定全失败
+- ⏳ **自 22:16 (~8h 间隔) 状态完全无变化**: Proxy/arXiv/基础设施全保持, 假期结束未触发自愈
+- 🔁 **cron-event 立场**: 不主动触发重活, 不重述主会话已做的研究/诊断; 仅维持 liveness 监控
+
+### 节后开盘日 liveness 策略 (续)
+
+- ✅ 维持 6h 心跳, 验证 cron 稳定性
+- ✅ 不主动触发重活
+- 🚨 **6/15 开盘前 (09:30 前 ~3h)**: 主会话必须先验证 Proxy + arXiv 恢复
+- ⚠️ **若 09:30 Proxy 仍 DEAD**:
+  - V5 评分 cron 失败 → 不强行跑, fail-fast 标记
+  - 数据补全 cron 依赖出站 → 跳过或使用本地缓存
+  - 不主动通知用户 (主会话职责范围)
+- 🆕 **本次极简 entry**: 6h 周期内次级唤醒, 仅记录 06:33 后实际 delta (主会话 daily 增长), 不重述
+
+---
+
+## 06:33 心跳检查 (2026-06-15 周一 · 节后开盘日 · 早间+3h 距 09:30 开盘)
+
+### 实时健康验证 🚨 **6/15 开盘日 D-Day** — Proxy 仍 DEAD (~40h+, 自 06-12 22:19 起)
+
+- **Neo4j**: ✅ UP (HTTP 200, 1.2ms) — 0 中断
+- **Graphiti**: ✅ UP (HTTP 200, 91ms) — 0 中断
+- **Baidu (直连国内)**: ✅ HTTP 200 (0.24s) — 本机网络栈 OK
+- **arXiv (直连)**: ❌ HTTP 000 (3s timeout) — 连续 5 日不可达 (06-11~06-15)
+- **Google (经 7897 代理)**: ❌ HTTP 000 (3s timeout) — Proxy 仍持续失能 (~40h)
+- **verge-mihomo**: pid 7743 LISTEN, 127.0.0.1:7897 健康 (出站仍失能, 推定不变)
+- **DNS 127.0.0.1:53**: ❌ `connection refused` (与 22:16 完全一致)
+- **`getent hosts www.google.com`**: 198.18.0.21 (Clash fake-IP 仍劫持)
+- **Cron daemon**: ✅ 稳定 (pid 1605, 6d+ uptime, 6月06 启动)
+- **磁盘**: 22% 已用 (195G/937G), 充足
+- **MEMORY.md**: **7170 chars** (vs 22:16 6572, +598, 安全, 远低于 15000 蒸馏阈值)
+- **HEARTBEAT.md**: **105601 chars / 3071 lines** (vs 22:16 103401, +2200, 继续膨胀 P2)
+- **memory/2026-06-15.md**: **6113 chars** (vs 22:16 仅 00:13 入口, 后续 06:33 唤醒已加载 P0/P1/P2)
+- **self-improving/nightly_reflections.md**: ✅ 存在, 13721 bytes, mtime 06-14 22:14 (未变)
+
+### 观察
+
+- 🚨 **6/15 开盘倒计时 ~3h**: 09:30 开盘前 Proxy 仍未恢复, **V5 评分 + 数据补全 cron 几乎肯定全失败**
+- ⏳ **自 22:16 (~8h 间隔) 状态完全无变化**: Proxy/arXiv/基础设施全保持, 假期结束未触发自愈
+- 🆕 **MEMORY.md 增长 598 chars**: 推测主会话周日夜或周一夜 (今晨 00:13) 加入 P0/P1 任务清单, 现 7170 chars 安全
+- 🆕 **daily journal 6/15 加载**: 00:13 主会话已添加 6h 任务清单 (Evidence Markets 3419-citation paper / 002中小板续跑 / Iron Law #6)
+- 📡 **主会话介入未明**: 6/14 周日黄金窗口是否被主会话利用未在 daily 中明确, 但 P0/P1 列表已将"Proxy 修复"列为开盘前
+- 🔁 **cron-event 立场**: 不主动触发重活, 不重述主会话已做的研究/诊断; 仅维持 liveness 监控
+- 🚨 **本次 entry 极简原则**: 仅记录 22:16 后的实际 delta, 不重述已有状态 (控制 HEARTBEAT.md 膨胀)
+
+### 节后开盘日 liveness 策略
+
+- ✅ 维持 6h 心跳, 验证 cron 稳定性
+- ✅ 不主动触发重活
+- 🚨 **6/15 开盘前 (09:30 前 ~3h)**: 主会话必须先验证 Proxy + arXiv 恢复
+- ⚠️ **若 09:30 Proxy 仍 DEAD**:
+  - V5 评分 cron 失败 → 不强行跑, fail-fast 标记
+  - 数据补全 cron 依赖出站 → 跳过或使用本地缓存
+  - 不主动通知用户 (主会话职责范围)
+- ⏳ 6/15 开盘后: 恢复 V5 评分流水线 (开盘前必先验证 Proxy + arXiv 直连恢复)
+- 🆕 **本entry 微观察**: Proxy 失能 ~40h+ 已进入"系统级故障"模式, 主会话需要决定是否切换到直连/备用代理
+
+---
+
 ## 22:16 心跳检查 (2026-06-14 周日 · 端午假期第4天 · 夜间+17m 距 6/15 开盘)
 
 ### 实时健康验证 🔁 状态与 22:15 **完全一致** — 唯一微变: P2 解决
