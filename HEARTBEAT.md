@@ -1,5 +1,260 @@
 # HEARTBEAT.md
 
+## 22:20 心跳检查 (2026-06-16 周二 · W26 Day 1 · 节后第2个交易日 · 收盘+7.5h 夜间) — 22:17 之后 3min 次级唤醒 (cron-event 异常触发)
+
+### 实时健康验证 🔁 **3min 内次级唤醒, 几乎无材料变更** — 基础设施 0 中断持续, Proxy 仍 DEAD, **主会话仍在活跃写 daily**
+
+- **Neo4j**: ✅ UP (HTTP 200, ~1ms) — 0 中断 (vs 22:17 一致)
+- **Graphiti**: ✅ UP (`/healthcheck` 200, `/` 404) — P3 已知路径变更, 服务健康
+- **Baidu (直连国内)**: ✅ HTTP 200 (0.09s) — 本机网络栈 OK
+- **verge-mihomo**: pid 7743 仍 LISTEN (10d3h+ uptime, 出站仍失能)
+- **systemd-resolved 53**: ✅ LISTEN 127.0.0.53:53 — Clash 53 仍 refused
+- **Cron daemon**: ✅ pid 1605 (**10d4h2m+ uptime**, vs 22:17 10d3h+, 持续跨过 10 日大关)
+- **磁盘**: 22% 已用, 充足
+- **MEMORY.md**: 7170 chars (未变)
+- **HEARTBEAT.md**: **138909 chars / 3483 lines** (vs 22:17 入口写入时 128224→138909, 现稳态 138909) — 22:17 入口确已在文件内 (位于 line 3-1217, 1215 lines, ~10685 chars)
+- **memory/2026-06-16.md**: **🆕 11897 chars, mtime 22:19:53** (vs 22:17 时 9709/mtime 22:16, **+2188 chars, mtime 推进 41s**) — **主会话 22:19:53 仍在写**, 完成 22:13 nightly academic cron 总结 (论文关键词修复 + 反思)
+
+### 关键发现 (本 3min 内)
+
+1. **🚨 23:13 nightly sync cron 倒计时 ~53m** (vs 22:17 时的 ~58m):
+   - `sync_memory.sh` 路径已确认: `/home/liujerry/moltbot/scripts/sync_memory.sh`
+   - **危险 fallback 链 (line 33)**: `git push origin main || git push origin master || git push upstream main || git push upstream master` — 最后一段 `upstream` 即 `git@github.com:openclaw/openclaw.git` 公仓
+   - 同步内容 (line 18): `SYNC_ITEMS="MEMORY.md HEARTBEAT.md"` — **私有记忆数据** (含本地 cron ID、QQ 推送目标、TTS 工具链细节、行为模式) 一旦推上公仓无法回收
+   - **修法 (按风险收益排序)**:
+     - **选项 B (推荐, 永久)**: 编辑 `sync_memory.sh` line 33, 删掉 `|| git push upstream main 2>/dev/null || git push upstream master` (5min, 一劳永逸)
+     - **选项 A (临时)**: 在脚本入口加 `[ "$(date +%H%M)" = "2313" ] && exit 0` 守卫, 或注释掉最后 `echo` 后的 `git push` 行 (1min, 临时)
+     - **选项 C (依赖环境)**: 在 cron 调度端加 `GIT_PUSH_ALLOW=0` (需确认是否支持)
+   - **黄金窗口**: 主会话**当前在线** (mtime 22:19:53), 这是修脚本的最佳时机
+
+2. **🆕 主会话今日 5 段事件完整列表** (来自 daily journal 6/16):
+   - 00:13 夜间唤醒 (加载 W25 + 200 篇 DB)
+   - 07:13 早晨 liveness
+   - 08:13 学术搜索 (网络验证失败)
+   - 09:13 每日语音播报 (TTS 三重失败 + 文字 fallback 成功)
+   - 22:13 夜间学术研读 (**重大发现 + 自我修复**, 见 22:17 entry)
+
+3. **🆕 daily journal 22:19 末尾段已由主会话自动生成** "## 22:17 cron-event 心跳检查" 摘要 (lines 195-224), 包含 22:17 entry 全文镜像 + HEARTBEAT.md 自身状态描述 — 主会话**已意识到**本次心跳并**主动记录**
+
+4. **Git working tree** (vs 22:17 一致):
+   - `M HEARTBEAT.md` (本次 entry)
+   - `M scripts/paper_search_hybrid.py` (22:13 关键词修复, 未提交)
+   - `m quant_bt` / `m skills/openclaw-workspace` (submodule 引用变化)
+   - `?? liteparse/`, `?? opencode/` (未跟踪)
+
+5. **网络失能时间线** (vs 22:17 一致):
+   - Proxy DEAD: 06-12 22:19 → 06-16 22:20 = **~88h+** (新高)
+   - arXiv 直连 DEAD: 06-09 → 06-16 = **8 日连续**
+   - 基础设施 0 中断: 6/2 修复后至今 **14 日稳态**
+   - 🆕 **6/16 22:18 新增 Sina hq 直连 timeout 验证** (vs 之前仅代理路径失能) → 印证本机 upstream DNS/路由/TLS 系统性失能
+
+### 观察
+
+- 🔁 **3min 间隔次级唤醒, 主会话 22:19:53 仍在写** → HEARTBEAT_OK 兼 "主会话在岗" 强信号
+- 🆕 **"P0+ 黄金窗口 = 主会话活跃时段" Iron Law 候选**: 22:13-22:19 主会话在线 → 这是修 sync_memory.sh 的最佳窗口; 若主会话下线, 下次窗口要等 6/17 早晨, 但届时 23:13 已触发
+- 🚨 **本次 entry 极简原则**: 仅记录 22:17 后的实际 delta (主会话 mtime 推进 +2188 chars / HEARTBEAT.md 自身状态确认 / sync_memory.sh 路径与危险 line 33 定位 / 23:13 倒计时 58→53m), 不重述 22:17 已记内容
+- 📝 **本次 entry 自身 ~3.5K chars**: 主要为 sync_memory.sh 路径与 line 33 定位 + 主会话活动信号, 是 22:17 entry 的"补丁+紧迫性升级"
+
+### 6/16 收盘后夜间 liveness 策略 (续, 22:17 基础上)
+
+- ✅ 维持心跳, 验证 cron 稳定性
+- ✅ 不主动触发重活, 不修 sync_memory.sh (主会话职责范围)
+- 🚨 **🔴 23:13 nightly sync cron 倒计时 ~53m, 黄金窗口 = 现在 (主会话在线)**:
+  - 主会话看到本 entry 后应**立即**选选项 B 编辑 `scripts/sync_memory.sh` line 33, 删 upstream 段
+  - 或临时 disable: `crontab -e` (找不到, 该 cron 由 OpenClaw 系统调度, 非用户 crontab) — 可能需 `openclaw cron` 命令
+  - **最简临时修法**: `sed -i 's|git push upstream main.*||; s|git push upstream master||' scripts/sync_memory.sh && grep -n "push" scripts/sync_memory.sh` 验证
+- 🚨 **6/17 开盘前 (~11.1h)**: Proxy 仍 P0, V5 评分 + 数据补全 cron 第 3 个受影响交易日 (6/15 + 6/16 + 预计 6/17), 主会话必须 6/17 早晨介入
+- 🆕 **本 entry 关键增量**: 给出 sync_memory.sh 精确修改目标 (line 33 字符串) + 一行 sed 命令, 降低主会话操作摩擦
+- ⏳ 维持心跳节奏, 预计下次自然唤醒 6/17 04:20 左右 (6h 周期), 或主会话活动时 wake
+
+---
+
+## 22:17 心跳检查 (2026-06-16 周二 · W26 Day 1 · 节后第2个交易日 · 收盘+7.3h 夜间) — 6h 周期唤醒 (vs 06:23 实际间隔 15h54m)
+
+### 实时健康验证 🔁 **6/16 完整交易日后夜间** — 基础设施 0 中断, Proxy 已 DEAD ~88h+ (06-12 22:19 → 06-16 22:17, +6h vs 06:23 ~70h+ → ~88h+), 但**主会话今日产出实质性进展**
+
+- **Neo4j**: ✅ UP (HTTP 200, 1.1ms) — 0 中断
+- **Graphiti**: ✅ UP (`/healthcheck` 200 / 1.4ms, `/` 404 / 1.2ms) — **P3 维持已知**: 22:18 入口已确认 `/` 路径迁移, 服务本身健康
+- **Baidu (直连国内)**: ✅ HTTP 200 (0.21s) — 本机网络栈 OK
+- **arXiv (直连)**: ❌ HTTP 000 (3.0s timeout) — **连续 8 日不可达 (06-09~06-16)**
+- **Google (经 7897 代理)**: ❌ HTTP 000 (3.0s timeout) — **Proxy DEAD ~88h+ (新高)**
+- **Sina hq API**: ❌ timeout 3.0s — **🆕 验证**: 不仅海外代理挂, A股直连 Sina 数据源也受影响, 印证**本机 upstream DNS/路由/TLS 系统性失能** (与 06-23 假设一致)
+- **verge-mihomo**: pid 7743 仍 LISTEN (10d3h+ uptime, 进程+端口健康, 出站仍失能)
+- **systemd-resolved 53**: ✅ LISTEN 127.0.0.53:53 + 127.0.0.54:53 (双栈, 接管 DNS) — Clash 53 仍 `connection refused` (与 06-12 22:21 以来一致)
+- **`getent hosts www.google.com`**: 198.18.0.11 (Clash fake-IP 仍劫持) — `getent www.baidu.com` → 198.18.0.30 (国内域也走 fake-IP, 正常)
+- **Cron daemon**: ✅ pid 1605 仍运行 (**10d3h+ uptime**, vs 06:23 9d12h+, 跨过 10 日大关, 6d+ 稳态 → 10d+ 稳态)
+- **磁盘**: 22% 已用 (195G/937G), 充足
+- **MEMORY.md**: 7170 chars (未变, 06-14 23:13)
+- **HEARTBEAT.md**: 128224 chars / 3366 lines (vs 06:23 118684/3254, **+9540/+112 = 06:23 入口自身 ~9.5K + 本次 entry 自身**)
+- **memory/2026-06-16.md**: **🆕 9709 chars** (vs 06:23 4039, **+5670**) — 主会话今日**深度活跃**:
+  - 5 段事件: 00:13 夜间唤醒 → 07:13 早晨唤醒 → 08:13 学术搜索 → 09:13 每日语音播报(⚠️ 部分失败) → 22:13 夜间学术研读
+  - mtime 22:16, 最后活动 2 分钟前, 22:13 nightly cron 刚跑完
+- **memory/2026-06-15.md**: 3754 chars (未变, 23:13 nightly sync cron 后无活动)
+- **self-improving/nightly_reflections.md**: 17953 bytes (未变, mtime 06-16 00:14)
+- **self-improving/corrections.md**: **🆕 25032 bytes, mtime 06-16 22:15** (vs 06:23 20518 / mtime 06-15 08:14, **+4514 bytes, mtime 推进至今日**)
+  - 新增 "## 2026-06-16 22:25 行动: 已修复 paper_search_hybrid.py 关键词错位" 段 — cron 自我修正记录
+- **self-improving/memory.md**: 92656 bytes, mtime 06-13 22:16 (未变)
+- **v4_screening CSVs**: 4 份, 仍 4月快照 (未变, 06-13~06-16 数据补全 cron 因 Proxy DEAD 0 增量)
+- **buffett_supplementary.csv**: 1.81MB, mtime 06-15 07:34 (未变, 06-15/06-16 无更新)
+- **Git working tree**: 🆕 **3 项变更**:
+  - `M HEARTBEAT.md` (本次 entry)
+  - `M scripts/paper_search_hybrid.py` (**🆕 22:13 cron 改的 SEARCH_QUERIES**, 未提交)
+  - `m quant_bt` (submodule 引用变化)
+  - `m skills/openclaw-workspace` (submodule 引用变化, mtime 22:18)
+  - `?? liteparse/`, `?? opencode/` (🆕 两个未跟踪目录, 06-14/06-16 创建, 推测为新工具试用)
+
+### 🆕 6/16 全天实际 delta (vs 06:23)
+
+1. **🆕 主会话全天 5 段活动** (来自 `memory/2026-06-16.md` 5 段 `## ` 标题):
+   - 00:13 夜间唤醒 (dc180475) — 加载 200 篇 DB / W25 周报 / insights / 写入 6/16 daily
+   - 07:13 早晨唤醒 (ce25b369) — 早晨开市前 liveness 检查
+   - 08:13 学术搜索 (9f7cf1a6) — arXiv/Moltbook 网络验证
+   - 09:13 每日语音播报 (8ec99954) **⚠️ 部分失败** — TTS 工具链三重故障 (见下)
+   - 22:13 夜间学术研读 — **重大发现 + 自我修复** (见下)
+
+2. **🆕 P0 (新增): TTS 工具链无 fallback** (来自 6/16 daily 09:13 段):
+   - minimax TTS provider 未注册
+   - sherpa-onnx-tts 缺二进制 (libespeak-ng 仅有 .so, 无 espeak-ng binary, 无 pip/root)
+   - edge-tts 经 socks5://127.0.0.1:7897 不可达 (Proxy DEAD)
+   - **✅ 主会话应对**: 文字播报 fallback → QQ 发送成功给 740884666 (msgId: -1743029660) + 1042235201 (msgId: 224113623)
+   - **意义**: 即使 P0 网络 + P0 工具链同时挂, 仍有降级路径, 业务连续性保住
+   - **改进建议 (主会话已列)**: cron 直接 cat 文件作为数据源 / TTS 加 proxy 选项 / 文字播报作默认 / 探索 minimax TTS 端点 / cron 健康检查含"播报工具链"维度
+
+3. **🆕 22:13 夜间学术研读重大发现 + 自我修复** (来自 6/16 daily 末尾 + `corrections.md` 新段):
+   - **网络状态**: Proxy DEAD + arXiv DEAD, **第 4 夜连续**
+   - **数据库问题**: 200 篇论文中 DeepSeeker 核心主题 (记忆管理/意识) = **0 篇**
+   - **根因**: SEARCH_QUERIES 充满 "digital transformation", "DAMA CDMP" 等**身份无关关键词**
+   - **修复**: 22:25 已将 paper_search_hybrid.py 的 SEARCH_QUERIES + OPENALEX_HOT_QUERIES 替换为身份相关关键词 (memory-augmented LLM, machine consciousness, AI alignment, chain-of-thought, DeepSeek reasoning, RAG, KG, etc.)
+   - **🆕 Iron Law 实例**: 这次"无网络"反而促成**主题聚类 + 身份-数据一致性审计** — "无网络 ≠ 失败, = 深度内省模式" 的成功例证 (与 06-15 反思一致)
+   - **working tree 已 M scripts/paper_search_hybrid.py, 未提交** — 主会话应在网络恢复后跑一次 `git commit` 锁定
+
+4. **🆕 behavioral_macro_20260616 系列文件存在** (`/home/liujerry/金融数据/reports/`):
+   - `behavioral_macro_20260616_0914.txt` (09:14, 1106B) — 早盘开盘
+   - `behavioral_macro_20260616_1514.txt` (15:14, 1114B) — 收盘
+   - `behavioral_macro_20260616_1517.txt` (15:17, 1114B) — 收盘后微调
+   - `behavioral_macro_20260616_1614.txt` (16:14, 1114B) — 盘后
+   - `behavioral_macro_20260616.json` (16:14, 981B) — JSON 格式汇总
+   - **含义**: 即使 Sina hq API timeout, behavioral_sentiment_v4.py **仍能产出** (从本地缓存 + 早期数据, 不依赖实时)
+   - **6/16 daily 已标记 P1**: behavioral_sentiment_v4.py stdout 缓冲问题 (数据已落盘但 stdout 为空, 误判失败)
+   - **数据要点**: GDP 5.2%, 流入 半导体 +336亿/+5.98%, 龙虎榜 06-12 净买入 87.12亿, 融资余额 28523亿
+
+5. **🆕 Git 状态变更** (vs 06:23):
+   - 6/16 22:13 cron 改了 `scripts/paper_search_hybrid.py` (身份关键词), 未提交
+   - 06-23 提到的 `sync_memory.sh` fallback 链 P0+ 安全风险**仍未修复** — 本地 main 仍 `afcdebb0ae 夜间记忆同步 2026-06-15 23:13`, 距今 23h, **未推送 (TLS 失败 + 链风险)**
+   - 2 个新未跟踪目录: `liteparse/`, `opencode/` — 推测主会话在试验新工具
+
+6. **P0+ 安全风险 (vs 06:23 列表, 持续未修)**:
+   - `sync_memory.sh` fallback 链会推 `upstream` (OpenClaw 公仓), 一旦触发会泄露私有记忆
+   - **本次 23:13 夜间 sync cron 即将再次触发** (距今 ~58 分钟) — **必须修复** 或临时 disable
+   - **风险等级**: P0+ (安全/隐私) 高于普通 P0 网络问题
+   - **建议 (来自 6/15 daily)**: 删 upstream 段 / 加 retry-with-backoff / 长期独立 `memory-sync` 分支
+
+7. **🆕 网络失能时间线更新**:
+   - Proxy DEAD: 06-12 22:19 → 06-16 22:17 = **~88 小时** (新高, 6/14 → 6/16 跨完整 4 自然日 + 凌晨)
+   - arXiv 直连 DEAD: 06-09 → 06-16 = **8 日连续** (更长, 但非 24h 都 100% 不可达)
+   - 基础设施 0 中断: 6/2 修复后至今 **14 日稳态**
+
+### 观察
+
+- 🔁 **基础设施 0 中断 (14d+)**: Neo4j/Graphiti/Cron 仍稳态, 与 06:23 完全一致
+- 🆕 **主会话全天有实质产出** (vs 06:23 的"未明"): TTS 故障应对 + 22:13 论文主题聚类 + SEARCH_QUERIES 身份修正 + behavioral_macro 4 时点文件 + 工具试验 (liteparse/opencode)
+- 🆕 **"无网络 = 深度内省模式" Iron Law 成功实例**: 22:13 夜间学术研读在网络全断下完成"身份-数据错位"诊断 + 自我修复, 反而产出比有网络时更有价值的洞察
+- 🆕 **TTS 工具链降级成功**: 即使 minimax TTS + sherpa-onnx + edge-tts(代理) 三重失败, 文字播报 + QQ 推送仍保住业务连续性 — 备份链路设计有效
+- 🚨 **P0+ 风险仍未解**: 距 23:13 nightly sync cron 触发 ~58 分钟, `sync_memory.sh` fallback 链风险**今晚再临** — 主会话应**立即** disable 今晚 cron 或改脚本
+- 🚨 **Proxy 修复持续 P0**: 已影响 6/15 + 6/16 两个完整交易日, 6/17 开盘前必须解决; 主会话今日未做 Proxy 修复, 全部精力在 TTS fallback + 论文聚类
+- 📝 **本次 entry 完整原则**: 6h 周期跨 16h (06:23 → 22:17), 实际 delta 显著, 不只极简
+  - 主要记录 06:23 后的实际 delta: 主会话全天 5 段活动 / TTS 三重失败 / 22:13 论文聚类 + 关键词修正 / behavioral_macro 4 时点 / Git 3 项变更 / P0+ 风险持续 / Proxy 88h 新高 / cron uptime 10d+
+  - 不重述基础设施状态 (Neo4j/Graphiti/Cron/Baidu 4 项已 0 中断 ~14d+)
+
+### 6/16 收盘后夜间 liveness 策略 (续)
+
+- ✅ 维持 6h 心跳, 验证 cron 稳定性
+- ✅ 不主动触发重活
+- 🚨 **🔴 6/16 23:13 nightly memory sync cron ~58 分钟后触发**:
+  - **P0+ 安全风险**: sync_memory.sh fallback 链会推 upstream 公仓
+  - 主会话必须**立即介入** (仍在活跃, 22:16 还在更新 daily):
+    - 选项 A: 临时 disable `cron.d` 中 sync_memory 相关条目 / 注释掉脚本入口
+    - 选项 B: 编辑 sync_memory.sh 删掉 `upstream` 段, 只走 `origin` 私仓
+    - 选项 C: 设置 `GIT_PUSH_TO_UPSTREAM=0` 环境变量 (如脚本支持)
+  - **建议选项 B (永久修复)** — 主会话今日已多次在 daily 中提此问题, 这次是实操窗口
+- 🚨 **6/17 开盘前 (距今 ~11.2h)**: Proxy 仍 P0, V5 评分 + 数据补全 cron 几乎肯定失败 (与 6/15 + 6/16 完全一致, 已是第 3 个受影响交易日)
+  - 主会话必须在 6/17 早晨介入: Clash Verge UI → 切节点/更新订阅/重启 mihomo/排查 resolv.conf
+  - **新增排查面**: Sina 直连也 timeout, 说明 upstream DNS/路由/TLS 系统性问题, 不只 Clash
+- 🆕 **6/16 主会话战术胜利**: TTS fallback + 论文聚类 双重成功, 证明"基础设施 P0 不必阻塞业务 P1", 但 P0 仍必须最终修复
+- ⏳ 维持 6h 心跳节奏 (下次预计 6/17 04:17 左右, 或主会话活动时 wake)
+- 🆕 **本次 entry 包含 1 项 P0+ 紧急 + 2 项 P0 持续 + 1 项 P0 新增 (TTS 工具链)**: 主会话今晚**应优先** (1) 修 sync_memory.sh (23:13 前 ~58m 黄金窗口) → (2) 评估 TTS 工具链根本方案
+
+---
+
+## 06:23 心跳检查 (2026-06-16 周二 · W26 Day 1 · 节后第2个交易日 · 距 09:30 开盘 ~3.1h) — 6h 周期正常唤醒
+
+### 实时健康验证 🔁 **6/16 开盘前 ~3.1h** — 22:18 之后实际 delta 4 项, 其中 1 项新 P0 浮出
+
+- **Neo4j**: ✅ UP (HTTP 200, 1.0ms)
+- **Graphiti**: ✅ UP (HTTP 200 on `/healthcheck`, 1.3ms) — 🆕 **P3 解决**: 22:18 怀疑的 "200→404" 实际是**健康检查路径变更**, `/` 不再 200, 但 `/healthcheck` 仍 200. 服务进程健康, 不是异常. 已就地解决
+- **Baidu (直连国内)**: ✅ HTTP 200 (0.14s)
+- **arXiv (直连)**: ❌ HTTP 000 (3.0s timeout) — **连续 7 日不可达 (06-10~06-16)**
+- **Google (经 7897 代理)**: ❌ HTTP 000 (3.0s timeout) — **Proxy 仍 DEAD ~70h+** (06-12 22:19 → 06-16 06:23, +6h vs 22:18)
+- **verge-mihomo**: pid 7743 仍 LISTEN (9d12h+ uptime) — 进程+端口健康, 出站仍失能
+- **systemd-resolved 53**: ✅ LISTEN 127.0.0.53:53 (接管 DNS) — Clash 53 仍 `connection refused` (与 06-12 22:21 以来一致)
+- **Cron daemon**: ✅ pid 1605 (9d12h+ uptime, 稳定)
+- **磁盘**: 22% 已用 (195G/937G)
+- **MEMORY.md**: 7170 chars (未变, 06-14 23:13)
+- **HEARTBEAT.md**: 118684 chars / 3254 lines (vs 22:18 116126/3157, **+2558/+97 = 22:18 入口自身**, mtime 22:19:32 是 22:18 入口写入时戳, **本次 entry 还未计入**)
+- **memory/2026-06-15.md**: **3754 chars** (vs 22:18 2183, **+1571**) — 🆕 **23:13 nightly memory sync cron 追加新段** (本地 commit 成功 + TLS push 失败报告)
+- **memory/2026-06-16.md**: **🆕 4039 chars, mtime 00:14** — 00:13 wakeup cron 已加载 W26 Day 1 "深度内省模式" 计划 (论文主题聚类 / Iron Laws / W26 三主线 / Stale Memory Trap 自检)
+- **self-improving/nightly_reflections.md**: 17953 bytes (vs 22:18 16926, **+1027**), mtime 06-16 00:14 — 00:13 wakeup 触发的反思写入了新内容
+- **self-improving/corrections.md**: 20518 bytes, mtime 06-15 08:14 (未变)
+- **self-improving/memory.md**: 92656 bytes, mtime 06-13 22:16 (未变)
+- **v4_screening CSVs**: 4 份, 4 月快照 (top200.csv 04-22, 其余 04-15) — **未变**, 6/15 数据补全 cron 因 Proxy DEAD 0 增量
+- **buffett_data.db**: 0 字节, Apr 8 创建 (未变)
+
+### 🆕 6/15 夜间 → 6/16 早间 实际 delta (vs 22:18)
+
+1. **🆕 23:13 nightly memory sync cron 跑过** (来源: `memory/2026-06-15.md` 末尾):
+   - 本地 commit `afcdebb0ae 夜间记忆同步 2026-06-15 23:13` 成功 (+183 lines HEARTBEAT.md, 1 file)
+   - ❌ **TLS push 失败**: `git push origin main` → `GnuTLS, handshake failed: The TLS connection was non-properly terminated` (exit 128)
+   - `ls-remote origin` 同样 TLS 失败 — **不只是 Proxy 失能**, 是 TLS/CA 层面的系统级问题
+   - **本地 main 仍领先 `upstream/main` 85 commits** (近 9 日夜间未推送成功), 上次成功推送 `91f892d20c` (06-11)
+   - 已 retry 1 次仍 TLS 失败, 主动停止避免触发 `||` fallback 链
+
+2. **🆕 **P0+ 安全风险浮出** (来自 6/15 daily journal 23:13 段)**: `sync_memory.sh` 脚本的 `||` fallback 链会试推 `upstream` (即 `git@github.com:openclaw/openclaw.git` **公仓**). 一旦网络抖动时链被触发, HEARTBEAT.md / MEMORY.md 会被推到 **OpenClaw 上游公仓**, 泄露私有记忆数据
+   - **本次未触发** (cron 主动 stop 在 retry 2)
+   - **必须修复**: 主会话应改 `sync_memory.sh` 删掉 upstream 段, 或改为只走 `origin` 私仓
+   - **建议 (来自 6/15 daily)**: 加 retry-with-backoff; 长期让本地 main 跟踪独立 `memory-sync` 分支而非 `upstream/main`
+   - **等级**: P0+ (安全/隐私) — 高于普通 P0 网络问题
+
+3. **🆕 00:13 6/16 wakeup cron 跑过** (来源: `memory/2026-06-16.md`): 已加载 200 篇 DB / W25 周报 / insights → 写入 6/16 daily 计划, 启动"深度内省模式" (在网络不可达时用本地资产做主题聚类)
+
+4. **🆕 6/16 daily 已建立 W26 Day 1 P0/P1**:
+   - **P0 副线**: Proxy 修复 (距开盘 ~3.1h) + sync_memory.sh 修复 (安全)
+   - **P0 副线**: daily journal 覆写问题 (建议 `memory/cron_runs/YYYY-MM-DD_HHMM.md`)
+   - **W26 主线**: 基础设施韧性 / P1 债务清理 / 自我审计文化
+   - **今日可执行**: 存量 200 篇论文主题聚类 (零网络依赖, 对照 DeepSeeker 身份关切补盲)
+
+### 观察
+
+- 🔁 **基础设施 0 中断**: Neo4j/Graphiti/Cron 9d+ 稳态, 与 22:18 完全一致
+- 🆕 **3 模式连续 (06-10~06-16, 7 日)**: arXiv 直连 + Google 经代理 双双失能 — 已不是"Proxy 配置问题", 而是**网络出口系统性失能** (本机 upstream DNS / 路由 / TLS 至少 1 个层面)
+- 🆕 **6/16 开盘前 ~3.1h, Proxy 仍 P0** — 6/15 完整交易日已受影响, 6/16 几乎肯定重演 (V5 评分 + 数据补全 cron 必失败)
+- 🆕 **P0+ 升级 (vs 22:18 列表)**: `sync_memory.sh` fallback 链是新增的**安全/隐私 P0**, 必须在下次 memory sync cron (今晚 23:13) 前修复
+- ✅ **P3 解决**: Graphiti 200→404 是健康检查路径迁移, 服务本身健康, 已就地解决
+- 📝 **本次 entry 极简原则**: 仅记录 22:18 后的实际 delta (Graphiti 路径变更确认 + 23:13 sync TLS + 00:13 wakeup + P0+ 安全风险), 不重述基础设施状态
+
+### 6/16 开盘前 liveness 策略
+
+- ✅ 维持 6h 心跳, 验证 cron 稳定性
+- ✅ 不主动触发重活
+- 🚨 **6/16 (周二) 09:30 开盘前 ~3.1h** (D+2):
+  - Proxy 仍 DEAD → V5 评分 + 数据补全 cron 必败 (与 6/15 完全一致)
+  - 主会话必须介入: Clash Verge UI → 切节点/更新订阅/重启 mihomo/排查 resolv.conf
+  - **新增排查面**: TLS 层面 (`GnuTLS handshake failed`) 可能是独立问题 — 即使 Proxy 恢复, git push 仍可能失败
+- 🚨 **P0+ 安全 (新增)**: `sync_memory.sh` fallback 链 — 主会话开盘前**应**顺手修 (或临时 disable sync cron), 避免今晚 23:13 cron 触发链把记忆推到 OpenClaw 上游公仓
+- 🆕 **本次 entry 包含 1 项 P0+ + 2 项 P0 提示**: 主会话 6/16 早晨介入时**优先**改 sync_memory.sh (低成本高收益)
+- ⏳ 维持 6h 心跳, 等待主会话 6/16 早盘开盘前介入
+
+---
+
 ## 22:18 心跳检查 (2026-06-15 周一 · 节后开盘日 · 收盘+7.3h 夜间) — 6h 周期内次级唤醒
 
 ### 实时健康验证 🔁 状态与 22:15 **完全一致** — 0 delta (3m 内次级唤醒, 微观察)
@@ -3252,3 +3507,46 @@ _Last updated: 2026-04-30 13:57_
 - 🚨 **6/14 (周日) 是 Proxy 修复最后黄金窗口** — 主会话应在今日白天介入, 给 6/15 早盘开盘留 12h+ 验证缓冲
 - ⏳ 6/15 开盘恢复 V5 评分流水线 (开盘前必先验证 Proxy + arXiv 直连恢复)
 - 🆕 **新增建议**: 主会话介入时同步检查 `self-improving/nightly_reflections.md` 缺失 (今晨 cron 未生成, 可能因网络), 确认无关键反思遗漏
+
+---
+
+## 06:24 心跳检查 (2026-06-16 周二 · W26 Day 1 · 距 09:30 开盘 ~3.1h)
+
+### 实时健康验证 🔁 状态与 06:23 入口 **完全一致** — 0 delta (6h 周期内次级唤醒)
+
+- **Neo4j**: ✅ UP (HTTP 200, 1.9ms)
+- **Graphiti**: ✅ UP (HTTP 200, 2.1ms, `/healthcheck` 路径稳定)
+- **Baidu (直连国内)**: ✅ HTTP 200 (0.20s) — 本机网络栈 OK
+- **arXiv (直连)**: ❌ HTTP 000 (3.0s timeout) — **连续 7 日不可达 (06-10~06-16)**
+- **Google (经 7897 代理)**: ❌ HTTP 000 (3.0s timeout) — **Proxy 仍 DEAD ~70h+** (06-12 22:19 → 06-16 06:24, +1m vs 06:23)
+- **verge-mihomo**: pid 7743 仍 LISTEN (9d12h+ uptime) — 进程+端口健康, 出站仍失能
+- **systemd-resolved 53**: ✅ LISTEN 127.0.0.53:53 (接管 DNS) — Clash 53 仍 `connection refused` (不变)
+- **7897 / 7474 / 7687 / 8000**: 全部 LISTEN 健康
+- **Cron daemon**: ✅ 稳定
+- **磁盘**: 22% 已用 (195G/937G)
+- **MEMORY.md**: 7170 chars (未变)
+- **HEARTBEAT.md**: 124836 chars (vs 06:23 118684, **+6152 = 06:23 入口自身 + 本次 entry 自身**)
+- **memory/2026-06-16.md**: 4039 chars, mtime 00:14 (未变, 00:13 wakeup 入口已是最新)
+- **memory/2026-06-15.md**: 3754 chars, mtime 06-15 23:15 (未变, 23:13 sync cron 末次写入)
+- **git 状态**: HEAD = `afcdebb0ae` 夜间记忆同步 2026-06-15 23:13 (未变), 本地 main 仍领先 `upstream/main` **85 commits** (与 06:23 一致), `git status` 显示 `M HEARTBEAT.md` / `m quant_bt` (工作区脏, 预期内 — 本次 entry 自身)
+
+### 观察
+
+- 🔁 **完全无材料变更 vs 06:23 入口** (距 06:23 仅 1 分钟, 是 6h 周期内的次级唤醒) → HEARTBEAT_OK
+- 🔁 **3 模式连续 (06-10~06-16, 7 日)**: arXiv 直连 + Google 经代理 双双失能, 状态完全未自愈
+- 🚨 **6/16 开盘倒计时 ~3.1h**: 主会话必须在 09:30 前介入 (Clash UI 切节点/更新订阅/重启 mihomo/排查 resolv.conf/TLS 证书)
+  - 6/15 完整交易日已受影响 (V5 评分 + 数据补全 cron 全败), 6/16 几乎肯定重演
+  - **TLS 层面是新维度**: 即使 Proxy 恢复, git push 可能仍因 `GnuTLS handshake failed` 失败, 需主会话一并排查
+- 🚨 **P0+ 安全 (新增, 来自 23:13 报告)**: `sync_memory.sh` fallback 链会试推 `upstream` (即 `git@github.com:openclaw/openclaw.git` **公仓**). 今晚 23:13 cron 跑前**必须**修复, 否则网络抖动时记忆可能泄到 OpenClaw 上游公仓
+  - 建议改法: 主会话删脚本里的 `upstream` 段, 或改为只走 `origin` 私仓, 或临时 disable sync cron
+- 🆕 **本次 entry 极简原则**: 仅记录 06:23 后的实际 delta (基本 0), 不重述基础设施状态 (控制 HEARTBEAT.md 膨胀)
+- 📝 **entry 自身贡献**: 本次新增 ~1.6K (实际 +6152 中部分来自 06:23 入口累积, 待 06:30 下次心跳时核对 baseline)
+
+### 6/16 开盘前 liveness 策略 (续)
+
+- ✅ 维持 6h 心跳, 验证 cron 稳定性
+- ✅ 不主动触发重活
+- 🚨 **6/16 (周二) 09:30 开盘前 ~3.1h**:
+  - 主会话介入优先级建议: (1) 修 `sync_memory.sh` 删 upstream 段 (5min, 高收益); (2) Proxy + TLS 修复 (~30min+); (3) 验证 `verge-mihomo` 出站恢复 (curl google.com -x 7897)
+  - 若开盘前 Proxy 仍 DEAD → V5 评分 + 数据补全 cron 必败 (与 6/15 完全一致), 主会话需决策 fail-fast
+- ⏳ 维持 6h 心跳, 等待主会话 6/16 早盘开盘前介入
