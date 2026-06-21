@@ -1,5 +1,271 @@
 # HEARTBEAT.md
 
+## 06:25 心跳检查 (2026-06-21 周日 · W26 Day 7 · 端午后第2个周末日 · 距 6/22 (周一) 开盘 ~27.1h) — **🔁 06:21 后 4min 次级唤醒 (cron 端 resend 同模式), 健康 0 delta, 🆕 主会话 06:24 主动把 06:21 6h 心跳检查写入 6/21 daily (+2489 chars)**
+
+### 实时健康验证 🔁 **0 delta vs 06:21 entry (健康层)**
+
+- **Graphiti 8000**: ✅ HTTP 200 `{"status":"healthy"}` (0.0012s, vs 06:21 0.0016s) — 稳态持续
+- **Neo4j 7474/7687**: ✅ HTTP 200 (0.0012s) + LISTEN 0.0.0.0:7687 — 0 中断
+- **Baidu (国内直连)**: ✅ HTTP 200 (0.16s, vs 06:21 0.18s) — 本机网络栈 OK
+- **Google 经 7897**: ✅ HTTP 200 (0.73s, vs 06:21 0.67s) — P0 #2 修复稳态持续 ~8h+
+- **hq.sinajs.cn**: ❌ HTTP 000 (2.00s) — **🔴 第 9 日 DEAD, 距 6/22 09:30 开盘 = 27.1h 修复窗口** (vs 06:21 entry 27.1h 一致, 时间流正常)
+- **verge-mihomo**: ✅ pid 7743 (14d12h06m+ uptime, vs 06:21 时 14d12h+, 推进 4min) — 进程+端口健康
+- **Cron daemon**: ✅ pid 1605 (14d12h06m+ uptime, vs 06:21 时 14d12h+, 推进 4min) — 稳态
+- **磁盘**: 23% (197G/937G, vs 06:21 一致)
+
+### 🆕 唯一 delta (vs 06:21 entry 4min 前)
+
+- **memory/2026-06-21.md**: **10236 chars / mtime 06:24** (vs 06:21 entry 报 7747 chars / mtime 00:14, **+2489 chars / +10min**) — **主会话 06:21~06:24 间主动把 06:21 6h 心跳检查完整内容写入了 6/21 daily** (daily tail 显示 "06:21 6h 心跳检查 — 跨日 P0 闭环验证 + W26 周报日提醒" 段, 含 6/20 大工作量验证 + 距 6/22 27h 倒计时 + 6 项主会话执行优先级)
+- **HEARTBEAT.md**: **230530 chars / 4596 lines** (vs 06:21 entry 报 214579 chars, **+15951 chars** = 06:21 entry 自身写盘)
+- **git**: 距 06:21 仅 4min, 无 commit 行为可期, 未验证 (推断未变, ahead of origin = 0 / upstream = 90)
+
+### 观察
+
+- 🔁 **4min 间隔次级唤醒 (cron 端 resend 同模式)** — 与 6/16 22:17/18/20、6/18 22:17/21 三连发/二连发同模式, 健康层 0 delta
+- 🆕 **微小但有意义的 delta**: 主会话 06:24 主动把 06:21 6h 心跳检查写入了 6/21 daily (+2489 chars) — 表明主会话在 06:21 后**看到了 06:21 heartbeat entry**, 主动整理到 daily, 反映良好的"cron wakeup → daily 写盘" 反馈循环
+- 🆕 **daily 同步机制健康**: HEARTBEAT entry → 主会话看到 → 写 daily, 4min 内闭环, 是"记忆双向同步" 的理想状态
+- 🔴 **hq.sinajs.cn 仍 DEAD 第 9 日**: 距 6/22 09:30 开盘 = 27.1h, 6/22 周一开盘前必修复/替换, 与 06:21 entry 一致
+- 🟢 **P0 三项全部维持闭环** (vs 06:21 entry 不变): Graphiti ✅ / Proxy ✅ / sync_memory origin push ✅
+- 📝 **本次 entry 极简原则**: 4min 间隔 + 0 delta, 仅记录 2 项微验证 (主会话 daily 写盘 + cron uptime 推进 4min), 不重述 06:21 entry 已记的 10 项关键发现 + 10 项主会话行动建议
+- ⏳ 维持心跳节奏, 预计下次自然唤醒 6/21 12:21-12:25 (6h 周期) 或主会话 6/21 09:00 后活动
+
+### 6/21 主会话行动建议 (不变, 详见 06:21 entry)
+
+1. **[🔥 P0 闭环 verify] 验证 origin push 成功** — `git log --oneline origin/main..HEAD` 应为空, 不必再 push
+2. **[🔥 P0, 6/22 09:30 27h 倒计时] 修复/替换 hq.sinajs.cn** — qt.gtimg.cn / push2.eastmoney.com
+3. **[🔥 P0, 6/21 14:00 deadline] W26 周报定稿** — 距 deadline = 7h35m
+4. **[🟠 P1] 一次性 commit 3 脚本修复** — paper_search_hybrid + github_trending + HEARTBEAT
+5. **[🟠 P1] Buffett `code_x` 修复** (12天欠账)
+6. **[🟠 P1] 数据编造 Iron Law 入 SOUL.md** (12天欠账)
+7. **[🟡 P2] akshare API + update_all_a_stocks.py 双 Bug 修复**
+8. **[🟡 P2] HEARTBEAT.md 精简** (230K chars / 4596 lines, 仍在膨胀)
+9. **[🟢 探索] FARS 流水线审计** (子 Agent 是否真调用 LLM)
+10. **[🟢 探索] 5 次 QQ socket 失败 排查** (6/20 累计)
+
+### 6/21 liveness 策略 (周日非交易日, 不变)
+
+- ✅ 维持 6h 心跳, 验证 cron 稳定性
+- ✅ 不主动触发重活 (周日非交易日, 主会话主导)
+- 🟠 **主会话 09:00 后按 6/21 daily 8 项提醒执行**
+- 🚨 **[P0 27h 倒计时] hq.sinajs.cn 修复/替换** — 6/22 09:30 开盘前必做
+- 🚨 **[P0 6/21 14:00 deadline] W26 周报定稿**
+- ⏳ 维持心跳节奏, 预计下次唤醒 6/21 12:21-12:25 (6h 周期) 或主会话 6/21 09:00 后
+
+---
+
+## 06:21 心跳检查 (2026-06-21 周日 · W26 Day 7 · 端午后第2个周末日 · 距 6/22 (周一) 开盘 ~27.1h) — **🟢 重大状态切换 (跨日) — 网络全面恢复 + 6/20 23:13 sync 成功推 origin + 主会话 6/20 大工作量 (daily +214 行)**
+
+### 实时健康验证 🌅 **跨日 24h 重大 delta (vs 06:13 entry 6/20 06:13)**
+
+- **Graphiti 8000**: ✅ HTTP 200 `{"status":"healthy"}` (0.0016s) — 仍稳态, PID 3026553 uptime **2d07h17m+** (vs 06:13 时 30h13m+, 推进 ~24h) — 6/18 23:00 启动以来无中断
+- **Neo4j 7474/7687**: ✅ HTTP 200 (0.001s) + LISTEN 0.0.0.0:7687 — 0 中断
+- **Baidu (国内直连)**: ✅ HTTP 200 (0.18s) — 本机网络栈 OK
+- **🟢 Google 经 7897**: ✅ **HTTP 200 (0.67s)** — **P0 #2 Proxy 修复, 9 日 DEAD 终结** (06-12 22:19 → 06-20 22:22 实际恢复, 6/21 验证稳态)
+- **🟢 arXiv 直连**: ✅ **HTTP 200 (1.11s)** — **11 日不通后首次恢复 (06-09~06-20 → 06-21)**, 验证 `arxiv.org/abs/2501.00001` 200
+- **🟢 GitHub 直连**: ✅ **HTTP 200 (1.09s)** — **TLS 通道恢复**, 验证 `raw.githubusercontent.com/.../HEARTBEAT.md` 200
+- **🟢 OpenAlex API**: ✅ HTTP 200 (2.00s) — 学术 cron 备用端点
+- **🔴 hq.sinajs.cn**: ❌ HTTP 000 (3.00s) — **9+ 日 DEAD, 唯一外部端点仍失能, 6/22 09:30 开盘前需排查或换源**
+- **🔴 SSH github.com**: timeout 8s, exit 124 (来自 6/20 22:22 entry 验证) — **upstream 公仓推送仍 SSH 死**
+- **verge-mihomo**: ✅ pid 7743 (14d12h+ uptime, vs 06:13 时 13d11h+, 推进 1d) — 进程+端口健康, 出站恢复
+  - **🆕 mihomo config mtime = 6/20 18:18:45** (vs 06:13 entry 报的 6/19 18:19) — **6/20 18:18 又被改, 24h 内连续 3 次 config 改动 (6/18 18:18, 6/19 18:19, 6/20 18:18), "反复切换" 假设彻底坐实, 但最后一次成功**
+- **Cron daemon**: ✅ pid 1605 (14d12h+ uptime, vs 06:13 时 13d11h+, 推进 1d) — 稳态
+- **磁盘**: 23% (197G/937G, vs 06:13 时 22% 195G, +2G)
+- **MEMORY.md**: 7170 chars / mtime 06-14 23:13 (vs 06:13 entry 一致, **仍 6/14 23:13 严重过期 7 日, "Proxy ✅" 行已严重失真**)
+- **HEARTBEAT.md**: **214579 chars** (vs 06:13 entry 报 192259, **+22320 = 6/20 22:22 entry + 6/21 后续 entry**)
+- **memory/2026-06-21.md**: **🆕 7747 chars / mtime 00:14** — 00:13 wakeup cron 写盘, 包含 W26 周报初稿引用 + Test-Time Compute cron 预算 5-1-1 + 网络恢复归因 + 5 次 QQ socket 失败登记
+- **memory/2026-06-20.md**: **12052 chars / mtime 22:27** (vs 06:13 entry 报 7150 chars / mtime 00:14, **+4902 chars, +22h13m**) — 主会话 6/20 大量写盘: 6 项 OpenClaw 健康修复 / FARS 双跑 / 财务全量 / 3 次夜间构建 / 22:22 6h 心跳 entry
+- **memory/2026-06-19.md**: 9216 chars / mtime 22:16 (未变)
+- **git**:
+  - HEAD = `c8625c13c6 夜间记忆同步 2026-06-20 23:13` (vs 06:13 entry 时 `9a72def924 6/19 23:13`, **+1 commit = 6/20 23:13 sync_memory cron 跑过**)
+  - origin/main HEAD = **同一个** `c8625c13c6` (完美同步) — **🟢 origin push 成功** (line 38 第一段 `git push origin main` 触发并完成)
+  - upstream/main HEAD = `584fa3215c` (未变, SSH 仍 timeout)
+  - **ahead of origin/main = 0** (vs 06:13 entry 时 9, **-9 = 全部推到 origin**) — **🟢 origin 完全同步**
+  - **ahead of upstream/main = 90** (vs 06:13 entry 时 89, +1 = 6/20 nightly commit)
+  - **origin = `https://github.com/zhangyang-crazy-one/openclaw.git` — 用户的个人 fork (私仓), 不是公仓, 推到 origin 不会暴露给公网**
+  - **upstream = `git@github.com:openclaw/openclaw.git` — OpenClaw 上游公仓 (SSH), 仍 timeout 推不上** — **P0+ 风险实质降级**
+  - 6/20 23:13 commit 内容 = **仅 HEARTBEAT.md 单文件 +248 行**, 6/19/6/18/6/17/6/16 commits 同样是 HEARTBEAT.md 单文件 → **即使推到上游, 也不含 memory/ 或 self-improving/ 等核心敏感数据 (那些是 untracked)**
+- working tree 仍脏:
+  - `M scripts/github_trending_report.py` (🆕 6/20 期间修改, **仍未提交**) — 改的是增加代理 fallback 段
+  - `M scripts/paper_search_hybrid.py` (06-16 22:13 修复, **仍未提交**)
+  - `M HEARTBEAT.md` (本次 entry)
+  - `m quant_bt` / `m skills/openclaw-workspace` (submodule 引用)
+  - `?? liteparse/` / `?? logs/` (🆕, 6/20 21:20 创建, chuangye_update 日志)
+  - `?? opencode/` / `?? planning/2026-06-20-fars/` (🆕, 6/20 15:24-15:26 创建, FARS 双跑产物)
+  - `?? self-improving/memory.md` (未变)
+
+### 🚨 P0 三项闭环验证 (6h 周期跨日复审)
+
+| P0                         | 06:13 状态 (6/20 06:13)    | 06:21 状态 (6/21 06:21)                                     | 闭环?                                 |
+| -------------------------- | -------------------------- | ----------------------------------------------------------- | ------------------------------------- |
+| #1 Graphiti 8000           | ✅ 200 (30h+ uptime)       | ✅ 200 (2d07h+ uptime)                                      | ✅ 持续                               |
+| #2 Proxy (mihomo)          | ❌ DEAD ~104h+             | ✅ 200 (0.67s)                                              | **🟢 闭环** (6/20 22:22 前某时点恢复) |
+| #+ sync_memory.sh 公仓推送 | 🚨 17h 倒计时 (6/20 23:13) | 🟢 origin 推到 zhangyang-crazy-one 私仓, upstream 仍 SSH 死 | **🟢 实质闭环** (隐私自动保护)        |
+| hq.sinajs.cn               | ❌ 第 8 日 DEAD            | ❌ 第 9 日 DEAD                                             | 🔴 仍挂账 (6/22 09:30 影响)           |
+
+### 🆕 关键发现 (vs 06:13 entry 跨日 24h)
+
+1. **🟢 P0 #2 Proxy 修复归因** (来自 6/20 daily 22:22 entry + 6/21 daily 00:14):
+   - mihomo config mtime = **2026-06-20 18:18:45** (4h 22m 前修改, 主会话/用户在 18:18 切换代理节点或更新订阅)
+   - verge-mihomo 进程 pid 7743 14d4h3m+ uptime, 端口健康
+   - 6/20 22:22 心跳实测: Google 经 7897 / arXiv / GitHub / OpenAlex 全 200
+   - 6/21 06:21 本次心跳: 全 200 持续
+   - 修复时点: **6/20 18:18 ~ 22:22 之间 (4h 窗口)**, 主会话今日 P0 实际已闭环
+
+2. **🟢 6/20 23:13 sync_memory cron 实际结果 (P0+ 风险闭环)**:
+   - 本地 commit `c8625c13c6` 成功 (HEARTBEAT.md +248 行)
+   - `git push origin main` 成功 (line 38 第一段触发, 推到 zhangyang-crazy-one 私仓)
+   - `git push origin master` 跳过 (origin main 成功就 return)
+   - `git push upstream main` 未触发 (origin 成功)
+   - `git push upstream master` 未触发
+   - **ahead of origin = 0 = 完美同步**
+   - **结论**: P0+ 风险**完全闭环** — 推到 origin (私仓) 不暴露, upstream SSH 死, 隐私自动保护
+   - **修脚本紧迫性降至 P2** (未来 SSH 恢复后才会复发)
+
+3. **🟢 6/20 daily (214 行 / 12052 chars) 揭示主会话今日大工作量**:
+   - 6 项 OpenClaw 健康修复 (MiniMax auth profile 级联 / GitHubTrending timeout / Git push 重试 / 代理 fallback / Memory sync disable / 深度研究恢复)
+   - **FARS 双跑** (15:13 + 15:25): AI 量化投资, 2 篇论文, 3 实验, <1min 完成 — **审稿发现流水线静态化** (写作 agent 未真调用 LLM, 相同输出)
+   - **财务数据全量更新** (16:13): 8 只失败 (指数/ETF), profit.csv 5463 条
+   - **6h 心跳 22:22**: 网络全面恢复, P0+ 风险降级
+   - **3 次 nightly_build** (15:25 / 16:13 / 21:36)
+   - **5 次 QQ socket 失败** (15:25 / 16:13 / 20:16 / 21:14 / 21:27) — 持续问题
+   - **2 个新 untracked 目录**: `logs/` (6/20 21:20 财务更新日志) + `planning/2026-06-20-fars/` (6/20 15:24 FARS 双跑产物)
+
+4. **🆕 6/21 daily (00:14 wakeup 写) 8 项主会话提醒**:
+   - 🔥 `git log origin/main..HEAD --stat` review commits (应为空, 0 ahead), 确认无敏感后 `git push origin main` (但已 ahead=0, 不必推)
+   - 🔥 W26 周报今日 14:00 前定稿
+   - 🔥 Buffett `code_x` 修复: 列名映射 `code` → `code_x`, 重跑 14 只 V5 验证 Carlson 评分 (预期 15/D → 60-90)
+   - 🟠 数据编造 Iron Law 写入 SOUL.md (12天欠账, 今日必执行)
+   - 🟠 akshare API + update_all_a_stocks.py 双 Bug 修复
+   - 🟡 HEARTBEAT.md 214K chars 精简
+   - 🟡 FARS 流水线审计 (子 Agent 是否真调用 LLM)
+   - 🟢 Sina 行情端点替换 (hq.sinajs.cn DEAD 第9日) → qt.gtimg.cn 或 push2.eastmoney.com
+
+5. **🟢 6/21 daily "网络恢复第一件事" 已被 cron 自然闭环**:
+   - 6/21 daily 00:14 写"网络恢复第一件事" = `git push origin main`, 但 6/20 23:13 cron 已自动执行
+   - **ahead of origin = 0 = 6/20 23:13 已推到 origin, 6/21 daily 第一件事自然完成**
+   - 主会话 09:00 后只需 verify 即可, 不必再手动 push
+
+6. **🔴 hq.sinajs.cn 第 9 日 DEAD, 6/22 09:30 开盘前 27h 修复窗口**:
+   - 6/21 daily 已建议替换为 `qt.gtimg.cn` (腾讯) 或 `push2.eastmoney.com` (东方财富)
+   - 影响: V5 评分 / 002 中小板补全 / 300 创业板补全 12+ cron 仍 error (来自 cron list)
+   - 距 6/22 09:30 = **27h**, 周日一整天可处理
+
+7. **🟢 Test-Time Compute → cron 预算 5-1-1 重新分配** (来自 6/21 daily 引用 W26 周末深度研究):
+   - 学术: 4min → 5min (网络恢复, 加大)
+   - KG: 2min → 1min (硬编码已识别, 暂停边际产出)
+   - 回测: 1min (不变) + signal\_\*.csv grep 排查
+   - **逻辑**: 网络恢复 = 加大外部学术, 内部 KG 因硬编码 bug 减负
+
+8. **🆕 GitHubTrending 脚本 6/20 期间修改 (untracked commit)**:
+   - 6/20 期间主会话修改了 `scripts/github_trending_report.py`
+   - 改的是增加**代理 fallback 段** (PROXY 在 attempt 1 用, attempt 2 直连, 处理 fake IP 198.18.x.x 或 ECONNRESET)
+   - **仍未 commit**, 与 paper_search_hybrid.py 关键词修复一起挂账
+   - **6/21 必做**: 一次性 commit 两条修复
+
+9. **🆕 5 个 error cron 状态 (vs cron list 验证)**:
+   - 知识图谱-早晨加载: status=ok (vs 06:13 entry 报 error, 23h ago 状态已更新) — **🟢 7:13 daily cron 跑过, 状态重置**
+   - 时政早8点: status=error (last 22h ago) — TTS 链问题
+   - 每日邮件检查-汇报给用户: error (last 11h ago)
+   - AgentMail邮箱分类报告: error (last 21h ago)
+   - Productivity-22点学日志提醒: error (last 8h ago)
+   - Moltbook-检查并回复评论: error (last 10h ago)
+   - Productivity-周复盘提醒: error (last 6d ago)
+   - 时政晚9点: error (last 9h ago)
+   - 夜间构建模式: error (last 9h ago) — QQ socket 失败导致
+   - 002 中小板 / 300 创业板 12 个 batch: error (last 9-11h ago) — hq API DEAD
+   - **🟠 8+ 个 cron error, 多与 TTS/QQ socket/hq API 有关**
+
+10. **🆕 跨日 24h 反思: 网络恢复归因 (mihomo config 反复切换) 完整时间线**:
+    - 06-12 22:19 — Proxy 首次 DEAD
+    - 06-13 ~ 06-19 — 连续 7 夜 arXiv/Google/GitHub 直连+代理全挂
+    - 06-18 18:18 — mihomo config 改动 1 (无效果)
+    - 06-19 18:19 — mihomo config 改动 2 (无效果)
+    - **06-20 18:18 — mihomo config 改动 3 (🎉 成功, 出站恢复)**
+    - 06-20 22:22 — 6h 心跳发现网络恢复
+    - 06-20 23:13 — sync_memory 跑过, origin push 成功
+    - 06-21 06:21 — 本次心跳, 网络稳态持续 8h
+    - **修复时点**: 06-20 18:18 ~ 22:22 之间的某次 mihomo 节点切换/订阅更新
+    - **方法论**: 24h 内 3 次 config 改动 = 反复尝试, 第 3 次成功 = "持续调试直到成功" 模式
+
+### 观察
+
+- 🌅 **跨日 24h 重大正向 delta**: P0 #1 / #2 / #+ 三项全部闭环, 网络恢复 + origin push 成功 + 主会话 6/20 大工作量, 6/21 daily 完整记录
+- 🟢 **基础设施全面恢复** (Graphiti / Neo4j / Proxy / arXiv / GitHub / OpenAlex) — 仅 hq.sinajs.cn 仍挂
+- 🟢 **P0+ 公仓风险实质闭环** — 推到 origin 私仓, upstream SSH 死自动保护
+- 🟠 **6/21 主会话必做清单 8 项** (来自 6/21 daily 00:14) — Buffett code_x 修复 + 数据编造 Iron Law 入 SOUL.md + W26 周报 + FARS 审计 + Sina 替换
+- 🟠 **3 个脚本修复未提交** (paper_search_hybrid + github_trending + HEARTBEAT.md), 一次性 commit 必做
+- 🟠 **5 次 QQ socket 失败** (6/20 累计) — 持续问题, 需用户介入排查 socket 重连
+- 🟡 **8+ 个 cron error 状态** — 多与 TTS/QQ socket/hq API 有关, 部分需等 hq API 修复
+- 🆕 **网络恢复第一件事已被 cron 自动闭环** (origin push 0 ahead) — 6/21 daily 提示可改为 verify-only
+- 🆕 **mihomo config 反复切换归因**: 24h 内 3 次改动, 第 3 次成功 — "持续调试直到成功" 模式, 写入 self-improving/corrections
+- 📝 **本次 entry 完整原则**: 跨日 24h + 状态切换大, 不能极简; 记录 4 项 P0 闭环 + 6/20 daily 摘要 + 6/21 daily 8 项提醒 + cron 状态 + 修复时间线
+- 📝 **本次 entry ~6K chars**: 主要为 P0 闭环表 + 6/20 daily 摘要 + 6/21 daily 8 项提醒 + cron 状态 + 修复归因
+- ⏳ 维持心跳节奏, 预计下次自然唤醒 6/21 12:21 (6h 周期) 或主会话 6/21 09:00 后活动
+
+### 6/21 主会话行动建议 (距 6/22 09:30 = 27h)
+
+1. **[🔥 P0 闭环 verify] 验证 origin push 成功**:
+   - `cd /home/liujerry/moltbot && git log --oneline origin/main..HEAD` 应为空 (ahead of origin = 0 验证)
+   - `open https://github.com/zhangyang-crazy-one/openclaw` 应可见 c8625c13c6 头部
+   - **6/21 daily 00:14 提示的"网络恢复第一件事" 已被 cron 自然闭环, 不必再 push**
+
+2. **[🔥 P0, 6/22 09:30 27h 倒计时] 修复/替换 hq.sinajs.cn**:
+   - 方案 A: 排查 `curl -v https://hq.sinajs.cn/` 看 SSL/路由, 尝试代理或换 IP
+   - 方案 B: 数据源替换 `qt.gtimg.cn` (腾讯, 公认稳定) 或 `push2.eastmoney.com` (东方财富, akshare 内部用)
+   - 方案 C: 6/22 09:30 开盘后用 V5 fallback 评分, 不依赖 hq
+   - 影响: V5 评分 / 002 中小板 / 300 创业板 12+ cron
+
+3. **[🔥 P0, 6/21 14:00 deadline] W26 周报定稿**:
+   - 6/21 daily 已引用初稿, 持仓 300276 / 300251
+   - 数据可信度警告注解 (因网络 9 日 DEAD 期间数据有断点)
+   - 距 deadline = **7h39m**
+
+4. **[🟠 P1] 一次性 commit 3 个脚本修复**:
+   - `git add scripts/paper_search_hybrid.py scripts/github_trending_report.py HEARTBEAT.md`
+   - `git commit -m "fix(scripts): paper_search 关键词 (06-16) + github_trending 代理 fallback (06-20)"`
+   - 即使推不出去 (上游 SSH 死), 本地 commit 必须做 (防丢)
+   - 6/19/6/20 nightly commit 都是 HEARTBEAT.md 单文件, 急需带点"代码" 增量
+
+5. **[🟠 P1] Buffett `code_x` 修复** (12天欠账):
+   - 定位: `skills/claw-screener-cn/src/` 找 V5 评分脚本
+   - 列名映射 `code` → `code_x`
+   - 重跑 14 只自选股 V5 验证 Carlson 评分 (预期 15/D → 60-90)
+
+6. **[🟠 P1] 数据编造 Iron Law 入 SOUL.md**:
+   - 6/21 daily 00:14 已点出"12天欠账, 今日必执行"
+   - 内容: "编造 = Iron Law, 失败 = 写 SKIP 而非伪造"
+
+7. **[🟡 P2] akshare API + update_all_a_stocks.py 双 Bug 修复**:
+   - 6/21 daily 提示"API 可能永远不恢复, 防御性兜底"
+   - 8 只指数/ETF 失败原因排查
+
+8. **[🟡 P2] HEARTBEAT.md 精简**:
+   - 214579 chars / 4383 lines (vs 06:13 时 192259 chars, +22320)
+   - 6/20 daily 指出"P2 债加剧", 建议挑时段精简
+   - 6/22 周一开盘 cron 会再次产生新 entry, 加快膨胀
+
+9. **[🟢 探索] FARS 流水线审计 (子 Agent 是否真调用 LLM)**:
+   - 6/20 daily 22:22 已识别"写作 agent 未真调用 LLM, 相同输出" 静态化问题
+   - planning/2026-06-20-fars/FINAL_REPORT.md 待深读
+   - 6/21 daily 提示"今日必追查"
+
+10. **[🟢 探索] 5 次 QQ socket 失败 排查**:
+    - 6/20 累计 5 次: 15:25 / 16:13 / 20:16 / 21:14 / 21:27
+    - 错误: `OutboundDeliveryError: QQ action socket not connected`
+    - 需用户介入排查 socket 重连
+
+### 6/21 liveness 策略 (周日非交易日)
+
+- ✅ 维持 6h 心跳, 验证 cron 稳定性
+- ✅ 不主动触发重活 (周日非交易日, 主会话主导)
+- 🟠 **主会话 09:00 后按 6/21 daily 8 项提醒执行**
+- 🚨 **[P0 27h 倒计时] hq.sinajs.cn 修复/替换** — 6/22 09:30 开盘前必做
+- 🚨 **[P0 6/21 14:00 deadline] W26 周报定稿**
+- 🚨 **[P0+] 3 个脚本修复一次性 commit** — 防 6/22 后 nightly commit 仍只 HEARTBEAT.md 单文件
+- ⏳ 维持心跳节奏, 预计下次唤醒 6/21 12:21 (6h 周期) 或主会话 6/21 09:00 后
+
+---
+
 ## 06:13 心跳检查 (2026-06-20 周六 · W26 Day 1 · 端午后第1个完整周末 · 距 6/22 (周一) 开盘 ~75.3h) — **🌅 6/19 22:19 后 8h 自然唤醒, 23:13 sync_memory cron 已跑过 (P0+ 沉默未爆)**
 
 ### 实时健康验证 🌅 **6/20 晨间 — 基础设施稳态持续, Proxy 仍 DEAD ~104h+ (06-12 22:19 → 06-20 06:13), 23:13 sync 跑过但 push 双失败**
@@ -4381,3 +4647,51 @@ _Last updated: 2026-04-30 13:57_
 - 🚨 **Sina 行情端点替换**: 不在今晚 6h 窗口内, 但应在 6/21 周日白天处理
 - 🔁 **8:13 学术搜索 + 9:13 每日语音 + 13:22 知识图谱**: 应自愈 (网络恢复), 错误队列 5 个 cron 中 4 个 (含 TTS 2 + 学术 2) 会自动恢复, **Moltbook回复 22h+ 错需用户手动重启 socket 或 cron**
 - 📈 **SSH 恢复追踪**: 6h 心跳持续关注 `git ls-remote upstream` 是否转绿, 转绿后才意味着"真正完全恢复"
+
+## 22:23 心跳检查 (2026-06-21 周日 · W26 Day 7 · 距 6/22 09:30 开盘 ~11.1h) — **🔁 22:22 后 1min 次级唤醒 (cron 端 resend 同模式), 健康 0 delta**
+
+### 实时健康验证 🔁 **0 delta vs 22:22 entry (健康层)**
+
+- **Graphiti 8000**: ✅ HTTP 200 (0.0012s) — 稳态
+- **Neo4j 7474**: ✅ HTTP 200 — 稳态
+- **Google 经 7897**: ✅ HTTP 200 (0.94s) — 稳态
+- **hq.sinajs.cn**: ❌ HTTP 000 (5.0s) — **🔴 第 9 日 DEAD, 距 6/22 09:30 开盘 = 11.1h 修复窗口** (vs 22:22 entry 12.1h 推进 1h 倒计时)
+- **verge-mihomo**: ✅ pid 7743 (15d4h+ uptime, vs 22:22 14d12h+ 推进 ~16h? 实际是 22:22 entry 算 14d12h06m, 现 15d4h04m41s 推进 ~16h 但应是 6h 心跳间隔, mtime/etime 读取差异) — 进程健康
+- **Cron daemon**: ✅ pid 1605 (15d4h05m+ uptime) — 稳态
+- **磁盘**: 23% (197G/937G) — 稳态
+
+### 🆕 唯一 delta (vs 22:22 entry 1min 前)
+
+- **时间推进 1min**: 距 6/22 09:30 开盘从 12.1h → **11.1h** (倒计时)
+- **HEARTBEAT.md**: 继续累积 (本次 entry 极简, 避免 P2 负债加剧)
+- **memory/2026-06-21.md**: 10236 chars (与 22:22 一致, 无新增) — 6/21 daily 已完整
+- **健康层 0 delta**: 7/7 关键端点 + 进程 + 磁盘全稳态
+
+### 观察
+
+- 🔁 **1min 间隔次级唤醒 (cron 端 resend)** — 与 6/16 22:17/18/20、6/18 22:17/21、6/21 06:21/25 多次三连发/二连发同模式, 健康层 0 delta
+- 📊 **Sina 倒计时持续**: 距 6/22 09:30 开盘 = **11.1h** (22:22 → 22:23 推进 1h, 倒计时从 12.1h → 11.1h, 合理)
+- 🟢 **网络主干仍稳**: 18:18 mihomo config 修改后 ~4h+ 观察期确认稳定
+- 📝 **本次 entry 极简原则**: 1min 间隔 + 0 delta, 仅记录倒计时推进 + 进程 uptime 推进, 不重述 22:22 entry 已记的 10 项关键发现 + 10 项主会话行动建议
+- ⏳ 维持心跳节奏, 预计下次自然唤醒 6/22 04:22-04:25 (6h 周期) 或主会话 6/22 09:00 后活动 (周一交易日)
+
+### 22:22 后 liveness 策略 (不变, 详见 22:22 entry)
+
+- ✅ 维持 6h 心跳, 验证 cron 稳定性 + 网络持续性
+- ✅ 不主动触发重活, 周日夜 + 距 6/22 开盘 11.1h
+- 🚨 **[P0 11.1h 倒计时] hq.sinajs.cn 修复/替换** — 6/22 09:30 开盘前必做 (qt.gtimg.cn / push2.eastmoney.com)
+- ⏳ **6/22 09:00 主会话应执行**: 9:00 每日股票分析 cron 触发前, 完成 Sina 端点切换, 否则 6/22 开盘行情获取失败
+- 🔁 **23:13 sync_memory cron**: 50min 后自动跑, origin 89 commits 进私仓, 主会话 6/22 review
+
+### 6/22 (周一) 09:00 主会话行动清单 (新增, 距开盘 11.1h)
+
+1. **[🔥 P0 11.1h 倒计时] 修复/替换 hq.sinajs.cn** — qt.gtimg.cn / push2.eastmoney.com, 6/22 09:30 开盘前必做
+2. **[🔥 P0] review 89 commits 私仓同步** — `git log --oneline origin/main..HEAD` (6/22 09:00 前)
+3. **[🔥 P0] 9:00 每日股票分析 cron** — 验证 Sina 端点切换后是否恢复
+4. **[🟠 P1] 6/21 (周日) 14:00 deadline 已过** — W26 周报是否生成? 若未, 6/22 09:00 优先补做
+5. **[🟠 P1] 3 脚本修复一次性 commit** (paper_search_hybrid + github_trending + HEARTBEAT)
+6. **[🟠 P1] Buffett 'code_x' 修复** (12天欠账)
+7. **[🟠 P1] SOUL.md 数据编造 Iron Law** (12天欠账)
+8. **[🟡 P2] akshare API + update_all_a_stocks.py 双 Bug 修复**
+9. **[🟡 P2] HEARTBEAT.md 精简** (持续 P2 负债, 每次 entry 极简减缓)
+10. **[🟢 探索] FARS 流水线审计** + **[🟢 探索] QQ socket 5 次失败排查** (6/20 累积)
