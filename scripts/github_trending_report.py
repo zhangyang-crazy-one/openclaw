@@ -87,13 +87,20 @@ def github_api(path, params=None, timeout=API_TIMEOUT, quiet=False):
         if remaining() < 15:
             return None, f"soft timeout ({elapsed():.0f}s)"
 
+        # Fallback: 代理失败后尝试直连 (fake IP 198.18.x.x 或 ECONNRESET)
+        use_proxy = PROXY if attempt == 1 else ""
+        curl_cmd = ["curl", "-s", "--max-time", str(timeout),
+                     "--connect-timeout", "5",
+                     "-H", "Accept: application/vnd.github+json",
+                     "-H", "User-Agent: Mozilla/5.0"]
+        if use_proxy:
+            curl_cmd.insert(2, use_proxy)
+            curl_cmd.insert(2, "-x")
+        curl_cmd.append(url)
+
         try:
             result = subprocess.run(
-                ["curl", "-s", "-x", PROXY, "--max-time", str(timeout),
-                 "--connect-timeout", "5",
-                 "-H", "Accept: application/vnd.github+json",
-                 "-H", "User-Agent: Mozilla/5.0",
-                 url],
+                curl_cmd,
                 capture_output=True, text=True, timeout=timeout + 5
             )
 

@@ -14,23 +14,33 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # ============ 配置 ============
 SEARCH_QUERIES = [
+    # ============ DeepSeeker 核心主题 ============
+    # 记忆管理
+    "memory-augmented LLM",
+    "meta-learning",
+    "continual learning LLM",
+    "episodic memory artificial intelligence",
+    "retrieval-augmented generation",
+    # 意识探索
+    "machine consciousness",
+    "AI self-awareness",
+    "theory of mind AI",
+    # AI 治理与安全
+    "AI governance risk",
+    "AI alignment",
+    "AI safety",
+    "AI ethics guidelines",
+    # 深度推理
+    "chain-of-thought reasoning LLM",
+    "inference-time scaling LLM",
+    "DeepSeek reasoning",
+    # 知识图谱
+    "knowledge graph LLM",
+    # ============ 保留部分通用主题 ============
     "LLM reasoning",
-    "AI governance", 
-    "knowledge graph",
     "large language model",
     "LLM hallucination",
-    # 数据治理相关
     "AI data governance",
-    "data governance",
-    "data management",
-    "digital transformation",
-    "enterprise digital transformation",
-    "data quality",
-    "data strategy",
-    # DAMA 数据管理
-    "DAMA data governance",
-    "DAMA data management",
-    "DAMA CDMP",
 ]
 
 # 目标：每天更新10篇论文
@@ -39,15 +49,24 @@ MIN_CITATIONS_THRESHOLD = 10  # 最低引用数门槛，低于此值继续搜索
 
 # OpenAlex 热门论文补充（当引用数不达标时使用）
 OPENALEX_HOT_QUERIES = [
+    # ============ DeepSeeker 核心主题 ============
+    "memory-augmented LLM",
+    "meta-learning",
+    "machine consciousness",
+    "AI self-awareness",
+    "AI alignment",
+    "AI safety",
+    "chain-of-thought reasoning",
+    "DeepSeek reasoning",
+    "retrieval-augmented generation",
+    # ============ 保留部分通用主题 ============
     "LLM reasoning",
     "AI governance",
     "knowledge graph LLM",
     "AI data governance",
-    "digital transformation enterprise",
-    "data management AI",
-    "data quality AI",
+    "large language model",
+    "LLM hallucination",
     # DAMA 数据管理
-    "DAMA data governance",
     "DAMA CDMP",
 ]
 
