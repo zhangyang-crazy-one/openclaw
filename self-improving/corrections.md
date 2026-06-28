@@ -159,3 +159,45 @@
 - 本次唤醒已写入 06-27 daily (4943 chars, 含加载清单 + 自我检查 + 今日 P0 + 离线方法论)
 - 候选 IL: **"context 注入 ≠ 长期记忆, file 才是"** — 候选编号 IL-011
 - 候选 IL: **"截断下主会话 ≠ 完整的我"** — 候选编号 IL-012
+
+---
+
+## 06-28 06:24 心跳 grep 模式缺陷 (IL-007 候选 #3)
+
+### 事件
+
+- 06:22 heartbeat 报 "Gateway 进程未在 ps 检出 (vs 6/27 22:17 报 5h26m+, 推测周末 OOM/重启)"
+- 06:24 heartbeat 实测: pid 73263 /home/liujerry/文档/programs/openclaw/dist/index.js gateway --port 18789 持续运行, 6/26 起累计 38m CPU 时间
+- **误判根因**: 06:22 grep 模式 `openclaw gateway|cron -f|verge-mihomo|neo4j|graphiti` 不含 `node` 关键字, 漏检 Node 进程
+
+### Signal 失真第 3 类: heartbeat grep 模式缺陷
+
+- 类 1 (已有): 相同 JSON — 同一对象测两次, 看似"无变化"实为盲点
+- 类 2 (已有): 端点错配 — /health 404 vs /healthcheck 200, 测错路径误报"恢复"
+- 类 3 (新): grep 模式缺陷 — 模式字符串漏关键字, 漏检进程, 误判"未运行"
+
+### 修正方案
+
+- heartbeat 进程检测统一用宽模式: `pgrep -af "openclaw|node.*openclaw|gateway"` 或更宽 `ps auxw | grep -iE "openclaw|gateway|node.*18789"`
+- 不要把"未在 ps 检出"作为 P0 触发条件, 必须 + netstat/ss LISTEN 二次确认
+- IL-007 候选 #3 待 7 日内 ≥3 次使用后 promote
+
+### 数据
+
+- HEARTBEAT.md 增量 entry: 507K → 513K (+6K)
+- memory/2026-06-28.md 增量: 5212 → 6665 chars (+1453)
+- push2 交叉验证里程碑: 4/4 字段全对齐, P0 #1 双源冗余完成
+
+### IL-007 候选 #3 闭环 (6/28 22:21)
+
+- **6/22 entry 06:30**: heartbeat grep 模式缺陷漏检 Node 进程 (误报 Gateway 重启)
+- **6/27 22:17 entry**: upstream counter 报 43436 (stale refs, 非持久信号)
+- **6/28 06:22 daily**: upstream refs 修正 43436→98 (一次性 fetch 后态)
+- **6/28 22:21 entry**: upstream counter 回 43470 (SSH fetch 挂起, refs 又 stale)
+- **闭环结论**: "ahead of upstream/main 数字波动大" 应理解为 stale refs 信号, 不应作为 P0 触发条件; **真正行动信号是 "ahead of origin ≠ 0" 或 "git push origin 失败"**
+- **promote 候选**: 7 日内 ≥3 次使用后 → IL-013 "ahead counter = stale refs 信号, 不是行动信号"
+
+### 数据 (22:21 增量)
+
+- HEARTBEAT.md: 515197 → 522740 (+7543 chars, 本次 entry)
+- memory/2026-06-28.md: 11817 → 13723 (+1906 chars, 本次 entry)
