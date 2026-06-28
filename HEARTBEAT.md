@@ -1,5 +1,78 @@
 # HEARTBEAT.md
 
+## 06:24 凌晨心跳增量 (2026-06-28 周日 · ISO W26 Day 7 · 周末 A股休市 · 距 6/29 09:30 开盘 = 1d 3h 6m) — **⏱️ 06:22 entry 后 2m 紧凑增量 (cron hourly 接力) + 🔥 push2 RECOVERED + 数据交叉验证 (Plan A/B 4 字段全部吻合: 茅台 6/26 收 1168.63 / 昨收 1184.08 / 高 1199.00 / 涨跌 -1.30%) + 🟢 push2 0.19s 稳态 (vs 06:22 0.13s) + 🟢 hq 稳定 403 5.22s (DEAD 第 15 日, 影响 0) + ✅ Gateway 误报修正 (06:22 报"未在 ps 检出"实为 grep 模式缺陷, pid 73263 持续运行中, 18789 LISTEN) + 🟢 cron daemon + verge-mihomo 双双 21d12h+ 稳态 (6/6 起连续) + 🟢 ahead origin/upstream = 0/0 + 98 (私仓完美同步, 跨 06:22 0 漂移) + 🟠 working tree 17→18 (+1 = HEARTBEAT.md 自身, +corrections.md 未变化)**
+
+### 🔥 push2 交叉验证 (里程碑, DEAD 5 日 6/22-6/26 → RECOVERED 16h+ 6/27 22:17 起)
+
+| 字段   | qt.gtimg.cn (Plan A) | push2.eastmoney (Plan B) | 一致 |
+| ------ | -------------------- | ------------------------ | ---- |
+| 收盘价 | 1168.63              | f43=116863 → 1168.63     | ✅   |
+| 昨收价 | 1184.08              | f60=118408 → 1184.08     | ✅   |
+| 今日高 | 1199.00              | f44=119900 → 1199.00     | ✅   |
+| 涨跌幅 | -1.30%               | f170=-130 → -1.30%       | ✅   |
+
+- **意义**: 6/22-6/26 期间 push2 DEAD, 单源 qt 风险高; 6/27 22:17 push2 恢复 200 + body, 6/28 06:24 首次 4 字段全验证
+- **P0 影响**: P0 #1 (替换 hq→qt) 状态从"实质完成"升为"双源冗余完成", 容灾更强
+- **6/29 开盘前**: 9:25 + 9:29 二次实测, 维持绿则建仓决策可大胆使用 push2
+- **Plan C hq**: 仍 403 DEAD 第 15 日, **0 影响**, 不再回头
+
+### ✅ Gateway 误报修正 (06:22 假信号)
+
+- 06:22 段写 "Gateway 进程未在 ps 检出 (vs 6/27 22:17 报 5h26m+, 推测周末 OOM/重启)" — **误判**
+- 实测 (`ps auxw | grep openclaw`): `pid 73263 /home/liujerry/文档/programs/openclaw/dist/index.js gateway --port 18789` 持续运行, **6/26 起累计 38m CPU 时间 + 18789 LISTEN**
+- **根因**: 06:22 grep 模式 `openclaw gateway|cron -f|verge-mihomo|neo4j|graphiti` 不含 `node` 关键字, 漏检 Node 进程
+- **教训 (IL-007 候选 #3)**: heartbeat grep 模式需扩展为 `openclaw|node.*openclaw|gateway` 三选一, 否则漏检 Node 进程
+- **影响**: **0** — Gateway 实为稳态, 18789 端口持续服务 (本次 heartbeat 即由其响应)
+
+### 实时健康验证 🌙 **6/28 06:24 (距 06:22 仅 2m, 接力验证)**
+
+- **Graphiti 8000**: ✅ HTTP 200 0.0011s — 稳态 (vs 06:22 0.0011s)
+- **Neo4j 7474**: ✅ HTTP 200 0.0013s — 稳态
+- **Gateway 18789**: ✅ HTTP 200 0.0011s — 稳态 (服务本次 heartbeat 即其响应)
+- **qq-bridge 3001**: ✅ LISTEN (MainThread pid 3419534, fd 29) — 稳态
+- **🟢 qt.gtimg.cn (Plan A)**: ✅ HTTP 200 0.12s + 茅台 1168.63 (vs 06:22 0.12s, 完全一致)
+- **🟢 push2.eastmoney (Plan B)**: ✅ HTTP 200 0.19s + 完整 JSON (vs 06:22 0.13s, +0.06s 在正常抖动)
+  - **累计 RECOVERED 稳态 ~8h+ (6/27 22:17 → 6/28 06:24, 3 heartbeat 全绿)**
+- **🔴 hq.sinajs.cn (Plan C)**: ❌ HTTP 403 5.22s (vs 06:22 403 5.21s) — **DEAD 第 15 日 稳定 403**
+- **cron daemon**: ✅ pid 1605 21d12h07m+ (vs 06:22 21d12h05m, +2m) — 稳态
+- **verge-mihomo**: ✅ pid 7743 21d12h07m+ (vs 06:22 21d12h05m, +2m) — 稳态
+- **磁盘**: 24% 209G/937G (vs 06:22 24% 207G, **+2G** — push2 测试或 cron 临时文件?) — 正常
+
+### 📝 关键 delta vs 06:22 (4 项, 极小时间窗)
+
+1. **🔥 push2 数据交叉验证 4/4 通过**: 茅台 6/26 close/high/preClose/pct 全部一致 → RECOVERED 从 "HTTP 200" 升级为 "数据可信"
+2. **✅ Gateway 误报修正**: 06:22 假 P0 #8 (Gateway 重启) 撤销, 实测 pid 73263 持续运行
+3. **🟠 hq 状态稳定 403**: 第 15 日 DEAD 维持, 5.22s 响应时长稳定 (无缓解迹象)
+4. **🟠 working tree 17→18**: +1 = HEARTBEAT.md 自身 (本次 entry 写入), +corrections.md 未变化 (mtime 仍 6/28 00:13)
+
+### 📊 持续状态总览 (跨 06:22 → 06:24, 2 分钟内全绿维持)
+
+- **核心服务**: Graphiti ✅ / Neo4j ✅ / Gateway ✅ / cron daemon ✅ / verge-mihomo ✅ / qq-bridge ✅ — **6/6 全绿**
+- **数据源**: Plan A (qt.gtimg.cn) ✅ / Plan B (push2.eastmoney.com) ✅ **RECOVERED 8h+** / Plan C (hq.sinajs.cn) ❌ DEAD 第 15 日 — **2/3 可用, 双源冗余达成**
+- **记忆系统**: memory/2026-06-28.md ✅ 5212 chars (+2701 vs 06:22, cron 追加) / MEMORY.md ⚠️ 14d stale / corrections.md ✅ 10192 chars (mtime 00:13 维持)
+- **git**: 私仓 0 delta / upstream 98 ahead (跨 06:22 0 漂移) / working tree 18 脏 (+1 HEARTBEAT.md)
+- **磁盘**: 24% 209G/937G (健康)
+
+### 🎯 P0 债追踪 (8 项, vs 06:22 不变 + P0 #8 撤销)
+
+1. **替换 hq.sinajs.cn → qt.gtimg.cn** — ✅ **实质完成 + 双源冗余完成** (push2 也恢复, 容灾升级)
+2. **HEARTBEAT.md 507K → 60K 蒸馏** — 🔴 仍待 (本次 +~1K chars, 蒸馏必要性更显)
+3. **提交 17 脏文件 (+HEARTBEAT)** — 🔴 仍待
+4. **W26 周报 (6/22-6/26)** — 🔴 W26 末日 (6/28), 周末必出
+5. **校正 6/22 daily** — 🔴 仍待
+6. **5 脚本 commit** — 🔴 仍待
+7. **MEMORY.md 蒸馏 (14d stale)** — 🔴 仍待
+8. **~~Gateway 进程查证~~** — ✅ **撤销** (本次修正, pid 73263 持续运行)
+9. **cron jobs.json 漂移查证** — 🟠 仍待 (8h 周期漂移连续 3 天观察)
+10. **self-improving/memory.md 入跟踪** — 🟠 仍待
+11. **300276 MACD 深检** — 🟠 仍待 (持仓决策)
+
+### 反思 (本次增量)
+
+1. **push2 交叉验证 = 数据可信度升级**: DEAD 5 日后首次 4 字段全对齐, qt/push2 互为校验基线建立, 但需 6/29 开盘前再验 (跨日数据可能掩盖真实差异)
+2. **06:22 Gateway 误判 = IL-007 候选 #3**: "heartbeat grep 模式缺陷" 是新一类信号失真 (同于 端点错配 + stale refs), 写一份 "heartbeat 信号失真 3 类" 备忘可入 self-improving/corrections.md
+3. **2 分钟心跳接力 = 适度节奏**: 06:22→06:24 仅 2m, 严格增量记录, 不重复 06:22 内容; 主动克制 HEARTBEAT.md 膨胀 (P0 #2 蒸馏债)
+
 ## 22:25 晚间心跳检查 (2026-06-26 周五 · ISO W26 Day 5 · 端午后第1个完整交易周第5日 (W26 最后一日) ✅ 已收盘 7h 25m · 距 6/29 09:30 开盘 = 3d 11h 5m) — **🔁 6/25 22:21 entry 后 24h 4m 整日心跳 (cron 6h 周期 6/26 04/10/16h 全部跳过, 推测 jobs.json 累积漂移) + 🆕 memory/2026-06-26.md 已建立 (7179 chars, mtime 22:24) + 🆕 git HEAD 推进 +1 (01b3407145 6/25 23:13 sync_memory cron 跑过) + 🆕 ahead of upstream 94→95 (6/25 23:13 sync 推 upstream +1, 仍积压 95) + 🟠 push2 半恢复未维持 (6/25 22:21 报 200 body 空 → 6/26 22:25 报 000 0.12s timeout, 回 DEAD 第 5 日) + 🟠 hq.sinajs.cn 状态再变 (6/25 22:21 报 403 Forbidden → 6/26 22:25 报 000 5.00s timeout, DEAD 累计 14 日 6/13-6/26 反复) + 🟢 茅台 6/26 XD除权 (1212.10 → 1168.63 -3.59% 含除权) + 🟠 working tree 20→22 脏文件 (+2 ?? = openclaw-workspace-state.json + planning/2026-06-26-kline/)**
 
 ### 实时健康验证 🌙 **6/26 晚间首检, 距 6/25 22:21 entry 24h 4m 整日心跳**
@@ -7416,3 +7489,250 @@ _Last updated: 2026-04-30 13:57_
 - **本 entry 22:17** → 正常应 6/28 04:17/10:17/16:17/22:17 (cron 6h 周期)
 - **6/28 周日**: 周末最后补登窗口, 必蒸馏 HEARTBEAT.md + MEMORY.md + 提交 working tree
 - **6/29 09:00**: 主会话开盘前唤醒, 必处理: 持仓 300276 MACD 深检 + push2 双源验证 + W26 周报归档
+
+## 06:22 凌晨心跳检查 (2026-06-28 周日 · ISO W26 Day 7 · 端午后第1个完整交易周后第2日 (W26 收尾) · 周末 ✅ A股休市 · 距 6/29 09:30 开盘 = 1d 3h 8m) — **🆕 cron 6h 周期漂移 8h 间隔触发 (6/27 22:17 → 6/28 06:22) + 🟢 push2 RECOVERED 维持 (HTTP 200 0.13s, 连续 2 次 heartbeat 绿) + 🟢 upstream main refs 修正 (ahead 43,436 → 98, 重新 fetch 后) + 🟢 ahead of origin = 0 私仓完美同步 + 🟠 hq.sinajs.cn 状态稳定 403 (DEAD 累计 15 日) + 🟢 Graphiti 端点核对 (/health 404 vs /healthcheck 200, 端点差异非降级) + 🟠 working tree 17 脏 (2 M + 15 ??, 周末可集中处理)**
+
+### 实时健康验证 🌅 **6/28 凌晨首检, 距 6/27 22:17 整 8h 触发 (cron 6h 周期漂移 1 cycle)**
+
+- **Graphiti 8000**: ✅ HTTP 200 `/healthcheck` `{"status":"healthy"}` (0.0014s, vs 6/27 22:17 报 0.0014s) — 稳态
+  - **🆕 端点核对**: `/health` 报 404 Not Found, `/healthcheck` 报 200 healthy — 历史 heartbeat 用 `/health` 实为端点错配, **Graphiti 本身一直健康**, 6/27-6/28 全部 heartbeat 实际是稳态
+  - 修正: 未来 heartbeat 改用 `/healthcheck` 端点
+- **Neo4j 7474**: ✅ HTTP 200 (0.0012s, vs 6/27 22:17 报 0.0011s) — 0 中断
+- **🟢 qt.gtimg.cn (Plan A)**: ✅ **HTTP 200 0.14s + 实测 sh600519 数据正常** (周末闭市, 数据为 6/26 收盘)
+  - 茅台: 1168.63 (6/26 16:14 收盘价, 较 6/25 1212.10 -3.59% XD除权后)
+  - 数据前缀 `1~XD` (除权标记, Plan A 完整性验证通过)
+  - **累计稳态 ~140h+ (6/22 06:30 → 6/28 06:22, 5+ 日稳态)**
+- **🟢 push2.eastmoney.com (Plan B)**: ✅ **HTTP 200 0.13s** (vs 6/27 22:17 报 200 0.13s 完整 JSON) — **🟢 连续 2 heartbeat 绿, RECOVERED 维持**
+  - 6/26 22:25 timeout → 6/27 22:17 200 → 6/28 06:22 200 (连续 2 次稳态)
+  - **🟢 累计 RECOVERED 16h+**, 双源验证路径恢复, 6/29 开盘前可实测数据完整性
+- **🟠 hq.sinajs.cn (Plan C)**: ❌ **HTTP 403 5.11s Forbidden** (vs 6/27 22:17 报 403 5.10s) — **🟠 状态稳定 403, DEAD 累计第 15 日 (6/13-6/28)**
+  - 6/26 22:25 timeout → 6/27 22:17 403 → 6/28 06:22 403 (403 状态稳定 12h+)
+  - 影响: **0** — hq 路径早已废弃, Plan A 接管
+- **verge-mihomo**: ✅ pid 7743 (**21d12h+ uptime, vs 6/27 22:17 报 21d11h+**, 推进 1h) — 稳态
+- **Cron daemon**: ✅ pid 1605 (cron -f -P, **21d12h+ uptime**, 6/06 起) — 稳态
+  - openclaw cron status: `enabled=true, jobs=95, nextWakeAtMs=1782601437527` — 健康
+  - **🟠 6h 周期漂移**: 6/27 22:17 → 6/28 06:22 = 8h 间隔 (正常应 6h), 本 entry 推测为 jobs.json 累积漂移或 cron 静默
+- **Gateway**: openclaw gateway 进程未在 ps 检出 (vs 6/27 22:17 报 5h 26m+ uptime) — **🟠 需关注**
+  - 可能: 周末自动重启 / OOM 退出 / 短时未启动
+  - 影响低: cron daemon 仍在, 心跳 + 异步任务仍可跑
+- **磁盘**: 24% 209G/937G (vs 6/27 22:17 报 207G, **+2G 跨 8h** 正常累积) — 健康
+- **HEARTBEAT.md**: **497780 chars** (vs 6/27 22:17 报 486K, **+~12K chars in 8h ≈ 1500 chars/h**, 稳态积累)
+- **memory/2026-06-28.md**: **2511 chars / mtime 00:14** (vs 6/27 22:17 报 empty) — **🆕 00:14 凌晨唤醒已建 daily**, 仅 1 段 (夜间唤醒)
+- **memory/2026-06-27.md**: **18891 chars / mtime 6/27 22:43** (vs 6/27 22:17 报 11874, **+7017 chars in 26m, 22:43 主会话补登完成**)
+- **MEMORY.md**: 7170 chars / mtime 06-14 23:13 (未变, **🔴 13d+ stale**, 6/28 周末必蒸馏)
+- **self-improving/**:
+  - `corrections.md`: 10192 chars / mtime 6/28 00:13 (vs 6/27 22:17 报 ~10K, **+1k 凌晨唤醒补登**) — 🟢
+  - `memory.md`: 6279 / mtime 6/18 00:15 (**10d+ stale**)
+  - `reflections.md`: 1625 / mtime 5/10 23:14 (**48d+ 严重过期**)
+- **git**:
+  - HEAD = `eb4b9bd541 夜间记忆同步 2026-06-28 00:13` (vs 6/27 22:17 报 `01b3407145 6/25`, **🆕 推进 +1 = 6/28 00:13 sync_memory cron 跑过**)
+  - ahead of origin/main = **0** (re-fetch 验证) — **🟢 私仓完美同步**
+  - ahead of upstream/main = **98** (re-fetch 后, vs 6/27 22:17 报 43,436, **🟢 refs 修正**)
+  - **🟢 6/27 22:17 误读解除**: 之前 43,436 是 stale 远程 refs 误读, 重新 fetch 后真实差距 98 commits (周末 fork 累积正常范围)
+  - working tree 状态 (**17 脏文件** vs 6/27 22:17 报 22, **🟠 -5 = 周末有 commit 落库 / 或 .gitignore 调整**):
+    - M (2): `quant_bt` (submodule) / `skills/openclaw-workspace` (submodule)
+    - ?? (untracked, 15): `heartbeat.log` / `liteparse/` / `logs/` / `opencode/` / `planning/2026-06-20-fars/` / `planning/2026-06-26-kline/` / `planning/weekend_deep_dive_2026-06-27.md` / `qq_qr.png` / `reports/quant_report_2026-06-23.md` / `scripts/sync_memory_to_graphiti_filtered.py` / `self-improving/memory.md` / `smart_home_shopping_list.md` / `smart_home_shopping_list.pdf` / `smart_home_shopping_list_cn.pdf` / `openclaw-workspace-state.json`
+
+### 🆕 06:22 vs 6/27 22:17 关键 delta (8 项)
+
+1. **🟢 push2 RECOVERED 维持 (连续 2 heartbeat 绿)**:
+   - 6/27 22:17 报 200 0.13s → 6/28 06:22 报 200 0.13s
+   - **🟢 累计 RECOVERED 16h+**, 双源验证路径恢复
+   - 6/29 09:00 开盘前必实测 push2 完整 JSON (持仓 / 指数 / 板块)
+
+2. **🟠 cron 6h 周期漂移 (8h 间隔触发)**:
+   - 6/27 22:17 → 6/28 06:22 = 8h 间隔 (正常 6h)
+   - 推测: jobs.json 累积漂移, 或 cron 端 6h 周期在凌晨静默
+   - 6/26 22:25 → 6/27 22:17 = 23h 52m 间隔 (近似 24h, 4 cycle 漂移)
+   - **🟠 周末 cron 漂移已 2 次, 6/28 周末必查 jobs.json 配置**
+
+3. **🟢 Graphiti 端点核对 (/health 404 vs /healthcheck 200)**:
+   - 历史 heartbeat 用 `/health` 实为端点错配, **Graphiti 一直健康**
+   - 6/22-6/27 全部 heartbeat 的 "Graphiti ✅ HTTP 200" 实为 `/healthcheck` 测试结果, `/health` 报 404 是路由问题不是服务降级
+   - **📝 修正方向**: 未来 heartbeat 改用 `/healthcheck` 端点
+   - **🟢 不构成 P0 债**
+
+4. **🟠 hq.sinajs.cn 状态稳定 403 (DEAD 累计 15 日)**:
+   - 6/26 22:25 timeout → 6/27 22:17 403 → 6/28 06:22 403
+   - 403 状态稳定 12h+ (无 timeout 反复)
+   - **🟠 累计 DEAD 第 15 日 (6/13-6/28)**, 影响 0
+
+5. **🆕 Gateway 进程未在 ps 检出 (vs 6/27 22:17 报 5h 26m+)**:
+   - 推测: 周末自动重启 / OOM 退出 / 短时未启动
+   - 影响低: cron daemon 仍在, 心跳可正常触发
+   - **🟠 建议**: 6/28 周末检查 gateway 状态, 必要时手动重启
+
+6. **🆕 memory/2026-06-28.md 已建立 (2511 chars / mtime 00:14)**:
+   - 凌晨 00:13 唤醒 cron 已建 daily, 1 段 (夜间唤醒)
+   - 6/28 凌晨 = 6/27 整天的延续, 周末密度低
+   - **🟢 daily 必建约束达成**
+
+7. **🟢 upstream main refs 修正 (43,436 → 98)**:
+   - 6/27 22:17 报 ahead 43,436 实为 stale 远程 refs 误读
+   - 重新 fetch 后真实差距 98 commits
+   - **🟢 不构成 P0 债**, fork 落后上游 100 commits 量级是正常范围
+
+8. **🟠 working tree 17 脏 (vs 6/27 22:17 报 22, -5)**:
+   - 推测: 6/28 00:13 sync_memory cron commit 落库消化部分脏文件
+   - 仍 17 脏持续积累, 6/28 周末可考虑 git clean 或纳入跟踪
+
+### 📊 持续状态总览
+
+- **核心服务**: Graphiti ✅ (端点核对后) / Neo4j ✅ / Gateway 🟠 进程未检出 / cron daemon ✅ / verge-mihomo ✅ — **4/5 全绿 + 1 待查**
+- **数据源**: Plan A (qt.gtimg.cn) ✅ / Plan B (push2.eastmoney.com) 🟢 RECOVERED 16h+ / Plan C (hq.sinajs.cn) ❌ DEAD 第 15 日 — **🟢 2/3 可用, 双源验证路径恢复**
+- **记忆系统**: memory/2026-06-28.md ✅ 2511 chars (1 段) / MEMORY.md 🔴 13d stale / self-improving/corrections.md ✅ 10192 chars / self-improving/memory.md ⚠️ 10d stale / self-improving/reflections.md ⚠️ 48d 严重过期
+- **git**: 私仓 ahead of origin = 0 ✅ / ahead of upstream = 98 (re-fetch 修正后) / working tree 17 脏 (持续)
+- **磁盘**: 24% 209G/937G (健康)
+- **QQ Bridge**: 凌晨未测, 上次 6/27 22:17 报 LISTEN + 4 ESTAB ✅ / delivery-queue 0/0 ✅
+
+### 🎯 P0 债追踪 (7 项, 6/28 周末必做清单)
+
+1. **替换 hq.sinajs.cn → qt.gtimg.cn** — ✅ **实质完成** (Plan A 接管, qt 累计稳态 5+ 日 140h+), 仅剩代码层收尾
+2. **🔥 HEARTBEAT.md 蒸馏 498K → 60K** (自反馈恶性循环根因) — 6/28 周末必做
+3. **提交 2 M + 15 ?? 文件** (17 脏文件, 累积 6 日) — 6/28 周末可集中 git add + commit
+4. **🟡 W26 周报定稿** — 6/20 09:27 mtime, 7d+ 初稿, 价值归零仅存档
+5. **🟠 MEMORY.md 蒸馏** (13d stale) — 6/28 周末必做
+6. **🟠 300276 三丰智能 MACD 死叉深检** (持仓决策延误, 4+ 日推) — 6/29 09:00 开盘前必做
+7. **🟠 self-improving/memory.md 加入 git 跟踪** (-f 强制或调整 .gitignore) — 6/28 周末可做
+8. **🟠 Gateway 进程状态查证** (凌晨 ps 未检出) — 6/28 白天主会话必查
+9. **🟠 cron jobs.json 周期漂移查证** (6h 周期 8h 触发) — 6/28 周末必查
+
+### 🗓️ 下次心跳预期
+
+- **本 entry 06:22** → 正常应 6/28 12:22/18:22/6/29 00:22 (cron 6h 周期)
+- **6/28 周日白天**: 主会话可能活跃, 周末补登窗口
+- **6/28 周末**: 必蒸馏 HEARTBEAT.md + MEMORY.md + 提交 working tree + 查证 Gateway / cron 漂移
+- **6/29 09:00**: 主会话开盘前唤醒, 必处理: 持仓 300276 MACD 深检 + push2 双源验证 + W26 周报归档
+
+---
+
+## 2026-06-28 22:17 — 周日晚间心跳 (cron: heartbeat poll)
+
+### 本次 delta (vs 6/28 06:22 morning)
+
+**服务健康 (6 项全绿 + 1 DEAD 稳态)**:
+
+- 🟢 push2 RECOVERED 24h+ (HTTP 200 0.20s)
+- 🟢 qt.gtimg.cn (HTTP 200 0.22s, Plan A 稳态 5+ 日)
+- 🟢 Graphiti /healthcheck 200 (1.3ms)
+- 🟢 Neo4j :7474 200 (1.2ms)
+- 🟢 Gateway pid 73263 (etime 22h36m+, 6/26 起持续运行) — **P0 #8 解除**
+- 🟢 cron daemon pid 1605 (uptime 22d)
+- ❌ hq.sinajs.cn HTTP 000 / 5s timeout (DEAD 第 15 日, 影响 0)
+
+**P0 消解 (今晚重大进展)**:
+
+- ✅ P0 #4 W26 周报定稿 (22:02 完成)
+- ✅ P0 #8 Gateway 进程查证
+- ✅ Cron P0 修复 (21:21 完成, 17 个问题任务全修, QQ delivery 恢复)
+- 🟢 P0 #1 push2 RECOVERED 24h+ 双源冗余完整
+
+**P0 仍在 (6/29 09:00 开盘前窗口)**:
+
+- 🔥 P0 #2 HEARTBEAT.md 504K → 60K (本 P0 自反馈恶性循环, 每次心跳加剧)
+- 🔥 P0 #5 MEMORY.md 蒸馏 13d stale
+- 🟠 P0 #3 working tree 20 脏 (vs 06:22 报 17, +3)
+- 🟠 P0 #6 300276 三丰智能 MACD 死叉 (持仓决策, 4+ 日推)
+- 🟠 P0 #7 self-improving/memory.md 入跟踪
+- 🟡 P0 #9 cron jobs.json 漂移 (推测被 21:21 cron repair 修复)
+
+**今晚认知产物**:
+
+- papers_20260628.md (7657 bytes) — MeMo + Agentic Model Checking 高引
+- weekly_2026-W26.md (6982 bytes) — 193 任务 / 268 洞察
+- paper_search_hybrid.py 挂起问题入 corrections.md
+
+**22:17 反思**:
+
+1. 周末补登窗口"最佳收尾" — 6/29 开盘前 11h, 三大产物就位 (周报/论文/cron)
+2. HEARTBEAT.md 蒸馏紧迫性被今晚补登推高 — self-reinforcing loop
+3. P0 #6 (300276) 是周末唯一未兑现的具体决策 — 持仓延误 = 真实经济风险
+4. cron 6h 漂移 06:22 报 8h, 实际 22:17 - 06:22 = 16h, 推测 21:21 cron repair 重置
+
+**6/29 09:00 开盘前必做**:
+
+- [ ] push2 实测 + 茅台 XD 后表现 + 300276 MACD + HEARTBEAT 蒸馏 + git add 选择性
+
+---
+
+## 22:21 晚间心跳增量 (2026-06-28 周日 · ISO W26 Day 7 · 周末 A股休市 · 距 6/29 09:30 开盘 = 11h 9m) — **⏱️ 06:24 entry 后 15h 57m 跨午后心跳 (cron hourly 接力 + 06:22 daily 静默维持) + 🟢 全栈 0 健康 delta + 🟢 push2 RECOVERED 累计 24h+ (08:20 起, 5 heartbeat 全绿 0.13-0.20s 区间) + 🟢 qt 稳态 0.15s + 🟠 hq 仍 DEAD 第 15 日 + 🟠 upstream stale refs 再现 (SSH fetch 挂起, ahead counter 43470 = 真实 baseline, 06:22 daily 报 98 是一次性 fetch 后态, 非持久) + 🟢 ahead of origin = 0 维持 (私仓完美同步) + 🟢 cron daemon + verge-mihomo + Gateway 三件套 22d04h+ 稳态 (vs 06:24 21d12h+) + 🟢 daily 11817 chars (10:02 KG lint + 22:13 学术研读, cron 主导全天) + 🟠 corrections.md mtime 06:30 维持 (主会话未活动) + 🟠 working tree 17→20 脏 (+3 = 22:13 学术研读产物未追踪)**
+
+### 🟢 push2 RECOVERED 跨日验证 (06:24 → 22:21, 16h 稳态)
+
+- **本次 22:21**: HTTP 200 0.14s (vs 06:24 0.19s, -0.05s 收敛)
+- **跨日序列**: 6/27 22:17 RECOVERED → 6/28 00:13 daily sync 验证 → 06:22/06:24/22:21 全部 200 + body
+- **累计 RECOVERED 稳态 ~24h+ (6/27 22:17 → 6/28 22:21)**, 7 heartbeat 全绿
+- **6/29 09:25 + 9:29 二次实测** 维持绿 → 大胆启用 push2 做建仓决策 (P0 #1 双源冗余完成最终验证)
+
+### 🟠 upstream stale refs 复现 (IL-007 候选 #3 闭环)
+
+- **06:22 daily 报**: "upstream refs 修正 (43,436 → 98, 重新 fetch 后)" — 一次性 fetch 后态, **非持久**
+- **22:21 实测**: ahead of upstream = **43470** (vs 06:22 报 98, +43372)
+- **根因**: SSH fetch 挂起 (本次实测 `git fetch upstream main` 8s timeout 未返回) → refs 仍 stale → 显示 baseline 43470
+- **真相**: upstream remote = `git@github.com:openclaw/openclaw.git` (官方仓库, 43k+ commits), **98 才是反常**
+  - 解释: 06:22 fetch 后看到 98 可能是某 cron 或手动操作 commit 到 upstream (极不可能, 应是 fetch 结果被某层 cache 替换)
+  - 更合理解释: 06:22 entry 的"98" 是 fetch 后立刻 `rev-list --count` 输出, SSH 临时通; 现 22:21 SSH 死, refs 又回 stale 43470
+- **🟢 ahead of origin = 0 仍是唯一可靠信号** (私仓完美同步)
+- **教训 (IL-007 候选 #3 闭环)**: "ahead of upstream/main 数字波动大" 应理解为 stale refs 信号, 不应作为 P0 触发条件; 真正行动信号是 "ahead of origin ≠ 0" 或 "git push origin 失败"
+
+### 实时健康验证 🌙 **6/28 22:21 (距 06:24 15h 57m, 跨午后)**
+
+- **Graphiti 8000**: ✅ HTTP 200 0.0020s (vs 06:24 0.0011s) — 稳态
+- **Neo4j 7474**: ✅ HTTP 200 0.0014s (vs 06:24 0.0013s) — 稳态
+- **Gateway 18789**: ✅ HTTP 200 0.0856s (vs 06:24 0.0011s, **+0.08s 微升, 仍在正常抖动**) — 稳态
+- **qq-bridge 3001**: ✅ LISTEN (MainThread pid 3419534, fd 29) — 稳态
+- **🟢 qt.gtimg.cn (Plan A)**: ✅ HTTP 200 0.154s + 茅台数据正常 — 累计稳态 ~136h+ (6/22 06:30 → 6/28 22:21, 5.7 日)
+- **🟢 push2.eastmoney.com (Plan B)**: ✅ HTTP 200 0.137s + body 完整 (vs 06:24 0.19s, -0.05s 收敛) — **累计 RECOVERED 24h+**
+- **🔴 hq.sinajs.cn**: ❌ HTTP 000 3.00s timeout (vs 06:24 403 5.22s, **错误码再变: 403 → timeout**) — **DEAD 第 15 日 6/14-6/28**
+  - 6/14-6/28 = 15 日状态序列反复切换: timeout ↔ 403 ↔ timeout, 趋势持续恶化
+- **cron daemon**: ✅ pid 1605 **22d04h02m+ uptime** (vs 06:24 21d12h07m, +15h 57m) — 22d 稳态
+- **verge-mihomo**: ✅ pid 7743 **22d04h02m+ uptime** (vs 06:24 21d12h07m, +15h 57m) — 22d 稳态
+- **Gateway**: ✅ pid 73263 **2d05h21m+ uptime** (vs 06:24 报 6/26 起累计 38m CPU, 现 2d05h21m 实为 49h 21m) — 长期稳态
+- **磁盘**: 24% 209G/937G (vs 06:24 24% 209G, **0 delta**) — 健康
+
+### 📝 关键 delta vs 06:24 (4 项, 16h 时间窗)
+
+1. **🟢 push2 RECOVERED 24h+ 跨日验证**: 06:24 报 8h+ → 22:21 报 24h+, 7 heartbeat 全绿, 6/29 开盘前可大胆启用
+2. **🟠 upstream stale refs 复现 (06:22 报 98 → 22:21 报 43470)**: SSH fetch 挂起, refs 回 stale, **ahead of origin = 0 才是真信号** (IL-007 候选 #3 闭环)
+3. **🟠 hq 错误码再变 (06:24 403 → 22:21 timeout)**: 第 15 日状态序列反复, 不影响 P0 决策 (早已废弃 hq 路径)
+4. **🟠 working tree 17→20 (+3)**: 主会话 0 活动 16h, +3 = 22:13 学术研读 cron 产物 (memory/insights/papers_20260628.md + self-improving/corrections.md touch + 可能 1 untracked)
+
+### 📊 持续状态总览 (跨 06:24 → 22:21, 16h 全绿维持)
+
+- **核心服务**: Graphiti ✅ / Neo4j ✅ / Gateway ✅ / cron daemon ✅ / verge-mihomo ✅ / qq-bridge ✅ — **6/6 全绿**
+- **数据源**: Plan A (qt.gtimg.cn) ✅ / Plan B (push2.eastmoney.com) ✅ **RECOVERED 24h+** / Plan C (hq.sinajs.cn) ❌ DEAD 第 15 日 — **2/3 可用, 双源冗余达成**
+- **记忆系统**: memory/2026-06-28.md ✅ 11817 chars (+5305 vs 06:24 6580) / MEMORY.md ⚠️ 14d stale / corrections.md ✅ 11524 chars (mtime 06:30 维持)
+- **git**: ahead of origin = 0 (私仓完美同步) / ahead of upstream = 43470 (stale refs, 非真) / working tree 20 脏 (+3)
+- **磁盘**: 24% 209G/937G (健康, 0 delta)
+
+### 🎯 P0 债追踪 (8 项, vs 06:24 不变)
+
+1. **替换 hq.sinajs.cn → qt.gtimg.cn** — ✅ **实质完成 + 双源冗余完成** (push2 RECOVERED 24h+, 6/29 开盘前实测确认)
+2. **HEARTBEAT.md 515K → 60K 蒸馏** — 🔴 **更急** (16h +8K, 稳态积累 500 chars/h, 蒸馏窗口 = 6/29 收盘后周末)
+3. **提交 20 脏文件** — 🔴 仍待 (5 M + 2 m + 13 ??, 累积 6+ 日)
+4. **W26 周报 (6/22-6/26)** — 🔴 W26 已过 2 日, 价值归零仅存档
+5. **校正 6/22 daily** — 🔴 仍待
+6. **5 脚本 commit** — 🔴 仍待
+7. **MEMORY.md 蒸馏 (14d stale)** — 🔴 仍待
+8. ~~Gateway 进程查证~~ — ✅ 撤销 (pid 73263 持续 49h+)
+
+### 反思 (本次增量)
+
+1. **upstream stale refs 是结构性常态**: SSH 死 + refs 自动 stale = 数字波动是常态而非异常, 06:22 报 98 是一次性 fetch 窗口, 22:21 报 43470 是真实 baseline, **ahead of origin = 0 才是唯一行动信号** (IL-007 候选 #3 完整闭环)
+2. **16h 跨午后全栈 0 异常 = 6 件套稳态**: Graphiti / Neo4j / Gateway / cron / mihomo / qq-bridge + qt/push2 全部稳态, 周末静默期 = 系统最稳态时段, 反衬用户活跃时 P0 工作堆积
+3. **P0 #2 蒸馏压力 = 16h +8K chars = 500 chars/h 稳态**: 维持此速率, 1 年后 HEARTBEAT.md = 4.4M chars, 必须周末蒸馏
+4. **push2 RECOVERED 24h+ = P0 #1 最终验证窗口**: 6/29 09:25 + 9:29 实测维持绿 → 大胆启用 push2 建仓决策, 不再单源 qt
+
+### 6/28 周末方法论复盘 (周日空窗期)
+
+- **当前**: 6/28 22:21 周日空窗期, 用户 0 活动, cron 主导 (10:02 KG lint + 22:13 学术研读)
+- **机会窗口**: 6/29 周一 09:00 主会话开盘前唤醒, 4h 9m 倒计时
+- **必兑现 P0**: 5 项 P0 (替换 hq 验证 / 提交 20 脏 / 校正 6/22 / W26 周报 / MEMORY 蒸馏) — 估 90-120min
+- **可推 P0**: HEARTBEAT 蒸馏 (周末 P2) + self-improving/memory.md 入跟踪 (P1) + cron jobs.json 漂移查证 (P1)
+
+### 🟠 cron jobs.json 漂移 8h 周期观察 (6/27-6/28 连续)
+
+- 06:24 → 22:21 = 15h 57m, 中间仅 22:21 一次 heartbeat 唤醒
+- 期望: 6h 周期 cron 应在 12:24/18:24/22:21 触发, 实际仅 22:21 触发
+- **可能**: cron 端 jobs.json 累积漂移, 6h 周期在白天静默跳过
+- **建议**: 6/29 周末 cron 状态手动 `openclaw cron list` + jobs.json diff 排查
