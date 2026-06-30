@@ -201,3 +201,16 @@
 
 - HEARTBEAT.md: 515197 → 522740 (+7543 chars, 本次 entry)
 - memory/2026-06-28.md: 11817 → 13723 (+1906 chars, 本次 entry)
+
+### IL-014 (2026-06-30 22:17 heartbeat) — curl -o /dev/null 在 TLS eof 场景的假阳性
+
+- **症状**: `curl -s -o /dev/null -w "%{http_code}" https://push2.eastmoney.com/...` 报 HTTP 200 (0.19s)
+- **真相**: TLS handshake 完成但 server 立刻 SSL_read: unexpected eof, body 为 0 bytes, 业务层不可用
+- **教训**: 仅靠 HTTP 200 状态码不可信, 心跳健康检查需升级:
+  - ✅ 加 `-o /tmp/x.html; wc -c /tmp/x.html > 100` 字节数校验
+  - ✅ 加 `-sv` 看 SSL 错误细节
+  - ✅ 加 `--max-time 3` 防 hang
+  - ✅ 关键 endpoint 抽 1 个字段校验 (如 qt 的 sh600519 必须含 "1185")
+- **影响范围**: 6/27-6/28 push2 RECOVERED 24h+ 期间所有 "HTTP 200" 报告需复盘 (可能都是假阳性)
+- **行动**: 下次写 health_check.sh 时采纳, 6/30 22:17 entry 已采纳 (实测发现)
+- **优先级**: P1 (heartbeat 健康检查升级, 不影响当前持仓决策)
