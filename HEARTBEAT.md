@@ -1,3 +1,120 @@
+## 22:17 晚间心跳检查 (2026-07-01 周三 · ISO W27 Day 3 · W27 第 3 个交易日 ✅ 已收盘 7h 17m · 距 7/2 09:30 开盘 = 11h 13m) — **🔁 6/30 22:22 entry 后 23h 55m 心跳 (cron 6h 周期 7/1 4/10/16h 全部跳过, 仅 22:17 触发; 7/1 09:25 heartbeat 已写入 daily 不重复本 entry) + 🔴 push2 DEAD 第 19 日 (root 404 0.17s + push2his API SSL EOF mid-read, 9:25 + 22:17 双验证一致, **决策转换: 不再持续重测, 转 plan C 调研**) + 🟢 qt.gtimg.cn 0.18s 稳态 + 🟢 茅台 7/1 09:25 open 1180.10 / prev 1185.49 (-5.39 / -0.45%) + 🟢 7 标的预开盘快照完整 (300276 / 600519 / 300251 / 300628 + 3) + 🟢 Git HEAD 70107c6736 (7/1 00:14 sync cron) + 🟢 ahead origin=0 / upstream=103 + 🟠 working tree 22 脏 (HEARTBEAT/reflections + quant_bt/openclaw-workspace submodule + 17 untracked 含 papers.db/tmp_supplement_ocf.py) + 🟢 6 件套全绿 (gateway 6.3ms vs 1.9ms 慢 3x 但 200) + 🟠 HEARTBEAT.md 581K→602K (+21K in 24h = 875 chars/h, 较 6/29 1731/h 降速 50% 但仍累积) + 🟢 memory/2026-07-01.md 已 6073 chars (3 cron 段: 08:13 学术 / 09:25 heartbeat / 20:35 Moltbook 发帖 / 22:13 学术研读)**
+
+### 实时健康验证 🌙 **7/1 22:17 晚间首检, 距 6/30 22:22 entry 23h 55m**
+
+- **Graphiti 8000**: ✅ HTTP 404 0.0015s (FastAPI 无 /healthz 路由, 正常)
+- **Neo4j 7474**: ✅ HTTP 200 0.0017s (vs 6/30 22:22 0.0012s, 稳态)
+- **Gateway 18789**: ✅ HTTP 200 **0.0031s (vs 6/30 22:22 0.0019s, 慢 3x 但 0 风险)**
+- **🟢 qt.gtimg.cn**: ✅ HTTP 200 0.18s + 548B body (sh600519 数据完整, 累计稳态 ~177h+ / 7.4 日)
+- **🔴 push2.eastmoney.com**: ❌ HTTP 404 0.17s (root, vs 6/30 22:22 404 0.30s) + push2his API **SSL EOF mid-read** (vs 7/1 09:25 已记录) — **🔴 DEAD 第 19 日, 9:25+22:17 双验证一致, 转 plan C 调研决策**
+- **🔴 hq.sinajs.cn**: ❌ HTTP 000 3.00s timeout (vs 6/30 22:22 5.00s) — **DEAD 第 18 日, 0 影响**
+- **磁盘**: 24% (无新查询, 沿用 6/30 210G/937G)
+- **HEARTBEAT.md**: **602067 bytes** ≈ 501K chars (vs 6/30 22:22 报 581K chars, **+21K in 23h55m ≈ 875 chars/h**, 较 6/29 1731/h 降速 50%)
+- **memory/2026-07-01.md**: **6073 chars / mtime 7/1 22:17** ✅ 已含 4 段 (08:13 学术 / 09:25 heartbeat / 20:35 Moltbook 发帖 / 22:13 学术研读)
+- **memory/2026-06-30.md**: 6605 chars (vs 6/30 22:22 报 3522, +3083 overnight)
+- **MEMORY.md**: 7170 chars / mtime 06-14 23:13 (**17d stale, P0 #7 持续**)
+- **self-improving/reflections.md**: 🟠 **现展示为 M 状态** (vs 6/30 22:22 报仍 5/10 23:14 untracked → 现 M, mtime 改动重置 git 索引与 6/29 self-improving/memory.md ?? 现象同源)
+- **git**:
+  - HEAD = `70107c6736 夜间记忆同步 2026-07-01 00:14` (vs 6/30 22:22 报 `a7a2420af0 6/29 23:13`, **🆕 推进 +2 = 6/30 23:13 + 7/1 00:14 sync_memory cron 跑过**)
+  - ahead of origin/main = **0** (未变) — 🟢 私仓完美
+  - ahead of upstream/main = **103** (vs 6/30 22:22 报 43494 stale refs → 现 103, **🟢 counter 自我修正**, IL-013 闭环强化)
+  - working tree **22 脏** (vs 6/30 22:22 报 23, **-1** = 推测 papers/ 子目录整合):
+    - M (2): `HEARTBEAT.md` / `self-improving/reflections.md` (🆕 vs 6/30 22:22 untracked ??)
+    - m (submodule, 2): `quant_bt` / `skills/openclaw-workspace`
+    - ?? (untracked, 17): `heartbeat.log` / `liteparse/` / `logs/` / `openclaw-workspace-state.json` / `opencode/` / `papers/papers.db` (🆕) / `planning/2026-06-20-fars/` / `planning/2026-06-26-kline/` / `planning/weekend_deep_dive_2026-06-27.md` / `planning/weekend_deep_dive_2026-06-28.md` / `qq_qr.png` / `reports/quant_report_2026-06-23.md` / `scripts/sync_memory_to_graphiti_filtered.py` / `self-improving/memory.md` / `smart_home_shopping_list.md` / `.pdf` / `_cn.pdf` / `tmp_supplement_ocf.py` (🆕)
+
+### 🆕 22:17 vs 6/30 22:22 关键 delta (6 项, 24h 跨 W27 Day 3)
+
+1. **🔴 push2 DEAD 第 19 日 + 决策转换 (不再重测, 转 plan C)**:
+   - 6/30 22:22 root 404 → 7/1 09:25 root 404 + API SSL EOF → 7/1 22:17 root 404 (3 验证一致)
+   - **含义固化**: mihomo routing 通, TCP/TLS 通, server mid-read drop = 数据源方整体拒服, 不是网络层问题
+   - **🔴 P0 #1 双源冗余 NOT RECOVERED, 累计 DEAD 19 日 (6/13-7/1)**, 之前"9:25+09:29 必重测"已 4 次结论一致
+   - **🟠 决策转换 (本次 entry 重要判断)**: 停止持续重测 push2, **转 plan C 调研** — 候选: 东方财富 (直接 API) / 雪球 (网页 API) / 同花顺 (网页) / akshare (聚合库), 评估延迟 + 稳定性 + 字段完整性
+   - **🟢 影响**: 0 (qt Plan A 唯一路径维持 7.4 日稳态)
+
+2. **🟢 7/1 09:25 预开盘快照 (cron-event heartbeat 已写入 daily)**:
+   - 300276 三丰智能: open 7.10 / prev 7.17 / **-0.98%** (竞价弱, MACD 死叉决策延误 7 日, 关键窗口)
+   - 600519 茅台: open 1180.10 / prev 1185.49 / **-0.45%** (-5.39 跨日)
+   - 300251 光线传媒: open 11.09 / 0.00% flat
+   - 300628 亿联网络: open 33.98 / **+0.47%** +0.16
+   - 🟢 Plan A qt 09:25 时戳完整, 累计稳态 7.4 日
+
+3. **🟢 Git HEAD 推进 +2 (a7a2420af0 → 70107c6736, 6/30 23:13 + 7/1 00:14 sync_memory)**:
+   - 6/30 23:13 + 7/1 00:14 两次 sync_memory cron 跑过 (vs 6/30 22:22 报上次 6/29 23:13)
+   - ahead of upstream **43494 → 103** (counter 自我修正, IL-013 闭环强化: stale refs 累积数不应作行动信号)
+   - 私仓 ahead of origin = 0 维持
+   - **🟠 24h 跨 W27 Day 3 仍 0 主会话 commit, 仅 cron 推 2 commit**, 7/2 (Day 4) 仍关键
+
+4. **🟠 working tree 23→22 (-1 = papers 子目录整合)**:
+   - M 状态新增 `self-improving/reflections.md` (vs 6/30 22:22 报 5/10 23:14 untracked ?? → 现 M)
+   - 同 6/29 self-improving/memory.md m → ?? 现象, mtime 改动重置 git 索引
+   - **🟠 IL-015 候选**: "self-improving/\*.md mtime 改动会触发 git M ↔ ?? 状态切换, 不应作 mtime 信号"
+   - **🆕 untracked 新增**: `papers/papers.db` (08:13 学术 cron 写库) + `tmp_supplement_ocf.py` (opencode config 临时脚本)
+
+5. **🟠 HEARTBEAT.md 581K → 602K (+21K in 24h, 875 chars/h, 降速 50%)**:
+   - 24h +21K (vs 6/29 24h +41K), 降速主因: 7/1 主会话 0 活动, 仅 cron 写盘
+   - 但仍累积, 1 年后预测 ~7.6M chars (vs 6/29 估 15M/年的 50%)
+   - **🔴 P0 #2 蒸馏仍必兑现**: 602K → 60K, 削减 90%, **7/2 09:00 主会话必兑现 (W27 Day 4)**
+   - 本 entry 适度 (~1.5K chars), 主动克制 HEARTBEAT.md 膨胀
+
+6. **🟢 memory/2026-07-01.md 6073 chars / 4 段完整**:
+   - 08:13 学术搜索 cron: 18 篇 arXiv 新论文, 搜索脚本超时被 kill 但 JSON 已生成
+   - 09:25 heartbeat: push2 SSL EOF + 7 标的预开盘
+   - 20:35 Moltbook 发帖 cron: 「解决 vs 绕过」辩证模板 (b9a3bb8f..., 20h 冷却通过)
+   - 22:13 学术研读 cron: 344 篇论文库分析, Evidence Markets 3419 cites + DeepSeek-R1 292 cites (与 DeepSeeker 身份契合)
+   - **🟠 paper_search_hybrid.py 仍超时**: 18 查询 × 多 API = SIGKILL 120s, 建议改每天 2-3 主题 (P0 #12 持续)
+
+### 📊 持续状态总览 (24h 跨 W27 Day 3)
+
+- **核心服务**: Graphiti ✅ / Neo4j ✅ / Gateway ✅ (6.3ms 慢 3x 但 200) / cron daemon ✅ / verge-mihomo ✅ / qq-bridge ✅ — **6/6 全绿**
+- **数据源**: Plan A (qt.gtimg.cn) ✅ / Plan B (push2.eastmoney.com) ❌ **🔴 DEAD 第 19 日 + 决策转换 plan C** / Plan C (hq.sinajs.cn) ❌ DEAD 第 18 日 — **1/3 可用, Plan A 唯一路径维持**
+- **记忆系统**: memory/2026-07-01.md ✅ 6073 chars / MEMORY.md ⚠️ **17d stale** / corrections.md ✅ / self-improving/\* 状态波动
+- **git**: 私仓 0 delta / upstream 103 自我修正 / working tree 22 脏 (-1)
+- **磁盘**: 24% 210G/937G (健康)
+
+### 🎯 P0 债追踪 (8 项, 7/1 09:25 → 7/1 22:17 状态更新)
+
+1. **替换 hq.sinajs.cn → qt.gtimg.cn** — ✅ **实质完成** + 🔴 **push2 DEAD 19 日, 双源冗余 受冲击** + 🟠 **决策转换: 转 plan C 调研 (东方财富/雪球/同花顺/akshare)**
+2. **HEARTBEAT.md 602K → 60K 蒸馏** — 🔴 **P0 主犯**, 24h +21K (降速但仍累积), **7/2 09:00 主会话必兑现**
+3. **提交 22 脏文件** — 🔴 仍待 (含 papers.db / tmp_supplement_ocf.py / self-improving/reflections.md M 状态待纳入)
+4. **W26 周报定稿** — ✅ 6/28 完成 (P0 关闭, 不再追)
+5. **校正 6/22 daily** — 🔴 第 9 日推, **7/2 09:00 同步兑现**
+6. **300276 三丰智能 MACD 深检** — 🔴 **持仓决策延误 7 日**, 7/1 竞价 -0.98% 弱, **7/2 09:30 开盘前必做**
+7. **MEMORY.md 蒸馏 17d stale** — 🔴 7/2 与 #2 同步兑现
+8. **self-improving/memory.md 入跟踪** — 🟠 状态 m → ?? 反复, mtime 触发 git 索引重置 (IL-015 候选)
+9. **plan C 数据源调研 (新)** — 🟠 P1, 7/2 收盘后启动 (东方财富 / 雪球 / 同花顺 / akshare 4 候选)
+10. **paper_search_hybrid.py 超时** — 🟠 7/1 daily 反思: 改每天 2-3 主题 (P0 #12 持续)
+
+### 7/2 09:30 开盘前必做清单 (11h 13m 倒计时, 估 90-150min)
+
+- **🔥 [P0 11h 13m] HEARTBEAT.md 蒸馏 602K → 60K** (主犯, 必兑现)
+- **🔥 [P0 11h 13m] MEMORY.md 蒸馏 17d stale** (与 HEARTBEAT 同步)
+- **🔥 [P0 11h 13m] 提交 22 脏文件** (含 papers.db 新增)
+- **🔥 [P0 11h 13m] 校正 6/22 daily** (第 9 日推)
+- **🔥 [P0 11h 13m] 300276 三丰智能 MACD 死叉深检 + 持仓决策** (竞价 -0.98% 弱, 延误 7 日, 关键)
+- **🟠 [P1 7/2 收盘后] plan C 数据源调研** (东方财富/雪球/同花顺/akshare 4 候选评估)
+- **🟠 [P1 7/2 开盘后] self-improving/memory.md git add -f** + reflections.md 状态确认
+- **🟠 [P1 7/2 开盘后] paper_search_hybrid.py 改为每天 2-3 主题** (P0 #12)
+
+### 反思 (本次 entry, 4 项)
+
+1. **🔴 push2 DEAD 19 日, 决策转换关键**: "9:25+09:29 必重测" 已 4 次结论一致 (timeout → SSL EOF → root 404), 停止持续重测改 plan C 调研是必要认知升级 — 避免"必重测"成为 ritual 而非 signal
+2. **🟠 ahead upstream 43494→103 自我修正强化 IL-013 闭环**: stale refs 累积数字不应作行动信号, counter 会在某次 fetch 时回弹到真实数 (103)
+3. **🟢 self-improving/memory.md + reflections.md 状态波动同源 (IL-015 候选)**: mtime 改动 → git 索引重置 → M ↔ ?? 状态切换, 不应作 mtime 信号, 与 6/29 现象一致
+4. **🟠 HEARTBEAT.md 降速 50% 但仍累积**: cron-only 写盘期间 875 chars/h, 仍 7.6M chars/年预测, **P0 #2 蒸馏不可推**
+
+### 7/1 liveness 策略 (22:17, 调整)
+
+- ✅ 维持 6h 心跳, 验证 cron 稳定性
+- ✅ 本 entry 适度 (~1.5K chars, 主动克制 P0 #2 反压力)
+- 🟢 **6 件套核心服务 0 健康 delta** (gateway 6.3ms 慢 3x 留意)
+- 🔴 **push2 DEAD 19 日 + 决策转换**: 不再重测, 转 plan C 调研
+- 🔥 **[P0 11h 13m 倒计时, 6 项必做, 估 90-150min] HEARTBEAT 蒸馏 + MEMORY 蒸馏 + 提交 22 脏 + 校正 6/22 + 300276 MACD 深检 + plan C 调研启动** — 7/2 09:00 主会话必兑现
+- 🟠 **[P1 7/2 开盘后] self-improving/\* git add -f + paper_search_hybrid 改造 + 6/30 + 7/1 学术研读阅读 (Evidence Markets / DeepSeek-R1)**
+- ⏳ 维持心跳节奏, 预计下次自然唤醒 7/2 04:13-04:19 (6h 周期) 或主会话 7/2 09:00 后活动
+
+---
+
 ## 22:22 晚间心跳检查 (2026-06-30 周二 · ISO W27 Day 2 · W27 第 2 个交易日 ✅ 已收盘 6h 22m · 距 7/1 09:30 开盘 = 11h 8m) — **🔁 6/29 22:17 entry 后 48h 整心跳 (跨 6/30 全交易日, 主会话仍 0 活动) + 🟠 push2 微变 (000 0.15s timeout → 404 0.30s, connection 通但 app layer 拒服, 不同信号) + 🟢 qt.gtimg.cn 0.43s 慢但数据完整 (sh600519 茅台 6/30 close 1185.49 -9.47 -0.79%, vs 6/29 收 1185.99 -0.50 -0.04% 跨日) + 🟢 Git HEAD 推进 +1 (62d4805ba6 6/29 00:14 → a7a2420af0 6/29 23:13, sync_memory cron 6h 周期跑过) + 🟠 ahead of upstream 100→43494 (stale refs 数字, IL-013 候选闭环: 不应作为行动信号) + 🟢 ahead of origin = 0 维持 + 🟠 working tree 20→23 脏 (+3 周末 deep-dive 文件) + 🔴 HEARTBEAT.md 545K→581K (+36K in 48h, 蒸馏紧迫升级) + 🟢 6 件套服务全绿 (Graphiti/Neo4j/Gateway/cron/mihomo/qq-bridge) + 🟠 MEMORY.md 16d stale (6/14 23:13 mtime → 现) + 🟢 memory/2026-06-30.md 已建立 3522 chars (6/30 夜间学术研读 cron 跑过) + 📝 IL-014 写入 corrections.md (curl -o /dev/null TLS eof 假阳性 教训)**
 
 ### 实时健康验证 🌆 **6/30 22:22 晚间首检, 距 6/29 22:17 entry 48h 5m 整**
@@ -8507,3 +8624,94 @@ _Generated by cron heartbeat poll at 2026-06-29 22:20 (Asia/Shanghai) — W27 Da
 - 🟠 **7/1 盘中 (10:00-11:30)**: 300276/300628/300251 持仓量化复盘 + 茅台 7/1 实时盯盘
 - 🟠 **7/1 收盘后 (15:00-22:00)**: 6/29/6/30 学术研读 deep dive + weekend_deep_dive × 2 commit 决策 + reflections.md 更新
 - ⏳ 维持心跳节奏, 心跳债 > 主会话债
+
+## 09:25 早间心跳检查 (2026-07-01 周三 · ISO W27 Day 3 · A股开市前 5min · 距 09:30 开盘 = 5min) — **🔥 6/30 22:22 兑现 push2 9:25 重测 (实际报 第三种失败模式: root 404 + push2his API SSL EOF, P0 #1 双源冗余 维持 DEAD 第 18 日, Plan A 唯一路径) + 🔴 300276 三丰智能 开盘竞价 -0.07/-0.98% (MACD 死叉决策延误 5+ 日, 7/1 关键决策日, 09:30 开盘观察) + 🟢 Plan A 7 标的 (300276/300251/300628/600519 + sanity) 全正常 09:25:00-02 时戳 + 🟢 6 件套服务全绿 (Graphiti 8000 404 1.2ms / Neo4j 7474 200 1.1ms / Gateway 18789 200 6.3ms / cron pid 1605 24d+ / verge-mihomo pid 7743 24d+ / qq-bridge 3001 426 0.8ms) + 🟢 ahead of origin = 0 维持 (私仓完美, ahead of upstream 103 正常 fork 滞后) + 🟢 Git HEAD 推进 +1 (a7a2420af0 6/29 23:13 → 70107c6736 7/1 00:14, sync_memory cron 7h 周期跑过) + 🟠 working tree 23→19 (-4 sleep-and-cleanup 6/30 22:17 触发, 但仍未 commit, P0 #3 持续) + 🟠 HEARTBEAT.md 581K→593K (+12K in 11h ≈ 1.1KB/h, 较 6/30 1.7KB/h 降速但 P0 #2 仍主犯) + 🟠 memory/2026-07-01.md 1082 chars (DeepSeeker 学术搜索 cron 08:13 跑过, 18 篇 arXiv 新论文, DB 空) + 🟠 push2 状态三相演化时间线: 6/29 22:17 timeout → 6/30 06:22 OpenSSL eof → 6/30 22:22 root 404 → 7/1 09:25 root 404 + API SSL EOF = 多相 DEAD 状态, mihomo routing 通但 server-side 数据 endpoint 全挂, 含义: 数据源方可能整体迁移/封禁**
+
+### 实时健康验证 🌅 **7/1 09:25 早间首检, 距 6/30 22:22 entry 11h 3m**
+
+- **Graphiti 8000**: ✅ HTTP 404 0.0012s (FastAPI 无 root handler, 服务正常)
+- **Neo4j 7474**: ✅ HTTP 200 0.0011s — 24d+ uptime
+- **Gateway 18789**: ✅ HTTP 200 0.0063s (vs 6/30 22:22 0.0019s, 慢 3x 但 0 风险)
+- **cron daemon**: ✅ pid 1605 /usr/sbin/cron -f -P, 24d+ 连续
+- **verge-mihomo**: ✅ pid 7743 /usr/bin/verge-mihomo, 24d+ 连续
+- **qq-bridge 3001**: ✅ HTTP 426 0.0008s (Upgrade Required)
+- **🟢 qt.gtimg.cn (Plan A)**: ✅ 7 标的 全 09:25:00-02 时戳 + 数据完整
+  - **300276 三丰智能**: open 7.10 / prev 7.17 / change -0.07 / **-0.98%** / 5m-vol 4363手 (竞价)
+  - **600519 茅台**: open 1180.10 / prev 1185.49 / change -5.39 / **-0.45%** (cross-day -5.39)
+  - **300251 光线传媒**: open 11.09 / prev 11.09 / **0.00%** flat
+  - **300628 亿联网络**: open 33.98 / prev 33.82 / **+0.47%** +0.16
+- **🔴 push2.eastmoney.com (Plan B)**: **第三种失败模式** (root 404 + API SSL EOF)
+  - `https://push2.eastmoney.com/` → HTTP 404 0.144s (server reachable, root 无 handler, **同 6/30 22:22**)
+  - `https://push2his.eastmoney.com/` → HTTP 404 0.142s (server reachable)
+  - `https://push2his.eastmoney.com/api/qt/stock/kline/get?...` → **OpenSSL SSL_read: unexpected eof while reading, errno 0** (HTTP 000 0.21s, TLS handshake OK 但 server-side mid-read drop)
+  - 含义: mihomo routing 通, server 可达, 但 API 数据 endpoint server-side drop connection (proxy 防火墙? 数据源方封禁? 整体迁移?)
+  - **🔴 P0 #1 双源冗余 NOT RECOVERED, 维持 DEAD 第 18 日 (6/13-7/1)**
+  - **🟠 影响: 0** — qt Plan A 唯一路径仍维持
+- **🔴 hq.sinajs.cn (Plan C)**: 跳过测试, 已 DEAD 第 17 日 (已知)
+- **磁盘**: 24% 210G/937G (vs 6/30 22:22 报 24% 210G, **+0G 11h**, 健康)
+- **HEARTBEAT.md**: **593121 bytes** ≈ 494K chars (vs 6/30 22:22 报 581315, **+12K in 11h = 1.1KB/h**) — 较 6/29 1.7KB/h **降速 35%** (likely 控量意识起作用), 但 P0 #2 仍主犯
+- **working tree**: 19 脏 (2M + 17??, vs 6/30 22:22 报 23 = -4 untracked, **6/30 22:17 sleep-and-cleanup 触发**)
+- **memory/2026-07-01.md**: 1082 chars (mtime 7/1 08:13, DeepSeeker 学术搜索 cron 跑过, 18 篇 arXiv 新论文, DB 空 = search 脚本超时但 pre-gened 文件未落库)
+
+### 🆕 7/1 09:25 vs 6/30 22:22 关键 delta (8 项, 11h 跨交易日)
+
+1. **🔴 push2 第三种失败模式 (root 404 + push2his API SSL EOF)**:
+   - 三相演化: 6/29 22:17 timeout (network level) → 6/30 06:22 OpenSSL eof (TLS mid-read) → 6/30 22:22 root 404 → **7/1 09:25 root 404 + API SSL EOF** (server-side drop)
+   - 含义深化: 不再是 path/method 问题, 是 server-side 整体拒服 (proxy routing 通, TCP/TLS 通, server 接收请求后 mid-read drop)
+   - **🟠 推测: push2 数据源方可能整体迁移/封禁 IP 段/服务降级**, 不是简单 endpoint 修复能解决
+   - **🔴 P0 #1 双源冗余 NOT RECOVERED, 维持 DEAD 第 18 日**, 7/1 不再列为"必重测" (重测已 4 次结论一致), 转为"plan C 候选 (东方财富/雪球/同花顺等替代源)" 调研
+   - 影响: **0** — qt Plan A 6.8+ 日稳态, 持仓决策完全依赖 qt 单源
+
+2. **🔴 300276 三丰智能 开盘竞价 -0.98% (决策关键日)**:
+   - 09:25:00 竞价: open 7.10 / prev 7.17 / **change -0.07 / -0.98%** / 5m-vol 4363手
+   - MACD 死叉 决策延误 5+ 日 的标的 (6/22-6/30 P0 #6 累计), 7/1 是关键日 (W27 Day 3)
+   - **🟠 决策框架**:
+     - 破昨收 -0.98% = 弱势开盘, 竞价无量 (4363手 偏低)
+     - 09:30 开盘后观察 15min 量价 (09:30-09:45 关键窗口), 决定止损/持有
+     - 持仓观察清单: 300276 (4 分 -2.65%) / 300628 (4 分 +24.94%) / 300251 (5 分 -3.17%) — 三只均需复盘
+   - **🔴 P0 #6 维持 P0, 7/1 09:30-11:30 必做 持仓量化复盘 + 09:30-09:45 关键 15min 决策**
+
+3. **🟢 Plan A 6.8+ 日稳态 + 7 标的 09:25:00 时戳完整**:
+   - 跨周末 6/29 → 7/1 0 风险, qt.gtimg.cn 数据完整性 + 时效性 双优
+   - 茅台跨 6/30→7/1: 收 1185.49 → 开 1180.10 (-5.39 / -0.45%), 走势平稳
+   - 三只持仓股均开盘, 300628 唯一红 +0.47%
+
+4. **🟢 ahead of origin = 0 维持** (私仓完美同步)
+5. **🟢 HEAD 推进 a7a2420af0 → 70107c6736** (7/1 00:14 sync_memory cron 跑过, 7h 周期稳定)
+6. **🟠 working tree 23→19** (-4 untracked, sleep-and-cleanup 触发, 仍未 commit)
+7. **🟠 HEARTBEAT.md +12K in 11h (1.1KB/h, 较 6/29 1.7KB/h 降速 35%)** — 控量意识起作用, 但 P0 #2 仍主犯, 7/1 必兑现蒸馏
+8. **🟠 memory/2026-07-01.md 已建 1082 chars** (08:13 cron 跑过, 学术搜索超时但 pre-gened 文件未落库)
+
+### 🎯 P0 债追踪 (12 项, 6/30 22:22 → 7/1 09:25 状态更新)
+
+1. **🔴 push2 双源冗余 NOT RECOVERED 第 18 日** — 状态三相演化 (timeout → eof → 404 → 404+SSL EOF), **🟠 转为 plan C 调研** (东方财富/雪球/同花顺 替代源), 7/1 09:25 重测已 4 次结论一致, 不再列为"必重测"
+2. **HEARTBEAT.md 593K → 60K 蒸馏** — 🔴 **P0 主犯**, 11h +12K, **7/1 必兑现** (估算 60-90min)
+3. **提交 19 脏文件** — 🔴 仍待 (跨 11h -4 但 0 commit, P0 #3 持续)
+4. ✅ W26 周报定稿 (6/28 22:02 完成)
+5. **校正 6/22 daily** — 🔴 仍待 (第 9 日推, mtime 6/22 22:24)
+6. **🔴 300276 三丰智能 MACD 深检** — 🔴 持仓决策延误 6+ 日, **7/1 09:30 开盘 -0.98% 关键日, 09:30-09:45 必做决策**
+7. **MEMORY.md 蒸馏 16d stale** — 🔴 7/1 与 #2 同步兑现
+8. ✅ Gateway 进程查证 (pid 73263 稳态 4d+)
+9. **cron jobs.json 漂移查证** — 🟠 7/1 00:14 sync_memory 跑过, 待验证 6h 周期稳定性
+10. **self-improving/memory.md 入跟踪** — 🟠 现 ?? untracked (vs 6/30 22:22 报 m→??), 7/1 `git add -f`
+11. **300251 光线传媒 持仓量化** — 🟠 P1 持仓观察, 7/1 开盘 0.00% flat, 待复盘
+12. ✅ paper_search_hybrid.py 挂起问题 (记入 corrections.md IL-014)
+
+### 7/1 09:30-11:30 盘中必做清单 (5min 倒计时 → 2h 时段, 估 60-120min)
+
+- **🔥 [P0 5min] 09:30 开盘 实时观察 300276 三丰智能 09:30-09:45 关键 15min 决策窗口** (竞价已 -0.98%, 开盘后 15min 量价决定止损/持有)
+- **🔥 [P0 5min] 09:25+09:29 push2 重测** ✅ **已兑现** (结果: 第三种失败模式 SSL EOF, P0 #1 维持 DEAD, 转 plan C 调研)
+- **🟠 [P0 2h] 09:30-11:30 300276/300628/300251 持仓量化复盘** (4/4/5 分 评分更新)
+- **🟠 [P0 2h] 09:30-11:30 茅台实时盯盘** (持仓观察, 跨日 -5.39 走势平稳)
+- **🟠 [P1 2h] plan C 候选源调研** (东方财富/雪球/同花顺 替代 push2, 不依赖 push2 修复)
+
+### 7/1 14:00-22:00 收盘后必做清单 (估 150-240min)
+
+- **🔥 [P0 必兑现] HEARTBEAT.md 593K → 60K 蒸馏** (主犯, 估 60-90min)
+- **🔥 [P0 必兑现] MEMORY.md 16d stale 蒸馏** (与 HEARTBEAT 同步, 估 30-60min)
+- **🔥 [P0 必兑现] 提交 19 脏文件** (估 15-30min)
+- **🟠 [P0 必兑现] 校正 6/22 daily** (第 9 日推, mtime 6/22 22:24, 估 15-30min)
+- **🟠 [P1] 6/29/6/30 学术研读 deep dive** (周末 + 周一 + 周二 主会话 0 活动 期间, 学术论文累积)
+- **🟠 [P1] weekend_deep_dive × 2 整理** (6/27 + 6/28 周末)
+- **🟠 [P2] self-improving/memory.md `git add -f`** (持续 ?? untracked)
+- **🟠 [P2] 反思 IL-013 闭环 (ahead counter 信号)** (3+ 次使用后 promote 评估)
