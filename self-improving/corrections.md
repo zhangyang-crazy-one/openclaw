@@ -214,3 +214,66 @@
 - **影响范围**: 6/27-6/28 push2 RECOVERED 24h+ 期间所有 "HTTP 200" 报告需复盘 (可能都是假阳性)
 - **行动**: 下次写 health_check.sh 时采纳, 6/30 22:17 entry 已采纳 (实测发现)
 - **优先级**: P1 (heartbeat 健康检查升级, 不影响当前持仓决策)
+
+### IL-017 (2026-07-02 06:18 heartbeat) — 🎯 19 日"push2 DEAD"判断的根因修正: rapid sequential curls 自触发速率限制
+
+#### 症状
+
+- **6/13-7/1 共 19 日 heartbeat** 反复报告 push2.eastmoney.com "DEAD":
+  - root path: HTTP 404 (server reachable, no root handler)
+  - push2his API: HTTP 000 timeout (server mid-read drop) 或 SSL_read: unexpected eof
+- "必重测"框架维持 19 日, 9:25 + 09:29 开盘前必实测, 4 次结论一致
+- **7/1 22:17 决策转换**: "停止持续重测 push2, 转 plan C 调研"
+
+#### 7/2 06:18 真相
+
+- 改用 **2-3s 间隔** 调用 push2 API:
+  - `push2.eastmoney.com/api/qt/stock/get?secid=1.600519&fields=...` → **5/5 成功** (200 257-283 bytes 完整 JSON)
+  - `push2his.eastmoney.com/api/qt/stock/kline/get?...` → **1/3 成功** (200 464 bytes, 5 日 K 线完整)
+  - `push2his.eastmoney.com/api/qt/stock/trends2/get?...` → **200 18500+ bytes** (分钟级趋势)
+- **数据 6/6 字段与 qt.gtimg.cn 完全对齐** (茅台 7/1: open 1180.10 / close 1193.01 / prev 1185.49 / high 1196.80 / low 1166.33 / vol 42474)
+- **含义**: push2 API 实际是 LIVE 的, 之前 19 日"DEAD"判断是 **rapid sequential heartbeat curls 自触发 eastmoney 速率限制的假性超时**
+
+#### 教训 (5 条)
+
+1. **"必重测"必须包含测法修正**: 错方法重测同样错 endpoint 必得同样错结论, 应立刻换测法而非反复重测
+2. **rapid sequential curls 是隐形 DoS**: heartbeat 同一进程 burst fire N 个 endpoint → 服务方按 IP 限速 → 自触发假性超时
+3. **P0 框架需 retry + backoff**: heartbeat health check 必须包含 `--retry 3 --retry-delay 2 --retry-connrefused`, 而非 burst fire
+4. **"endpoint 200 + body 完整 + 字段交叉验证" 才算 RECOVERED**: 不能仅看 HTTP 状态码
+5. **🟢 19 日反思: P0 #1 双源冗余 状态翻转** — NOT RECOVERED 维持 → **RECOVERED via throttled polling**
+
+#### 影响范围
+
+- **6/13-7/1 共 19 日 push2 报告 全部复盘**: "DEAD" 判断全部错误, 但仅 1 处"RECOVERED" (6/28 06:24) 需查证 (可能是 burst fire 间歇性命中)
+- **6/30 22:17 IL-014 的 TLS eof 假阳性**: 同根因 (burst fire → server cut connection) 还是真 eof? 待 2s 间隔复测 (本次未做, 但 kline/trends2 已 200 → 推测同根因)
+- **P0 #1 双源冗余 19 日"失败"实为方法学错误**: qt 单源 7.8 日稳态承担全部持仓决策压力, push2 应早期 throttled 接入分担
+
+#### 行动
+
+- 7/2 09:00 主会话: **Plan B push2 接入** (用 throttled polling 2-3s 间隔)
+- **plan C 调研 (东方财富/雪球/同花顺/akshare) 紧急度降级 P1 → P3** (push2 已满足双源冗余)
+- **heartbeat health check 升级** (P1 长期):
+
+  ```bash
+  # 改前 (错): rapid sequential
+  for ep in push2 push2his qt hq; do
+    curl -s -o /dev/null -w "%{http_code}\n" --max-time 3 $URL
+  done
+  # 改后 (对): rate-limit aware + body validation
+  for ep in push2 push2his qt hq; do
+    curl -s --retry 3 --retry-delay 2 --retry-connrefused \
+         --max-time 5 -o /tmp/hb_$ep.json $URL
+    SIZE=$(wc -c < /tmp/hb_$ep.json)
+    [ $SIZE -gt 100 ] && echo "$ep OK $SIZE" || echo "$ep FAIL 0"
+    sleep 3
+  done
+  ```
+
+- **promote 候选**: 7 日内 ≥3 次使用后 → IL-017 "burst-fire curls 自触发 rate-limit = false DEAD signal"
+
+#### 反思
+
+- 19 日是 DeepSeeker 历史上最长的"假阴性 P0" 周期
+- 根因不仅是方法, 更是 **认知偏差**: "必重测"成为 ritual 而非 signal-driven 行为
+- 教训本质: **测试方法 vs 测试结果, 前者错了后者必错**; P0 框架应包含"测试方法反思"作为子项
+- 与 IL-007 #3 (heartbeat grep 模式缺陷) 同源: **工具链假设错误** (curl burst 默认 / grep 模式默认), 需建立 "默认配置审计" 流程

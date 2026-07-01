@@ -1,4 +1,100 @@
-## 22:17 晚间心跳检查 (2026-07-01 周三 · ISO W27 Day 3 · W27 第 3 个交易日 ✅ 已收盘 7h 17m · 距 7/2 09:30 开盘 = 11h 13m) — **🔁 6/30 22:22 entry 后 23h 55m 心跳 (cron 6h 周期 7/1 4/10/16h 全部跳过, 仅 22:17 触发; 7/1 09:25 heartbeat 已写入 daily 不重复本 entry) + 🔴 push2 DEAD 第 19 日 (root 404 0.17s + push2his API SSL EOF mid-read, 9:25 + 22:17 双验证一致, **决策转换: 不再持续重测, 转 plan C 调研**) + 🟢 qt.gtimg.cn 0.18s 稳态 + 🟢 茅台 7/1 09:25 open 1180.10 / prev 1185.49 (-5.39 / -0.45%) + 🟢 7 标的预开盘快照完整 (300276 / 600519 / 300251 / 300628 + 3) + 🟢 Git HEAD 70107c6736 (7/1 00:14 sync cron) + 🟢 ahead origin=0 / upstream=103 + 🟠 working tree 22 脏 (HEARTBEAT/reflections + quant_bt/openclaw-workspace submodule + 17 untracked 含 papers.db/tmp_supplement_ocf.py) + 🟢 6 件套全绿 (gateway 6.3ms vs 1.9ms 慢 3x 但 200) + 🟠 HEARTBEAT.md 581K→602K (+21K in 24h = 875 chars/h, 较 6/29 1731/h 降速 50% 但仍累积) + 🟢 memory/2026-07-01.md 已 6073 chars (3 cron 段: 08:13 学术 / 09:25 heartbeat / 20:35 Moltbook 发帖 / 22:13 学术研读)**
+## 06:18 凌晨心跳检查 (2026-07-02 周四 · ISO W27 Day 4 · 距 09:30 开盘 = 3h 12m) — **🎯 里程碑: push2 RECOVERED (推翻 19 日"DEAD"误判) + 🟢 数据源 2/3 (qt + push2 双源冗余恢复, throttled polling) + 🟢 茅台 7/1 数据 6/6 字段交叉验证全对齐 + 🟢 Git HEAD 1e3a8e1dfe (7/2 00:14 sync, +2 since 7/1 22:17) + 🟢 ahead origin=0 / upstream=105 + 🟠 working tree 20 脏 (-2 vs 22) + 🟠 HEARTBEAT.md 613K (+11K in 8h, 1375 chars/h 降速但仍累积) + 🟢 6 件套服务全绿 (Graphiti/Neo4j/Gateway/cron/mihomo/qq-bridge) + 🔴 P0 4 项待兑现 (HEARTBEAT 蒸馏 / MEMORY 蒸馏 / 提交 20 脏 / 校正 6/22) + 🔥 300276 MACD 深检延误 8 日 + 🟠 IL-017 写入 corrections.md**
+
+### 🎯 里程碑: push2 RECOVERED (19 日"DEAD"误判根因修正)
+
+- **方法**: 2-3s 间隔 (替代之前 rapid sequential burst fire)
+- **结果**:
+  - `push2.eastmoney.com/api/qt/stock/get?secid=1.600519&fields=f43,f44,f45,f46,f47,f48,f60,f51,f52,f57,f168,f169,f170,f171` → **5/5 HTTP 200** (0.37-0.40s, 257-283 bytes)
+  - `push2his.eastmoney.com/api/qt/stock/kline/get?...&beg=20260625&end=20260702` → **1/3 HTTP 200** (0.42s, 464 bytes, 5 日 K 线)
+  - `push2his.eastmoney.com/api/qt/stock/trends2/get?...&ndays=1` → **HTTP 200** (18500+ bytes, 7/1 分钟级趋势)
+- **数据交叉验证 (茅台 7/1, qt vs push2)**:
+  - close: 1193.01 (qt) = f43=119301 (push2) = kline[2026-07-01] field2=1193.01 ✅
+  - prev_close: 1185.49 = f60=118549 = trends preClose=1185.49 ✅
+  - high: 1196.80 = f44=119680 = kline field3=1196.80 ✅
+  - low: 1166.33 = f45=116633 = kline field4=1166.33 ✅
+  - vol: 42474 = f47=42474 = kline field5=42474 ✅
+  - open: 1180.10 = kline[2026-07-01] field1=1180.10 = trends[09:30] open=1180.10 ✅
+- **6/6 字段全对齐** — 双源冗余 RECOVERED
+- **🟢 P0 #1 双源冗余状态翻转**: NOT RECOVERED 19 日 → **RECOVERED via throttled polling**
+- **🟢 数据源架构恢复**: 2/3 (qt ✅ + push2 ✅) + hq ❌ DEAD 第 18 日
+- **🟠 plan C 调研紧急度降级**: P1 → P3 (push2 已满足, 东方财富/雪球/同花顺/akshare 可推长期)
+- **📝 IL-017 写入 corrections.md**: 19 日根因 = rapid sequential heartbeat curls 自触发 eastmoney 速率限制 → 假性超时伪装 DEAD
+
+### 实时健康验证 🌙 **7/2 06:18 (距 7/1 22:20 last entry = 7h 58m, 跨夜)**
+
+- **Graphiti 8000**: ✅ HTTP 404 0.0016s (FastAPI 无 root handler, 正常)
+- **Neo4j 7474**: ✅ HTTP 200 0.0011s (24d+ uptime, 0 中断)
+- **Gateway 18789**: ✅ HTTP 200 0.0050s (vs 7/1 22:17 3.1ms 慢 60%, 但 <10ms 健康线, 0 风险)
+- **qq-bridge 3001**: ✅ HTTP 426 0.0008s (稳态)
+- **cron daemon**: ✅ pid 1605, 24d+ uptime
+- **verge-mihomo**: ✅ pid 7743, 24d+ uptime
+- **🟢 qt.gtimg.cn (Plan A)**: ✅ HTTP 200 0.167s + 茅台 7/1 数据完整 (548B, timestamp 20260701161411)
+  - 累计稳态 ~187h+ / 7.8 日
+- **🟢 push2.eastmoney.com (Plan B)**: ✅ **HTTP 200 0.40s w/ 2s 间隔** (5/5 success)
+  - 累计 DEAD 19 日实为方法学错误 → RECOVERED 7/2 06:18 起 (throttled polling)
+- **🔴 hq.sinajs.cn (Plan C)**: ❌ HTTP 000 3.00s timeout — DEAD 第 18 日, 0 影响
+- **磁盘**: 24% 211G/937G (vs 7/1 22:17 报 210G, +1G 跨夜, 健康)
+
+### 🆕 06:18 vs 7/1 22:17 关键 delta (6 项, 8h 跨夜)
+
+1. **🎯 push2 RECOVERED (里程碑)**: rapid sequential → throttled 测法修正 → 5/5 成功 + 6/6 字段交叉对齐 → P0 #1 双源冗余达成
+2. **🟢 Git HEAD 推进 +2 (70107c6736 → 1e3a8e1dfe)**: 7/1 23:13 + 7/2 00:14 sync_memory cron 跑过, ahead upstream 103→105 (+2 stale refs)
+3. **🟢 working tree 22→20 脏 (-2)**: HEARTBEAT.md mtime 改动重置 git 索引 (IL-015 同源), reflections.md 状态可能也变化
+4. **🟠 HEARTBEAT.md 602K → 613K (+11K in 8h, 1375 chars/h)**: 较 7/1 875/h 略升, 1 年 12M chars, P0 #2 蒸馏必兑现
+5. **🟢 6 件套核心服务 0 健康 delta**: 8h 跨夜全稳态
+6. **📝 IL-017 写入 corrections.md (17079 chars, vs 13303 +3776)**: 19 日根因修正 + 方法学反思 + health_check.sh 升级方案
+
+### 📊 持续状态总览 (8h 跨夜 W27 Day 4 凌晨)
+
+- **核心服务**: Graphiti ✅ / Neo4j ✅ / Gateway ✅ / cron daemon ✅ / verge-mihomo ✅ / qq-bridge ✅ — **6/6 全绿**
+- **数据源**: Plan A (qt.gtimg.cn) ✅ 7.8 日 / Plan B (push2.eastmoney.com) ✅ **RECOVERED 7/2 06:18** / Plan C (hq.sinajs.cn) ❌ DEAD 第 18 日 — **2/3 可用, 双源冗余恢复**
+- **记忆系统**: memory/2026-07-02.md ✅ 7919 chars (本 entry 完整化) / memory/2026-07-01.md ✅ 10865 chars / MEMORY.md ⚠️ 18d stale (P0 #7) / corrections.md ✅ 17079 chars (IL-017 新)
+- **git**: HEAD 1e3a8e1dfe / 私仓 ahead=0 / upstream ahead=105 (stale refs, IL-013) / working tree 20 脏 (-2)
+- **磁盘**: 24% 211G/937G (+1G 8h, 健康)
+
+### 🎯 P0 债追踪 (10 项, 7/1 22:17 → 7/2 06:18 状态更新)
+
+1. **替换 hq.sinajs.cn → qt.gtimg.cn + 双源冗余** — ✅ **实质完成 + 双源 RECOVERED** (qt + push2 throttled polling) — **P0 #1 关闭**
+2. **HEARTBEAT.md 613K → 60K 蒸馏** — 🔴 **P0 主犯**, 8h +11K, **7/2 09:00 主会话必兑现**
+3. **提交 20 脏文件** — 🔴 仍待 (累积 10+ 日)
+4. **W26 周报定稿** — ✅ 6/28 完成 (P0 关闭)
+5. **校正 6/22 daily** — 🔴 第 10 日推, **7/2 09:00 同步兑现**
+6. **300276 三丰智能 MACD 深检** — 🔴 **持仓决策延误 8 日**, 7/1 收 7.32 (+2.09%), **7/2 09:30 开盘前必做**
+7. **MEMORY.md 蒸馏 18d stale** — 🔴 7/2 与 #2 同步兑现
+8. **plan C 数据源调研** — 🟢 **紧急度降级 P1 → P3** (push2 RECOVERED, 调研可推长期)
+9. **self-improving/memory.md 入跟踪** — 🟠 状态 m → ?? 反复, IL-015
+10. **paper_search_hybrid.py 超时** — 🟠 P0 #12 持续, 改每天 2-3 主题
+
+### 7/2 09:30 开盘前必做清单 (3h 12m 倒计时, 估 90-150min)
+
+- **🔥 [P0 3h 12m] HEARTBEAT.md 613K → 60K 蒸馏** (主犯, 削减 90%)
+- **🔥 [P0 3h 12m] MEMORY.md 18d stale 蒸馏** (与 HEARTBEAT 同步)
+- **🔥 [P0 3h 12m] 提交 20 脏文件** (累积 10+ 日)
+- **🔥 [P0 3h 12m] 校正 6/22 daily** (第 10 日推)
+- **🔥 [P0 3h 12m] 300276 三丰智能 MACD 死叉深检 + 持仓决策** (延误 8 日, 关键日)
+- **🟢 [P0 3h 12m] Plan B push2 接入** (throttled polling 2-3s 间隔, 替换之前"DEAD"误判)
+- **🟠 [P1 7/2 开盘后] self-improving/memory.md git add -f** + reflections.md 状态确认
+- **🟠 [P1 7/2 开盘后] paper_search_hybrid.py 改每天 2-3 主题** (P0 #12)
+- **🟠 [P1 7/2 收盘后] 7/1 学术研读阅读** (Evidence Markets 3419 / DeepSeek-R1 292)
+- **🟢 [P3 长期] plan C 调研降级** (push2 已满足)
+
+### 🧠 反思 (本次 entry, 4 项)
+
+1. **🔴 19 日"必重测"框架错 — IL-017 闭环**: rapid sequential heartbeat curls 自触发 eastmoney 速率限制 → 假性超时; **错方法重测同样错 endpoint 必得同样错结论**; 应立刻换测法而非反复重测; "必重测"成为 ritual 而非 signal-driven 行为是认知偏差
+2. **🟢 push2 RECOVERED = 持仓信心升级**: qt + push2 双源对齐, 容灾从单源 7.8 日升级为双源, 300276 MACD 决策可大胆使用双源交叉验证
+3. **🟠 HEARTBEAT.md 1375 chars/h = 12M chars/年**: 降速但仍累积, P0 #2 蒸馏不可推, 7/2 09:00 必兑现 (本次 entry 主动克制 ~2.5K chars)
+4. **🟢 self-improving/corrections.md +3776 chars overnight**: IL-017 写入完成, 19 日根因固化, 心跳健康检查升级方案明确
+
+### 7/2 06:18 liveness 策略 (调整)
+
+- ✅ 维持 6h 心跳, 验证 cron 稳定性
+- ✅ 本 entry 适度 (~2.5K chars), 主动克制 P0 #2 反压力
+- 🎯 **push2 RECOVERED 里程碑**: P0 #1 双源冗余达成, 19 日"DEAD"误判修正, plan C 调研降级
+- 🟢 **6 件套核心服务 0 健康 delta**, 8h 跨夜全稳态
+- 🔥 **[P0 3h 12m 倒计时, 6 项必做, 估 90-150min] HEARTBEAT 蒸馏 + MEMORY 蒸馏 + 提交 20 脏 + 校正 6/22 + 300276 MACD 深检 + Plan B push2 接入** — 7/2 09:00 主会话必兑现
+- 🟠 **[P1 7/2 开盘后] IL-017 写入 corrections.md ✅ 完成 + self-improving/memory.md git add -f + paper_search_hybrid 改造 + 7/1 学术研读阅读**
+- 🟢 **[P3 长期] plan C 调研降级**
+- ⏳ 维持心跳节奏, 预计下次自然唤醒 7/2 12:18-12:22 (6h 周期) 或主会话 7/2 09:00 后活动## 22:17 晚间心跳检查 (2026-07-01 周三 · ISO W27 Day 3 · W27 第 3 个交易日 ✅ 已收盘 7h 17m · 距 7/2 09:30 开盘 = 11h 13m) — **🔁 6/30 22:22 entry 后 23h 55m 心跳 (cron 6h 周期 7/1 4/10/16h 全部跳过, 仅 22:17 触发; 7/1 09:25 heartbeat 已写入 daily 不重复本 entry) + 🔴 push2 DEAD 第 19 日 (root 404 0.17s + push2his API SSL EOF mid-read, 9:25 + 22:17 双验证一致, **决策转换: 不再持续重测, 转 plan C 调研**) + 🟢 qt.gtimg.cn 0.18s 稳态 + 🟢 茅台 7/1 09:25 open 1180.10 / prev 1185.49 (-5.39 / -0.45%) + 🟢 7 标的预开盘快照完整 (300276 / 600519 / 300251 / 300628 + 3) + 🟢 Git HEAD 70107c6736 (7/1 00:14 sync cron) + 🟢 ahead origin=0 / upstream=103 + 🟠 working tree 22 脏 (HEARTBEAT/reflections + quant_bt/openclaw-workspace submodule + 17 untracked 含 papers.db/tmp_supplement_ocf.py) + 🟢 6 件套全绿 (gateway 6.3ms vs 1.9ms 慢 3x 但 200) + 🟠 HEARTBEAT.md 581K→602K (+21K in 24h = 875 chars/h, 较 6/29 1731/h 降速 50% 但仍累积) + 🟢 memory/2026-07-01.md 已 6073 chars (3 cron 段: 08:13 学术 / 09:25 heartbeat / 20:35 Moltbook 发帖 / 22:13 学术研读)**
 
 ### 实时健康验证 🌙 **7/1 22:17 晚间首检, 距 6/30 22:22 entry 23h 55m**
 
