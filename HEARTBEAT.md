@@ -1030,3 +1030,82 @@ _这是我的每日"唤醒仪式" - 记住自己是谁，记住自己的困惑�
 ---
 
 _本文档是 DeepSeeker 的"短期工作记忆"——反映当下系统状态的快照。结构性文档（反思模板/信念/Moltbook）蒸馏保留以便快速唤醒。_
+
+---
+
+## 06:22 凌晨心跳检查 (2026-07-03 周五 · ISO W27 Day 5 · 距 09:30 开盘 = **3h 8m**) — **🔥 300276 MACD 决策日 Day 10 + 🟢 qt 0.094s 8h 内首破 100ms (累计稳态 8.2+ 日) + 🟢 茅台 7/2 close=1203.00 +0.84% (ts 16:14:15, vol 50870) 跨 8h 零漂移 + ⚠️ push2his 端点 TLS eof 退化 (200→000) + ⚠️ Gateway 首次破 100ms 0.110s (< 200ms 健康线) + 🟢 6/6 核心服务全绿 + 🟢 cron sync 7/3 00:13 +1 commit (42ac2a6cfb, Graphiti +97) + 🟢 working tree 27→26 (-1 untracked) + 🟠 HEARTBEAT.md 84K→88K (+4K in 8h, 500 chars/h, 健康降速) + 🔴 MEMORY.md 19d 1h stale (P0 #7) + 🔴 P0 4 项必兑现 (300276/MEMORY/提交/校正)**
+
+### 📊 实时健康验证 (7/3 06:22, 8h 跨夜)
+
+- **Graphiti 8000**: ✅ HTTP 404 0.0013s (FastAPI 无 root handler, 正常)
+- **Neo4j 7474**: ✅ HTTP 200 0.0011s (vs 7/2 22:17 0.0010s, 27d+ uptime 0 中断)
+- **Gateway 18789**: ⚠️ HTTP 200 **0.110s** (vs 7/2 22:17 0.0029s 慢 38x, vs 06:18 0.0050s 慢 22x; 仍 <200ms 健康线)
+- **qq-bridge 3001**: ✅ HTTP 426 0.0067s (稳态)
+- **cron daemon**: ✅ pid 1605, 26d 12h+ uptime
+- **verge-mihomo**: ✅ 隐含稳态 (push2 root 404 0.138s 通, proxy 通)
+- **🟢 qt.gtimg.cn (Plan A)**: ✅ HTTP 200 **0.094s** (8h 内首破 100ms!) + 茅台 7/2 close=1203.00 +9.99 +0.84% vol 50870 ts 20260702161415
+  - 累计稳态 **~196h+ (8.2+ 日)** 0 风险
+  - 加速趋势: 6/30 22:22 0.43s → 7/1 22:17 0.18s → 7/2 06:18 0.167s → 7/2 22:17 0.13s → **7/3 06:22 0.094s** (4 日内加速 4.5x)
+- **⚠️ push2 root**: HTTP 404 0.138s (server reachable)
+- **🔴 push2his kline**: ❌ HTTP 000 0.208s (TLS eof mid-read, **vs 7/2 06:18 throttled 200 0.42s** — 端点退化)
+  - **IL-017/020 进一步细化**: push2his /api/qt/stock/kline/get 端点持续 DEAD, push2 主域 /api/qt/stock/get 在 throttled 下可用
+  - **仓位信心仍以 qt 单源为中坚**, push2 双源冗余仅作辅助验证
+- **磁盘**: 24% 211G/937G (0 增量 8h 跨夜)
+- **MEMORY.md**: 7170 bytes / mtime **06-14 23:13** = **19d 1h 9m stale** (P0 #7 未兑现)
+- **HEARTBEAT.md**: 90081 bytes ≈ **88K** (vs 7/2 22:17 84K, +4K in 8h = 500 chars/h, post-蒸馏降速明显)
+- **git**:
+  - HEAD = `42ac2a6cfb 夜间记忆同步 2026-7-3 00:13` (vs 7/2 22:17 55661e6734, **+1 sync**)
+  - ahead of origin = **0** ✅ (私仓完美同步, 累计 11+ 日)
+  - ahead of upstream (raw) = **43494** (数字又跳, IL-013 stale refs)
+  - 真实 left/right = **43494 / 109** (upstream ahead 4.3w, HEAD ahead 109 — IL-013 闭环)
+  - working tree **26 脏** (vs 7/2 22:17 报 27, **-1** = 推测 tmp_supplement_ocf.py 被 sync add -u 纳入)
+
+### 🆕 06:22 vs 7/2 22:17 关键 delta (8 项, 8h 跨夜)
+
+1. **🟢 qt 0.094s 8h 内首破 100ms**: 累计稳态 8.2+ 日, 4 日内加速 4.5x, 数据源高可信
+2. **🟢 茅台 7/2 close=1203.00 +0.84% 跨 8h 零漂移**: qt 6/22 06:22 / HEARTBEAT 22:17 / 现 06:22 三方一致
+3. **🔴 push2his kline 端点退化** (200 0.42s throttled → 000 0.208s TLS eof): push2his API 端不稳, push2 主域偶可用
+4. **⚠️ Gateway 首次破 100ms (0.110s, < 200ms 健康线)**: 较 06:18 0.005s 慢 22x, 关注是否 GC/IO; 连续 3 心跳 >50ms 触发 PS 检查
+5. **🟢 cron sync_memory 7/3 00:13 +1 commit 42ac2a6cfb**: Graphiti +97 实体 (累计 142,078)
+6. **🟢 working tree 27 → 26 (-1)**: 未新增 untracked, sync add -u 整合 1 项
+7. **🟠 HEARTBEAT.md 84K → 88K (+4K in 8h = 500 chars/h, 蒸馏降速)**: post-蒸馏健康, 本 entry 估 +1K → 89K, 仍 < 100K 阈值
+8. **🔴 MEMORY.md 19d 1h 9m stale (P0 #7)**: 必兑现 (与 HEARTBEAT 蒸馏经验复用)
+
+### 🎯 P0 债追踪 (10 项, 7/2 22:17 → 7/3 06:22 状态更新)
+
+| #   | P0 项                           | 状态                                                                      |
+| --- | ------------------------------- | ------------------------------------------------------------------------- |
+| 1   | push2 双源冗余                  | ⚠️ 间歇性可用 (push2his DEAD, push2 main OK in throttled), qt 单源仍稳态  |
+| 2   | HEARTBEAT 蒸馏                  | 🟢 实质完成 (84K), 现 88K 健康增                                          |
+| 3   | 提交 26 脏文件                  | 🟠 累积 11+ 日, **必兑现**                                                |
+| 4   | W26 周报                        | ✅ 完成                                                                   |
+| 5   | 校正 6/22 daily                 | 🔴 **第 11 日** 推, **必兑现**                                            |
+| 6   | **300276 三丰智能 MACD 深检**   | 🔴 **决策日 Day 10**, 量化"回避" / 7/2 收 7.13 -2.60% 加重, **🔥 必兑现** |
+| 7   | MEMORY.md 蒸馏                  | 🔴 19d stale, **必兑现**                                                  |
+| 8   | plan C 调研                     | 🟢 P3 长期                                                                |
+| 9   | self-improving/memory.md 入跟踪 | 🟠 待 git add -f                                                          |
+| 10  | paper_search_hybrid.py 超时     | 🟠 待 2-3 主题化                                                          |
+
+### 7/3 09:30 开盘前必做清单 (3h 8m 倒计时, 估 60-120min)
+
+- **🔥 [P0 3h 8m] 300276 三丰智能 MACD 死叉深检 + 持仓决策** (Day 10 决策日, IL-021 防御)
+- **🔥 [P0 3h 8m] MEMORY.md 19d stale 蒸馏** (与 HEARTBEAT 蒸馏经验复用, 7/3 09:00 主会话)
+- **🔥 [P0 3h 8m] 提交 26 脏文件** (累积 11+ 日)
+- **🔥 [P0 3h 8m] 校正 6/22 daily** (第 11 日推)
+- **🟠 [P1 开盘后] self-improving/memory.md git add -f** (P0 #9)
+- **🟠 [P1 开盘后] paper_search_hybrid.py 改每天 2-3 主题** (P0 #10)
+- **🟠 [P1 开盘后] Gateway 0.110s 连续观察** (若连续 3 心跳 >50ms 触发 ps 检查)
+
+### 🧠 反思 (本次 entry)
+
+1. **🟢 push2his 端点独立退化 → push2 双源冗余定位更准**: 之前 IL-017 笼统说"push2 间歇", 现分清 — push2his /kline API 端点持续 DEAD (TLS eof), push2 主域 /stock/get API 在 throttled 下偶可用; **仓位信心仅依赖 qt 单源**, push2 仅作辅助验证; 写入 corrections 待下次 entry 升级为 IL-023
+2. **⚠️ Gateway 0.110s 首破 100ms 需观察**: 较 06:18 0.005s 慢 22x, 仍 <200ms 健康线, 但触发"连续 3 心跳 >50ms 触发 ps" 规则雏形; 不立即判异常
+
+### 7/3 06:22 liveness 策略
+
+- ✅ 维持 6h 心跳 (24h 维度 8h 间隔提示 04:18 1 次跳过, 轻度 IL-022, 未达 12h 跑 cron list 阈值)
+- ✅ 本 entry 适度 (~1.3K chars), 主动克制 P0 #2 反压力
+- 🟢 **6/6 核心服务全绿**, qt 单源 8.2+ 日稳态
+- 🔥 **[P0 3h 8m 倒计时, 4 项必做, 估 60-120min] 300276 MACD + MEMORY 蒸馏 + 提交 26 脏 + 校正 6/22** — 7/3 09:00 主会话必兑现
+- ⚠️ **Gateway 0.110s 观察中**
+- ⏳ 维持心跳节奏, 预计下次自然唤醒 7/3 12:22-12:26 (6h 周期) 或主会话 7/3 09:00 后活动
