@@ -3,17 +3,7 @@
 > This file is created in `~/self-improving/corrections.md` when you first use the skill.
 > Keeps the last 50 corrections. Older entries are evaluated for promotion or archived.
 
-## Entries
-
-### 2026-06-11 00:13 — 夜间唤醒-加载记忆模式
-
-- **Context**: Cron `dc180475-acd3-4ecf-8e58-3a4d5f087cdd` 触发,需读取 4 类核心记忆
-- **Pattern**: 读 MEMORY.md + W\_周报 + 3个 insights + 今日/昨日日志,合并写入今日 daily journal
-- **Action**: 写入 `memory/2026-06-11.md`,含 (a) 加载清单 (b) 用户偏好 (c) 本周探索成果 (d) KG/数据快照 (e) 自我检查 (f) 端午假期目标
-- **Lesson**: self-improving `memory.md` 是模板文件,真实累积在 `corrections.md` + `reflections.md` + `MEMORY.md`,不要被模板格式误导
-- **Count**: 1 (新模式,待观察是否复用)
-
-## Example Entries (Template)
+## Example Entries
 
 ```markdown
 ## 2026-02-19

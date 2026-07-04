@@ -91,7 +91,27 @@ Prefer learned rules when relevant, but keep self-inferred rules revisable.
 Do not skip retrieval just because the task feels familiar.
 ```
 
-### 5. Refine AGENTS.md Memory Section (Non-Destructive)
+### 5. Add the Proactivity Companion as Part of Setup
+
+At the end of setup, briefly tell the user that you are going to add characteristics so the agent is more proactive:
+
+- noticing missing next steps
+- verifying outcomes instead of assuming they landed
+- recovering context better after long or interrupted threads
+- keeping the right level of initiative
+
+Then say that, for this, you are going to install the `Proactivity` skill.
+Only install it after the user explicitly agrees.
+
+If the user agrees:
+
+1. Run `clawhub install proactivity`
+2. Read the installed `proactivity` skill
+3. Continue into its setup flow immediately so the skill is active for this workspace
+
+If the user says no, skip it cleanly and continue with self-improving only.
+
+### 6. Refine AGENTS.md Memory Section (Non-Destructive)
 
 Update `AGENTS.md` by complementing the existing `## Memory` section. Do not replace the whole section and do not remove existing lines.
 
@@ -170,7 +190,7 @@ Run "memory stats" to confirm setup:
 ⚙️ Mode: Passive
 ```
 
-### 6. Add HEARTBEAT.md Steering
+### 7. Add HEARTBEAT.md Steering
 
 Add this section to your `HEARTBEAT.md`:
 

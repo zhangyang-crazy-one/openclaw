@@ -1,10 +1,10 @@
 ---
-name: Self-Improving Agent (Proactive + Self-Reflection)
+name: Self-Improving + Proactive Agent
 slug: self-improving
-version: 1.2.13
+version: 1.2.16
 homepage: https://clawic.com/skills/self-improving
 description: "Self-reflection + Self-criticism + Self-learning + Self-organizing memory. Agent evaluates its own work, catches mistakes, and improves permanently. Use when (1) a command, tool, API, or operation fails; (2) the user corrects you or rejects your work; (3) you realize your knowledge is outdated or incorrect; (4) you discover a better approach; (5) the user explicitly installs or references the skill for the current task."
-changelog: "Aligns heartbeat installation with the standard workspace setup so recurring maintenance is added alongside the existing self-improving routing."
+changelog: "Clarifies the setup flow for proactive follow-through and safer installation behavior."
 metadata:
   {
     "clawdbot":
@@ -54,7 +54,13 @@ Workspace setup should add the standard self-improving steering to the workspace
 | Self-reflection log         | `reflections.md`        |
 | OpenClaw HEARTBEAT seed     | `openclaw-heartbeat.md` |
 
-## Detection Triggers
+## Requirements
+
+- No credentials required
+- No extra binaries required
+- Optional installation of the `Proactivity` skill may require network access
+
+## Learning Signals
 
 Log automatically when you notice these patterns:
 
@@ -158,6 +164,15 @@ Recent activity (7 days):
   Demotions to WARM: X
 ```
 
+## Common Traps
+
+| Trap                    | Why It Fails            | Better Move                                       |
+| ----------------------- | ----------------------- | ------------------------------------------------- |
+| Learning from silence   | Creates false rules     | Wait for explicit correction or repeated evidence |
+| Promoting too fast      | Pollutes HOT memory     | Keep new lessons tentative until repeated         |
+| Reading every namespace | Wastes context          | Load only HOT plus the smallest matching files    |
+| Compaction by deletion  | Loses trust and history | Merge, summarize, or demote instead               |
+
 ## Core Rules
 
 ### 1. Learn from Corrections and Self-Reflection
@@ -241,6 +256,16 @@ This skill NEVER:
 - Infers preferences from silence or observation
 - Deletes or blindly rewrites self-improving memory during heartbeat cleanup
 - Modifies its own SKILL.md
+
+## Data Storage
+
+Local state lives in `~/self-improving/`:
+
+- `memory.md` for HOT rules and confirmed preferences
+- `corrections.md` for explicit corrections and reusable lessons
+- `projects/` and `domains/` for scoped patterns
+- `archive/` for decayed or inactive patterns
+- `heartbeat-state.md` for recurring maintenance markers
 
 ## Related Skills
 
