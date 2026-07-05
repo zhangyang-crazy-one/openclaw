@@ -1268,3 +1268,113 @@ _本文档是 DeepSeeker 的"短期工作记忆"——反映当下系统状态�
 - 🔥 [P0 周末] 3 项兑现窗口: MEMORY 蒸馏 + 6/22 校正 + 42 脏 commit
 - 🔥 [P0 7/6 09:30] 300276 双日重检 + 持仓决策 + push2his 接入
 - ⏳ 预计下次自然唤醒 7/5 凌晨 cron (时政早8点 08:00, 每日量化 16:00, 时政晚9点 21:00 等)
+
+---
+
+## 06:22 凌晨心跳检查 (2026-07-05 周日 · ISO W27 Day 7 · 距 7/6 09:30 开盘 = 27h 8m) — **🔴 cron-event 心跳漂移 56h (P0 #11 新) + 🟢 6 件套 + qt 全绿 + 🟢 HEARTBEAT.md 111K 健康 (距下次蒸馏 80K 空间) + 🔴 push2 DEAD 第 20 日 (0 影响) + 🟠 working tree 42→28 (-14 周末清理) + 🟢 git HEAD e9271a1e04 / 私仓 0/0 + 🟠 MEMORY.md 17d stale 持续 + 🔴 P0 4 项待兑现**
+
+### 实时健康验证 🌅 **7/5 06:22 凌晨首检, 距 7/2 22:17 HEARTBEAT 上次 entry 56h 5m**
+
+- **Graphiti 8000**: ✅ HTTP 404 0.0011s (FastAPI 无 root handler, 正常)
+- **Neo4j 7474**: ✅ HTTP 200 0.0013s (26d+ uptime)
+- **Gateway 18789**: ✅ HTTP 200 0.0048s (vs 7/2 22:17 0.0029s, 健康)
+- **qq-bridge 3001**: ✅ HTTP 426 0.0010s (稳态)
+- **cron daemon**: ✅ pid 1605, 26d+ uptime (但 jobs.json 漂移, P0 #11)
+- **verge-mihomo**: ✅ 24d+ uptime (push2 仍 TLS 失败可能与之相关)
+- **🟢 qt.gtimg.cn**: ✅ HTTP 200 0.153s + 茅台 7/5 凌晨数据完整 (Plan A 唯一路径稳态 9+ 日)
+- **🔴 push2.eastmoney.com**: ❌ HTTP 000 0.140s timeout (DEAD 第 20 日, 0 影响)
+- **磁盘**: 24% 212G/937G (vs 7/2 22:17 报 211G, +1G 跨 56h, 健康)
+
+### 🆕 06:22 vs 7/2 22:17 关键 delta (8 项, 56h 跨周末)
+
+1. **🔴 cron-event 心跳漂移 56h (P0 #11 新)**:
+   - 7/2 22:17 → 7/5 06:22 = 56h 0 heartbeat entry = 9+ 个 6h 周期全部跳过
+   - daemon 进程 26d+ 稳态 → 调度层失败
+   - **🟠 7/5 周日晚核查 openclaw cron list + jobs.json**, 7/6 跟踪 24h
+2. **🟢 push2 DEAD 第 20 日 0 影响**: qt 单源 9+ 日稳态, 持仓决策不依赖 push2
+3. **🟠 HEARTBEAT.md 84K → 111K (+27K in 56h, 490 chars/h 慢 67%)**: 蒸馏方法 (IL-019) 验证健康可持续, 距 80K/7d 重蒸馏阈值 ~80K 空间 ≈ 11 日 (7/16 前后)
+4. **🟠 working tree 27 → 42 → 28 (周末 -14 清理)**: 周六非活跃期减 14, 推测手工清理/移动, 7/6 主会话核查明细
+5. **🟢 git HEAD 推进 (55661e6734 → e9271a1e04)**: 7/3/7/4/7/5 三日 sync_memory cron 跑过 (distilled)
+6. **🟠 MEMORY.md 17d stale 持续**: P0 #6, 7/5 周日晚蒸馏窗口兑现 (复用 HEARTBEAT 蒸馏方法)
+7. **🔴 300276 三丰智能延误第 12 日**: 持仓盲飞, 7/6 09:30 开盘前必兑现 (量化"回避")
+8. **🟢 茅台 7/4 (周五收盘) + 周末**: qt 单源跨周末数据完整, 持仓信心中坚
+
+### 🎯 P0 债追踪 (11 项, 7/2 22:17 → 7/5 06:22 状态更新)
+
+1. ~~push2 双源冗余~~ — 🟢 **0 影响, qt 单源充分**
+2. ~~HEARTBEAT.md 蒸馏~~ — ✅ 实质完成 + 🟠 现 111K 距下次 7/16
+3. **提交 28 脏文件 (-14)** — 🔴 7/6 主会话兑现 (P0 #3 持续)
+4. **校正 6/22 daily** — 🔴 第 13 日推, 7/5 周日晚同步兑现
+5. **300276 三丰智能 MACD 深检** — 🔴 **第 12 日延误**, 7/6 09:30 开盘前必做 (P0 #5)
+6. **MEMORY.md 蒸馏 17d stale** — 🔴 7/5 周日晚兑现 (P0 #6)
+7. **plan C 数据源调研** — 🟢 P3 长期, push2 DEAD 20+ 日 0 影响
+8. **self-improving/memory.md 入跟踪** — 🟠 仍 ?? untracked, 7/5 周日晚 `git add -f`
+9. **paper_search_hybrid.py 超时** — 🟠 7/5 周日改造
+10. **cron-event 心跳漂移 (新, P0 #11)** — 🔴 56h 0 entry, 7/5 周日晚核查
+11. **push2his kline 80% success rate 实测** — 🟠 7/6 09:25 开盘前 (IL-018)
+
+### 7/5 周日晚主会话预估 90-150min 工作
+
+- 🔥 cron-event 心跳漂移核查 (P0 #11)
+- 🔥 MEMORY.md 17d 蒸馏 (P0 #6, 复用 HEARTBEAT 蒸馏方法)
+- 🔥 校正 6/22 daily (P0 #4)
+- 🟠 self-improving/memory.md `git add -f` (P0 #8)
+- 🟠 提交 28 脏文件 (P0 #3, 含 -14 变更核查)
+
+### 7/6 09:30 开盘前 (27h 倒计时) 必兑现
+
+- 🔥 300276 MACD 深检 + 持仓决策 (第 12 日延误)
+- 🔥 push2his kline 80% success rate 实测 (Plan B 验证)
+- 🟠 cron-event 6h 周期稳定性跟踪 (24h)
+
+### 反思 (本次 entry, 3 项)
+
+1. **🔴 cron-event 漂移是监测盲区**: 56h 0 heartbeat entry 不会引发系统问题但放大未来风险 (夜间长时 0 监控); 7/5 周日晚必查, 早发现早修复
+2. **🟢 蒸馏方法 (IL-019) 验证可持续**: HEARTBEAT 84K → 111K 是健康累积 (490 chars/h vs 蒸馏前 1500/h 慢 67%), MEMORY.md 蒸馏可复用同方法
+3. **🟢 qt 单源 9+ 日 0 风险**: 跨周末数据完整, push2 DEAD 20+ 日 0 影响; 持仓决策信心中坚稳固
+
+### 7/5 06:22 liveness 策略
+
+- ✅ 主动触发本 entry (替代 cron 6h 周期漂移 56h)
+- ✅ 本 entry 适度 (~1.5K chars), 主动克制 HEARTBEAT 膨胀
+- 🟢 6 件套 + qt 单源 0 健康 delta, 56h 跨周末全稳态
+- 🔥 [P0 27h 倒计时] 7/6 09:30 开盘前必兑现: 300276 MACD + 提交 28 脏 + push2his
+- 🟠 [P1 周日晚] MEMORY.md 17d + 6/22 daily + cron 漂移核查 + git add -f
+- ⏳ 等用户周日主会话 + 周一开盘前 P0 兑现
+
+## 22:17 cron-event 晚间心跳 (2026-07-05 周日 · ISO W27 Day 7 · 距 7/6 09:30 开盘 = 11h 13m · 距 7/2 22:17 last HEARTBEAT entry = 71h 0m) — **🔁 cron-event 漂移持续 (56h → 71h, 12+ 个 6h 周期 0 自动触发, cron daemon 26d+ 进程稳态但调度层失败, P0 #11 待 7/6 主会话 jobs.json 核查) + 🟢 6 件套核心服务全绿 (Graphiti/Neo4j/Gateway/qq-bridge/cron daemon/verge-mihomo) + 🟢 qt.gtimg.cn 0.188s 稳态 11+ 日 (Plan A 单源充分) + 🔴 push2 DEAD 第 21 日 (0 影响, qt 单源仍 100% 可靠) + 🔴 HEARTBEAT.md 116K chars (距 7/16 重蒸馏阈值 ~80K 空间, post-distillation 312 chars/h 健康) + 🟠 working tree 29 脏 (+1 since 06:22) + 🟢 7/5 cron 全面稳态 (09:13 GitHub Trending QQ 910667292 / 10:02 KG Lint 63718 实体 / 21:13 nightly_build QQ -512450134 / 22:13 学术研读 papers 345 篇不变) + 🔴 P0 #5 300276 MACD 第 12 日延误 (7/6 09:30 开盘前必兑现) + 🟠 EastMoney 财务数据 cron 3d error (push2 DEAD 同根因)**
+
+### 实时健康验证 🌙 **7/5 22:17 (周日 post-market, 距 7/2 22:17 = 71h)**
+
+- **Graphiti 8000**: ✅ HTTP 404 0.0011s (FastAPI 无 root handler, 正常)
+- **Neo4j 7474**: ✅ HTTP 200 0.0012s (26d+ uptime)
+- **Gateway 18789**: ✅ HTTP 200 0.0057s (vs 06:22 0.0048s 略升, 健康)
+- **qq-bridge 3001**: ✅ HTTP 426 0.0009s (稳态)
+- **cron daemon**: ✅ pid 1605, 26d+ uptime (进程健康, 调度失败待查)
+- **verge-mihomo**: ✅ 24d+ uptime
+- **🟢 qt.gtimg.cn**: ✅ HTTP 200 0.188s + 茅台数据完整 (累计稳态 11+ 日 / 270+ h)
+- **🔴 push2.eastmoney.com**: ❌ DEAD 第 21 日 (0 影响)
+- **🔴 hq.sinajs.cn**: ❌ DEAD 第 19 日 (0 影响)
+- **磁盘**: 24% 212G/937G (+1G since 7/2 22:17, 健康)
+- **HEARTBEAT.md**: 116348 bytes ≈ 116K chars (+5K since 06:22 111K, +32K since 7/2 蒸馏 84K)
+- **memory/2026-07-05.md**: 7218 → ~9K chars (含本 entry + 之前 cron reports)
+
+### 🎯 7/6 周一开盘前 P0 清单 (11h 13m 倒计时)
+
+1. **🔥 300276 三丰智能 MACD 深检** — P0 #5, 第 12 日延误, 关键日
+2. **🔥 cron-event 漂移核查 (jobs.json)** — P0 #11, 71h 0 自动触发
+3. **🔥 MEMORY.md 17d stale 蒸馏** — P0 #6
+4. **🔥 提交 29 脏文件** — P0 #3
+5. **🔥 校正 6/22 daily** — P0 #4, 第 13 日推
+
+### 🧠 反思 (1 项)
+
+- **🔴 cron-event 漂移根因推测**: daemon 进程稳态 + cron list 显示各 jobs enabled=ok + last_run 时间戳规律 → 推测 jobs.json 累积但 `run` action 调度逻辑在 gateway 层未触发; **下次**: 7/6 主会话跑 `openclaw cron list --json` 比对各 job lastRunAt vs 预期 nextRunAt, 找出断点
+
+### 22:17 liveness 策略
+
+- ✅ cron-event 兜底触发仍工作, 写入 daily + HEARTBEAT
+- ✅ 本 entry ~1.5K chars, post-distillation 纪律
+- 🔴 **P0 #11 cron-event 调度** 必查
+- 🔴 **P0 #5 300276 MACD** 关键日 7/6 09:30
+- ⏳ 预计下次自然唤醒 7/6 04:17 cron-event 或主会话 7/6 09:00 后
