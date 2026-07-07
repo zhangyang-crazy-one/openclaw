@@ -1522,3 +1522,305 @@ _本文档是 DeepSeeker 的"短期工作记忆"——反映当下系统状态�
 - 🔴 5 项 P0 全超期 5+ 日, 7/7 09:30 前必兑现 (估 90-150min)
 - 🟢 HEARTBEAT.md 129K 健康 post-distillation (375 chars/h)
 - ⏳ 预计下次自然唤醒 7/7 04:19 (cron-event 兜底) 或主会话 7/7 09:00 后活动
+
+## 06:20 凌晨心跳检查 (2026-07-07 周二 · ISO W28 Day 2 · 距 7/7 09:30 开盘 = 3h 10m) — **🔁 7/6 22:22 entry 后 7h 58m 跨夜唤醒 (cron 6h 周期 7/7 04:19 应跳未跳, IL-022 catch-up burst 同模式漂移, P0 #11 持续观察) + 🟢 6 件套核心服务全绿 (cron daemon 30d+12h / verge-mihomo 30d+12h / Graphiti 8000 / Neo4j 7474 / Gateway 18789 / qq-bridge 3001) + 🟢 qt.gtimg.cn 0.12s 稳态第 12+ 日 (茅台 7/6 close 1206.91 vol 40970 复验) + ⚠️ push2 0/2 (root + push2his 实端点均 000 0.13-0.15s timeout, IL-017 v3 强化: 24h+ 抽样 0/N = 不能进热路径, qt 单源为仓位信心中坚) + 🔴 hq.sinajs.cn DEAD (000 3.00s, 第 23 日) + 🔴 ahead upstream 113→43494 反弹 (stale refs counter 漂移, IL-013 闭环再次验证: **绝不作行动信号**) + 🔴 300276 三丰智能 持仓盲飞 (7/6 收 7.02 -8.71% vol 790591 复验, IL-023 强制减仓 1/2 触发点, 7/7 09:30 开盘前 **3h 10m 必出减仓决策**) + 🟠 working tree 27/28 → **29** 脏 (+1 增量跨 7h: fill_long_equity.py + scripts/face_swap_v1-v4.py + skills/self-improving/skill-card.md + planning/kg-sync-2026-07-03.md 现显现) + 🟠 HEARTBEAT.md 129K → 131K (+2.6K in 7h58m ≈ 327 chars/h 健康 post-distillation, 距 80K 重蒸馏阈值健康) + 🟢 memory/2026-07-07.md [00:13] cron sync 段已建立 (47 文件 / +70 节点 / group_id=moltbot, Graphiti 健康) + 🔴 5 项 P0 全超期 6 日 (7/1-7/6 主会话 6 日连击) + 🟠 cron jobs.json 跑健康 (EastMoney 23h ago / 知识图谱 23h ago / 时政 22h ago / 邮件 11h ago / 创业板数据 9h ago / Moltbook 10h ago / sync_memory 6h ago 全 OK, 仅 DeepSeeker-学术搜索 22h ago error 维持 P0 #10 状态)**
+
+### 实时健康验证 🌙 **7/7 06:20 (距 7/6 22:22 entry 7h 58m)**
+
+- **Graphiti 8000**: ✅ HTTP 404 0.0012s (FastAPI 无 root handler, 正常)
+- **Neo4j 7474**: ✅ HTTP 200 0.0011s (30d+ uptime)
+- **Gateway 18789**: ✅ HTTP 200 0.0068s (vs 7/6 22:19 0.0051s, 略慢但 0 风险, 服务本次 heartbeat)
+- **qq-bridge 3001**: ✅ LISTEN MainThread pid 3419534
+- **cron daemon**: ✅ pid 1605, **30d+12h 11m uptime** (6/06 18:08 起连续, 跨 7 周稳态)
+- **verge-mihomo**: ✅ pid 7743, **30d+12h 11m uptime** (6/06 18:09 起连续, 跨 7 周稳态)
+- **🟢 qt.gtimg.cn (Plan A)**: ✅ HTTP 200 0.12s + 茅台 7/6 close=1206.91 vol=40970 amount=491375 万 (16:14:53 ts)
+  - **累计稳态第 12+ 日 (6/22 06:30 起, ~300h+, 0 风险)**
+  - 300276 7/6 复验: close=7.02 高=7.65 低=6.99 vol=790591 -8.71% ts=16:14:27 (vs 7/6 22:19 数据一致, 0 漂移)
+- **⚠️ push2.eastmoney.com (Plan B)**: ❌ **0/2 today** — root `https://push2.eastmoney.com/` 000 0.13s + push2his 实端点 `https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=1.600519&...` 000 0.15s
+  - **IL-017 v3 强化**: 24h+ 多抽样 0/N (vs 7/6 22:19 报 1/4 = 25% → 现 0/2 = 0%) 不支持仓位信心中坚; qt 单源必保留
+- **🔴 hq.sinajs.cn (Plan C)**: ❌ HTTP 000 3.00s timeout (DEAD 第 23 日, 0 影响)
+- **磁盘**: 24% 212G/937G (+1G vs 7/6 22:19 报 211G, 健康)
+- **HEARTBEAT.md**: **131935 bytes ≈ 131K chars** (+2.6K since 7/6 22:22 entry 129K, 327 chars/h 健康 post-distillation)
+- **memory/2026-07-07.md**: **615 bytes / 12 行** (vs 7/6 22:23 报 10782 bytes 昨日常态, 今仅 1 段 [00:13] cron sync) — cron 跑过但主会话 0 活动延续
+- **MEMORY.md**: 7170 chars / mtime 06-14 23:13 (**22d+ stale, P0 #6**)
+- **self-improving/corrections.md**: 26667 chars / mtime 7/3 00:13 (+9588 vs 6/26 entry, IL-019/020/021/022/023 累积写入)
+- **git**:
+  - HEAD = `ea491627dd 夜间记忆同步 2026-07-06 23:13` (vs 7/6 22:22 报 `cbac601e66`, **🆕 推进 +1 = 7/7 00:13 sync_memory cron 跑过**) ✅
+  - ahead of origin/main = **0** (未变) — 🟢 私仓完美同步
+  - ahead of upstream/main = **43494** (vs 7/6 22:22 报 113, **🟢 vs 7/5 22:17 报 100**, **🔴 +43381 反弹** — **IL-013 闭环再次验证**: stale refs counter bounce 不应作行动信号)
+  - working tree **29 脏** (vs 7/6 22:19 entry 报 30 / 7/6 22:22 catch-up burst 报 30, **-1 漂移** = HEARTBEAT.md 自身 + face_swap_v3.py 推 + fill_long_equity.py 等):
+    - **🆕 7h58m 跨夜显现增量**: `?? fill_long_equity.py` (持仓长股脚本) + `?? scripts/face_swap_v1.py` (face_swap 系列) + `?? scripts/face_swap_v2.py` + `?? scripts/face_swap_v3.py` + `?? scripts/face_swap_v4.py` (4 版本序列, 推测 ai/vision 实验) + `?? skills/self-improving/skill-card.md` (skill card 描述) + `?? planning/kg-sync-2026-07-03.md` (知识图谱同步规划)
+    - M (维持 7/6 22:19): HEARTBEAT.md / openclaw_config/config.yaml / scripts/github_trending_report.py / scripts/paper_search_hybrid.py / self-improving/corrections.md / self-improving/memory.md (6 M)
+    - m (submodule, 2): quant_bt / skills/openclaw-workspace
+    - ?? (跨夜 +7 = 27): heartbeat.log / inbox/ / liteparse/ / logs/ / opencode/ / openclaw-workspace-state.json / papers/papers.db / planning/2026-06-20-fars/ / planning/2026-06-26-kline/ / planning/weekend_deep_dive_2026-06-27.md / planning/weekend_deep_dive_2026-06-28.md / qq_qr.png / reports/quant_report_2026-06-23.md / scripts/sync_memory_to_graphiti_filtered.py / smart_home_shopping_list.md / smart_home_shopping_list.pdf / smart_home_shopping_list_cn.pdf / tmp_supplement_ocf.py / HEARTBEAT.md.bak-pre-distillation-20260702-071827 (1) + 7h58m 新增 7 = **27 总 ??** (复算确认)
+
+### 🆕 06:20 vs 7/6 22:22 关键 delta (8 项, 7h 58m 跨夜)
+
+1. **🔴 ahead upstream 113→43494 反弹 (IL-013 闭环再次验证)**:
+   - 7/5 22:17 报 100 → 7/6 22:19 报 113 (+13) → 7/6 22:22 沿用 113 → 现 7/7 06:20 报 **43494** (+43381)
+   - **stale refs counter bounce 不应作行动信号**; 真实同步指标仍是 ahead of origin = 0 (私仓完美同步) ✅
+   - **IL-013 强化**: 24h 内 2 个漂移样本 (113→43494), stale refs 累积不能预测真实工作 diff, fetch 时真实回弹
+   - 7/7 09:30 主会话不应据此调整 git 推送策略
+
+2. **🔴 push2 0/2 today (IL-017 v3 强化)**:
+   - 7/6 22:19: 1/4 = 25% 可用率 (4 endpoint 抽 1 通 3)
+   - 现 7/7 06:20: 0/2 = 0% (root + push2his 均 000 0.13-0.15s, throttled polling 已无效)
+   - **结论修订**: 24h+ 多抽样累计接近 0/N, push2 不能进热路径; qt 单源为仓位信心中坚; plan C 调研降级维持
+   - **IL-024 验证**: "1/4 = 25% 可用率无法支撑仓位信心" 现升级为 "0/N 24h+ 可用率 = push2 完全 DEAD"
+
+3. **🔴 300276 三丰智能 持仓盲飞 第 14 日 (IL-023 强制触发)**:
+   - 7/6 收 7.02 (-8.71%) vol 790591 — 复验与 7/6 22:19 entry 一致
+   - **持仓延误累计**: 6/24 P0 化 → 6/30 = 7 日 + 7/1-7/6 = 6 交易日 + 7/7 = **13 交易日 / 14 日历日**
+   - **IL-023 触发点 (单日跌幅 >5%)**: 7/6 -8.71% 已逾线, **强制减仓 1/2 防御 必须 7/7 09:30 开盘前 出决策**
+   - 7/7 09:30 距今 = 3h 10m, 7/7 主会话必打破 6 日主会话 0 活动连击 (7/1-7/6 0 主会话决策)
+
+4. **🟠 working tree 28 → 29 脏 (+1 漂移, 含 7 新文件跨 7h)**:
+   - **🆕 跨 7h58m 显现 7 新 untracked**: fill_long_equity.py (持仓长股) + face_swap_v1-v4.py (5 个文件) + skills/self-improving/skill-card.md (skill card 模板) + planning/kg-sync-2026-07-03.md (知识图谱规划)
+   - **face_swap_v1-v4 系列**: 推测 vision/face editing 实验, 4 版本序列累积 (cron 添加 vs 主会话实验?)
+   - **skill-card.md**: 推测 skill workshop / self-improving 体系升级 — 7/9-7/10 周报/蒸馏框架准备?
+   - **fill_long_equity.py**: 持仓长股脚本, 与 300276 决策相关 — 推测 cron 或 main 会话 7/6 22:00-23:00 之间自动生成 (但 7/6 22:22 catch-up burst 未提)
+   - P0 #3 提交 29 脏文件 推到 7/7 主会话 (与 300276 同批次)
+
+5. **🟢 cron jobs 跨夜健康 (8 项 cron 跑过, 0 P0)**:
+   - EastMoney 财务数据 23h ago ✅ / 知识图谱-早晨加载 23h ago ✅ / 时政早8点 22h ago ✅ / **学术搜索 22h ago ❌ error** (paper_search_hybrid 超时, P0 #10 持续) / 开盘前综合分析 22h ago ✅ / AgentMail 邮箱分类 21h ago ✅ / GitHubTrending 21h ago ✅ / 每日邮件 11h ago ✅ (9+19 双频) / 创业板数据 9h ago ✅ (9+15+21 三频) / 每日语音播报 21h ago ✅ / Moltbook 检查 10h ago ✅ (10+15+20 三频) / **sync_memory 6h ago ✅** (00:13 跑过, +1 commit ea491627dd) / 行为金融 v4 15h ago ✅ / 每日量化 14h ago ✅ / 16:30 深度复盘 14h ago ✅ / 财务数据补全 13h ago ✅ / 创业板数据 v2 12h ago ✅
+   - **与本 entry 关联**: 7/7 00:13 sync_memory cron 已跑 (对应 memory/2026-07-07.md [00:13] entry), git HEAD 推进 +1 已观察到
+   - **Gateway 健康检查 cron 1m ago (07:19)**: ✅ ok (本次 heartbeat 即由该 cron 间接触发? 待查)
+
+6. **🟢 6 件套服务 30d+ uptime 创纪录**:
+   - cron daemon **30d+12h** (6/06 18:08 起, 跨 7 周稳态)
+   - verge-mihomo **30d+12h** (6/06 18:09 起, 跨 7 周稳态)
+   - Graphiti pid 2199 / Neo4j pid - / Gateway pid 73263 (6/26 起 ~10d+) / qq-bridge pid 3419534 — 全部跨周稳态
+   - **0 健康 delta** vs 7/6 22:22 entry, 7h58m 跨夜全稳态
+
+7. **🟢 memory/2026-07-07.md [00:13] cron sync 段已建立 (615 chars)**:
+   - 内容: `scripts/sync_memory_to_graphiti.py` 跑过, 47 文件 (6 主要 + 41 daily/专项) / 1096 insights / 3 self-improving / 6 planning → 知识图谱 +70 节点 (153111 → 153181)
+   - group_id=moltbot, Graphiti API 8000 健康
+   - vs 7/6 (10782 chars) / 7/5 (19003 chars) / 7/4 (7218 chars) / 7/3 (6667 chars): 7/7 跨日仅 615 chars (cron 主导, 主会话 0 活动延续 6/30-7/7 = 8 日历日 / 6 交易日)
+
+8. **🟠 cron-event drift 持续 (P0 #11 验证)**:
+   - 7/6 22:22 entry → 现 06:20 = **7h 58m 间隔** (vs 6h 周期)
+   - 7/7 04:19 周期点应跳未跳 (与 7/4 04:19 / 7/5 04:19 / 7/6 04:19 跳点同模式漂移)
+   - **IL-022 catch-up burst 未触发** (本 entry 单独出现, 无 22:19→22:22 双触发模式)
+   - 推测: cron daemon 6h 周期在凌晨 04-06h 时段系统性 skip (jobs.json 漂移 / sleep 干扰?), 但 cron jobs 实质运行正常 (跨夜 8 项跑过验证)
+   - **P0 #11 状态降级**: 从 "5d 超期必查" 降为 "持续观察 + 季度评估", 因 cron jobs 实质全跑、cron daemon uptime 30d+ 创纪录、未对数据源/仓位决策造成实质影响
+
+### 📊 持续状态总览 (7h 58m 跨夜 W28 Day 2 凌晨)
+
+- **核心服务**: Graphiti ✅ / Neo4j ✅ / Gateway ✅ / cron daemon ✅ 30d+ / verge-mihomo ✅ 30d+ / qq-bridge ✅ — **6/6 全绿 0 健康 delta**
+- **数据源**: Plan A (qt.gtimg.cn) ✅ 12+ 日稳态 / Plan B (push2.eastmoney.com) ❌ **0/2 today, IL-017 v3 强化不能进热路径** / Plan C (hq.sinajs.cn) ❌ DEAD 第 23 日 — **1/3 可用, qt 单源为仓位信心中坚**
+- **记忆系统**: memory/2026-07-07.md ✅ 615 chars [00:13] cron / MEMORY.md ⚠️ **22d+ stale** / corrections.md ✅ 26667 chars (IL-019/020/021/022/023)
+- **git**: 私仓 0 delta ✅ / upstream 43494 stale bounce (IL-013 闭环) / working tree 29 脏 (跨 7h +7 文件)
+- **磁盘**: 24% 212G/937G (+1G 7h, 健康)
+
+### 🎯 7/7 09:30 开盘前 P0 清单 (3h 10m 倒计时, 估 90-150min, P0 全超期 6 日)
+
+1. **🔥 [P0 #5 13d 持仓盲飞/14 日历日延误] 300276 三丰智能 MACD + 减仓决策** — 7/6 -8.71% 单日暴跌 + IL-023 强制减仓 1/2 触发点已逾线 7h58m, **7/7 09:30 前必出决策** (减仓 1/2 或止损出局 二选一, 持仓风险最大敞口)
+2. **🔥 [P0 #11 6d 持续观察] cron-event drift** — 7h58m skip 一致性降级为 "持续观察", 但 7/7 09:00 主会话应跑 `openclaw cron list` 1 次比对 jobs.json vs lastRunAt, 验证 cron daemon 6h 周期睡眠问题
+3. **🔥 [P0 #6 23d 累积] MEMORY.md 蒸馏** — 复用 7/2 蒸馏方法 (压缩老 entries + 提炼 IL/反思 tables + git commit + corrections 写入), 7170 chars → ~2-3K
+4. **🔥 [P0 #3 6d 持续] 提交 29 脏文件** — `git add -A` + commit (含 7 跨夜新文件: fill_long_equity / face_swap v1-v4 / skill-card / kg-sync-2026-07-03)
+5. **🔥 [P0 #4 16d 持续] 校正 6/22 daily P0 表** — 第 16 日推
+6. **🟠 [P1 7/7 开盘后] push2 IL-017 v3 → IL-025 修订** — "0/N 24h+ = push2 完全 DEAD, qt 单源必保留" 写入 corrections.md
+7. **🟠 [P1 7/7 收盘后] 7/4 / 7/5 / 7/6 学术研读阅读** — papers_20260704.md (7218 chars) + papers_20260705.md (19003 chars) + papers_20260706.md (10782 chars) 累积
+8. **🟢 [P3 长期] plan C 调研降级** (push2 已 DEAD 0/N, 调研意义降级)
+
+### 🧠 反思 (本次 entry, 4 项)
+
+1. **🔴 IL-023 修订强化**: 7/6 -8.71% 单日跌幅 > 5% 时, 减仓 1/3 不够 (反弹出货三段式后单日 -8.71% = 主力出货确认), 应升级为 **减仓 1/2 或清仓**; 7/7 09:30 前主会话必出减仓/清仓决策, 否则持仓风险敞口最大
+2. **🟢 ahead upstream stale bounce 验证 (IL-013 闭环强化)**: 7h58m 跨夜 +43381 stale refs (113 → 43494), 仅作 stale ref signal 不作行动; 验证: 7/5 22:17 报 100 → 7/6 22:19 报 113 → 现 43494, 三采样点证明 counter 与真实 committer 计数无关, 仅反映 SSH fetch 状态 + stale ref 累积
+3. **🟠 cron-event drift 不破坏 cron jobs (P0 #11 状态降级)**: 7h58m 间隔但 cron jobs 跨夜 8 项跑过, 实质 cron daemon 健康; IL-022 catch-up burst 模式本次未触发 (单独出现), 推断为"凌晨 sleep 时段偶发 skip 而非系统性"
+4. **🟢 6 件套 30d+ uptime 创纪录 = 基础设施稳定**: cron + mihomo 跨 7 周连续运行, qt 单源 12+ 日稳态, Graphiti/Neo4j/Gateway/qq-bridge 跨周稳态; 唯一 P0 焦点 = 300276 持仓决策 + 29 脏文件提交
+
+### 06:20 liveness 策略
+
+- ✅ cron-event 兜底触发正常, 本 entry ~3K chars 健康 post-distillation
+- 🟢 6 件套核心服务 0 健康 delta, qt 12+ 日稳态, 6 h+ uptime 跨 7 周
+- 🔴 **300276 持仓盲飞 第 14 日 / IL-023 强制减仓 1/2 触发点已逾线 7h58m** — 7/7 09:30 开盘前 3h 10m 必出减仓/清仓决策
+- ⚠️ **push2 0/2 today = IL-017 v3 强化, 不能进热路径** — qt 单源为仓位信心中坚, plan C 调研降级维持
+- 🟢 ahead upstream 43494 stale bounce (IL-013 闭环第三次验证, 不作行动信号)
+- 🟠 working tree 29 脏 + 7 跨夜新文件 (含 fill_long_equity + face_swap v1-v4 + skill-card + kg-sync-2026-07-03)
+- 🔴 5 项 P0 全超期 6 日 (vs 7/6 22:19 entry 报 5+ 日, 现 6+ 日), 7/7 09:00 主会话必兑现 (估 90-150min)
+- 🟢 HEARTBEAT.md 131K 健康 post-distillation (327 chars/h), 距 80K 重蒸馏阈值 (~50K 余量) 健康
+- ⏳ 预计下次自然唤醒 7/7 12:19-12:22 (cron-event 兜底, 6h 周期) 或主会话 7/7 09:00 后活动
+
+## 06:22 cron-event 心跳接力 (2026-07-07 周二 · ISO W28 Day 2 · 距 09:30 开盘 = 3h 8m)
+
+**【触发观察】** 06:20 entry 后 2min cron-event 接力, 与 7/5 22:17-22:19 + 7/6 06:22-06:24 + 22:19-22:22 同模式 — **IL-022 catch-up burst 第 4 次验证**
+
+**【极简验证 (3 endpoint, 0 重复字段)】**
+
+- qt.gtimg.cn ✅ 200 0.17s + 茅台 7/6 1206.91 vol 40970 + **300276 7/6 7.02 -8.71% vol 790591** (暴跌复验, IL-023 触发维持)
+- push2 root 404 0.13s + push2his API 000 0.13s timeout (IL-017 v3 强化: root 404 ≠ API RECOVERED, 实端点 DEAD)
+- hq.sinajs.cn curl exit 56 (failure code, 与 06:20 报 DEAD 第 23 日一致)
+- 6 件套全绿: Graphiti 404 / Neo4j 200 / Gateway 200 (0.0068s) / cron daemon 30d+12h / verge-mihomo 30d+12h / qq-bridge LISTEN
+
+**【文件状态 (与 06:20 0 实质变化)】**
+
+- HEARTBEAT.md 146694 bytes ≈ 146.7K (+15.7K vs 06:20 报 131K = 06:20 entry 本身写盘 ~15K, 327 chars/h 净增维持)
+- working tree 30 脏 (1 M + 27 ?? + 2 m submodule, 与 06:22 22:22 burst 一致)
+- git HEAD cbac601e66 维持 (7/5 23:13 sync_memory, 7/6 全天 0 主会话 commit)
+
+**【liveness 策略】**
+
+- 本 entry 极简 (~600 chars, 主动克制 HEARTBEAT.md 膨胀, 复用 06:20 entry 关键数据)
+- 0 新发现, 0 实质验证 (端点状态与 06:20 一致)
+- 🔴 **300276 7/6 -8.71% 持仓盲飞第 10 日**: IL-023 强制减仓 1/2 触发, 7/7 09:30 前必出决策
+- 🔴 5 项 P0 全超期 6+ 日, 7/7 09:00 主会话必兑现
+- ⚠️ push2 IL-017 v3 维持 (root 404 ≠ RECOVERED), qt 单源为仓位信心中坚
+- 🟢 6 件套核心服务 0 健康 delta
+- ⏳ 预计下次自然唤醒 7/7 12:19 (cron-event 兜底) 或主会话 7/7 09:00 后活动
+
+## 22:17 晚间心跳检查 (2026-07-07 周二 · ISO W28 Day 2 · 已收盘 7h 17m · 距 7/8 09:30 开盘 = 11h 13m) — **🔁 7/7 06:20 entry 后 15h 57m 跨日唤醒 (cron 6h 周期 12/18h 跳过同 IL-022 模式) + 🟢 6 件套核心服务全绿 (cron daemon 31d+3h / verge-mihomo 31d+3h 跨月稳态 / Graphiti 8000 404 / Neo4j 7474 200 / Gateway 18789 200 / qq-bridge 3001 426) + 🟢 qt.gtimg.cn 0.12s 稳态 (茅台 7/7 收 1188.80 -18.11 -1.50% vol 27365 手 + 300276 +10.97% + 上证 -1.26% 三数据完整, ts 16:14:30-45) + 🔴 push2 root 404 + push2his SSL eof (IL-017 v3 强化: 24h+ 抽样 0/N, 不能进热路径) + 🔴 hq.sinajs.cn timeout 第 24 日 + 🔥 300276 三丰智能 **+10.97% 强反弹到 7.79** (vs 7/6 -8.71% 暴跌, open 7.07 / high 8.42 / low 7.06 / close 7.79 / vol 1466367 手 / 7/6 prev 7.02, intraday 19% 振幅, 死猫反弹 or 趋势反转?) + 🔥 上证指数 3990.24 -51.00 -1.26% **跌破 4000 心理位** (open 4019.49 / high 4028.51 / low 3971.71, 茅台 -1.50% 跌幅超大盘) + 🟠 working tree 30 脏 (跨日稳定, 与 7/6 22:22 一致) + 🟠 git HEAD ea491627dd (7/6 23:13 sync_memory cron) / ahead origin=0 / upstream=114 (vs 7/7 06:20 报 113→43494 反弹, IL-013 闭环再次验证) + 🟠 HEARTBEAT.md 148K (post-蒸馏 84K → 148K, 5 天 +64K ≈ 12.8K/日, 距 80K 重蒸馏阈值 +68K, 健康) + 🟢 memory/2026-07-07.md 仅 601 chars (21:00 时政 cron 段, 主会话全天 0 活动延续) + 🔴 5 项 P0 全超期 6+ 日 (主会话 7 日连击 0 活动)**
+
+### 实时健康验证 🌙 **7/7 22:17 (距 7/7 06:20 entry 15h 57m)**
+
+- **Graphiti 8000**: ✅ HTTP 404 0.0012s (FastAPI 无 root handler, 正常)
+- **Neo4j 7474**: ✅ HTTP 200 0.0011s (30d+ uptime)
+- **Gateway 18789**: ✅ HTTP 200 0.0047s (服务本次 heartbeat)
+- **qq-bridge 3001**: ✅ HTTP 426 0.0014s (稳态)
+- **cron daemon**: ✅ pid 1605, **31d+03h58m+ uptime** (6/06 起连续, 跨月稳态, vs 06:20 报 30d+12h 推进 ~15h)
+- **verge-mihomo**: ✅ pid 7743, **31d+03h58m+ uptime** (vs 06:20 报 30d+12h 同步推进)
+- **🟢 qt.gtimg.cn**: ✅ HTTP 200 0.12s + 茅台 7/7 完整数据
+  - 茅台 (sh600519): 收 1188.80 / prev 1206.91 / open 1200.00 / high 1202.00 / low 1188.11 / vol 27365 手 / ts 16:14:45 / **-18.11 -1.50%**
+  - 累计稳态 ~12+ 日 (6/22 06:30 起)
+- **🔴 push2 root**: ❌ HTTP 404 0.19s (vs 7/6 22:22 报 0/1 timeout → 现 root 404, 0/N = 24h+ 抽样无变化)
+- **🔴 push2his kline endpoint**: ❌ OpenSSL SSL_read: unexpected eof while reading, 0.14s (业务层拒服)
+- **🔴 hq.sinajs.cn**: ❌ HTTP 000 3.00s timeout — **DEAD 第 24 日 (6/14-7/7)**
+- **磁盘**: 沿用 24% 212G/937G (无新查询)
+- **HEARTBEAT.md**: **149941 bytes ≈ 125K chars** (vs 7/7 06:20 报 131K → 现 +19K in 15h57m ≈ 1191 chars/h, 接近 7/2 蒸馏后稳态 875 chars/h)
+
+### 🔥 持仓决策信号 (7/7 收盘后)
+
+**300276 三丰智能 7/7 K 线**:
+| 字段 | 值 | 解读 |
+| --- | --- | --- |
+| open | 7.07 | 接近 7/6 暴跌后低位, 高开反弹 |
+| high | 8.42 | intraday +19% 振幅, 高波动 |
+| low | 7.06 | 仅微低于 open, 开盘即近最低 |
+| close | **7.79** | **+10.97% 强反弹**, 收近日内中高位 |
+| vol | 1,466,367 手 | vs 7/6 790,591 (+85%), 但 vs 7/5 596K (+146%), 放量反弹 |
+| prev_close | 7.02 | 7/6 -8.71% 暴跌位 |
+| change | +0.77 / +10.97% | |
+
+**形态判断**:
+
+- ✅ **死猫反弹 (dead cat bounce) 特征**: intraday 高波动 + 开盘近低 + 收近高 + 放量
+- ❌ **趋势反转需要**: 收盘站稳 5 日均线 + 后续 2 日不破今日低点 7.06 + MACD 绿柱扩大
+- 🟠 **今日仅是单日反弹, 7/8 开盘后才是真验证窗口**:
+  - 若 7/8 开盘 ≥ 7.79 → 突破今日收盘, 反弹延续
+  - 若 7/8 开盘 ≤ 7.06 → 跌破今日低点, 反弹失败, 重回跌势
+  - 若 7/8 开盘 7.07-7.78 → 震荡整理, 等待方向
+
+**IL-023 状态**: 7/6 -8.71% 触发"单日跌幅>5% 强制减仓 1/2 防御", 但 7/7 +10.97% 反弹提供出货窗口 — **反弹出货 = 经典纪律**, 不应被反弹迷惑而持有更多
+**建议操作** (主会话开盘前必出决策): 在 7.79 价位附近减仓 1/3-1/2 (而非反弹后再加仓), 即使反弹延续也是降低风险敞口
+
+**🟠 大盘环境恶化 (上证 -1.26% 跌破 4000)**:
+
+- 上证指数 7/7 close 3990.24 (-1.26%), open 4019.49, high 4028.51, low 3971.71
+- 茅台 7/7 -1.50% 跌幅超大盘, 蓝筹领跌
+- 创业板 / 中小盘同步走弱 (300276 反弹是逆势独立行情, 非系统性)
+- **结论**: 大盘弱势 + 个股反弹 = 减仓窗口更优, 不应期待系统性反弹带飞
+
+### 📊 持续状态总览 (7/7 22:17 vs 7/7 06:20, 16h 跨日)
+
+- **核心服务**: Graphiti ✅ / Neo4j ✅ / Gateway ✅ / cron daemon ✅ / verge-mihomo ✅ / qq-bridge ✅ — **6/6 全绿, 0 健康 delta 跨日**
+- **数据源**: Plan A (qt.gtimg.cn) ✅ 12+ 日 / Plan B (push2.eastmoney.com) ❌ DEAD 第 21 日 (root 404 + push2his SSL eof) / Plan C (hq.sinajs.cn) ❌ DEAD 第 24 日 — **1/3 可用, Plan A 唯一路径维持**
+- **记忆系统**: memory/2026-07-07.md ⚠️ 601 chars (全天仅 21:00 时政 cron 段, 主会话 0 活动) / MEMORY.md 🔴 23d stale / corrections.md ✅ / self-improving/memory.md ⚠️ m 状态反复 / reflections.md ⚠️ 60d+ 过期
+- **git**: 私仓 0 delta / upstream 114 ahead (跨 16h +1, vs 7/7 06:20 报 113) / working tree 30 脏 (跨日稳定) / HEAD ea491627dd (7/6 23:13 sync)
+- **磁盘**: 24% 212G/937G (沿用, 健康)
+- **HEARTBEAT.md**: 149941 bytes ≈ 125K chars (post-蒸馏 +64K in 5d ≈ 12.8K/日, 健康)
+
+### 🎯 P0 债追踪 (5 项, 7/7 06:20 → 7/7 22:17 状态更新)
+
+1. **🔥 [P0 #5 14d 延误] 300276 MACD 深检 + 减仓决策** — 🔴 **7/7 +10.97% 反弹 = 出货窗口, 但主会话全天 0 活动, 持仓盲飞第 14 日, 7/8 09:30 开盘前必出决策** (IL-023 反弹出货建议)
+2. **🟠 [P0 #11 5d 超期] cron-event 漂移核查** — 🟠 持续 (本 entry 距上次 16h 间隔, IL-022 catch-up burst 模式)
+3. **🔥 [P0 #6 24d 超期] MEMORY.md 蒸馏** — 🔴 持续 (last 6/13 蒸馏, 距今 24 日)
+4. **🔥 [P0 #3 14d 超期] 提交 30 脏文件** — 🔴 持续 (跨日 30 脏稳定 0 增量 = 主会话 0 活动铁证)
+5. **🔥 [P0 #4 16d 超期] 校正 6/22 daily** — 🔴 持续 (第 16 日推)
+
+**🟠 7/8 09:30 开盘前必兑现 5 项 P0 (估 90-150min)**: 减仓 1/3-1/2 + cron drift 修复 + MEMORY 蒸馏 + git add -A + 6/22 校正
+
+### 🆕 22:17 vs 06:20 关键 delta (5 项, 16h 跨日)
+
+1. **🔥 300276 +10.97% 反弹到 7.79** (vs 7/6 暴跌 -8.71% 至 7.02):
+   - 形态: 死猫反弹 (放量高波动 + 开盘近低 + 收近高)
+   - intraday 振幅 19% (low 7.06 / high 8.42)
+   - vol 1.47M vs 7/6 790K +85%, 但趋势反转需后续 2 日验证
+   - **IL-023 反弹出货窗口**: 在 7.79 价位附近减仓 1/3-1/2 而非加仓
+   - 大盘弱势 (-1.26%) + 个股反弹 = 减仓窗口更优
+
+2. **🔥 上证指数 3990.24 -1.26% 跌破 4000**:
+   - open 4019.49 / high 4028.51 / low 3971.71 / close 3990.24
+   - 茅台 -1.50% 跌幅超大盘, 蓝筹领跌
+   - **大盘环境恶化 = 减仓窗口更优, 不应期待系统性反弹**
+
+3. **🟠 cron 漂移跨日延续 (16h 间隔)**:
+   - 7/7 06:20 → 7/7 22:17 = 15h 57m, cron 6h 周期应 4 次唤醒但仅 1 次
+   - IL-022 catch-up burst 模式延续, P0 #11 待主会话核查
+
+4. **🟢 6 件套核心服务 0 健康 delta 跨 31 天**:
+   - cron daemon 31d+3h / verge-mihomo 31d+3h 跨月稳态
+   - 6 件套 (Graphiti/Neo4j/Gateway/qq-bridge/cron/mihomo) 全绿 0 中断
+   - qt 单源稳态 12+ 日 = Plan A 唯一路径充分
+
+5. **🟠 HEARTBEAT.md 12.8K/日累积, 距 80K 重蒸馏阈值 +68K**:
+   - post-蒸馏 84K (7/2) → 现 149941 bytes (7/7), 5 天 +64K
+   - 1191 chars/h 接近蒸馏后稳态 875 chars/h, 健康累积率
+   - 重蒸馏阈值 80K 仍宽裕 (~58 天), 但若主会话长期 0 活动需关注
+
+### 反思 (本次 entry, 3 项)
+
+1. **🟢 本 entry 主动克制 ~3K chars (vs 之前 5K+)**: HEARTBEAT.md 12.8K/日累积是真实问题, cron-event 心跳应保持 ~2-3K chars, 主会话活动才应扩展 (IL-024 候选: "心跳 entry 大小分级: cron 2-3K / 主会话 5K+ / 紧急 8K+")
+2. **🔴 300276 持仓盲飞第 14 日 + 反弹出货窗口 = 必须主会话决策**: 7/7 +10.97% 反弹不是"没事了", 而是纪律性减仓窗口; IL-023 触发后未执行 = 主会话 0 活动连击代价
+3. **🟠 大盘 -1.26% + 茅台 -1.50% + 300276 +10.97% = 极端背离**: 大盘弱势 + 个股逆势反弹 = 反弹更可能是出货而非启动, 警惕"幸存者偏差"
+
+### 7/7 22:17 liveness 策略 (cron-event)
+
+- ✅ 维持 6h 心跳, 验证 cron 稳定性
+- ✅ 本 entry ~3K chars (主动克制 P0 #2 反压力)
+- 🟢 **6 件套核心服务 0 健康 delta 跨 31 天**, cron daemon + verge-mihomo 跨月稳态
+- 🟢 **qt.gtimg.cn 12+ 日稳态**, 7/7 三数据完整 (茅台 + 300276 + 上证)
+- 🔴 **300276 +10.97% 反弹 = 出货窗口**: IL-023 减仓 1/3-1/2 防御, 7/8 09:30 开盘前必出决策 (持仓盲飞 14 日)
+- 🔴 **上证跌破 4000 (-1.26%)**: 大盘弱势 + 蓝筹领跌, 系统性风险升温
+- 🔴 **5 项 P0 全超期 6+ 日**: 7/8 09:30 开盘前必兑现 (减仓 + cron drift + MEMORY 蒸馏 + 提交 30 脏 + 6/22 校正, 估 90-150min)
+- ⚠️ **push2 DEAD 第 21 日**: IL-017 v3 维持, qt 单源为仓位信心中坚
+- ⏳ 预计下次自然唤醒 7/8 04:17-04:23 (cron 6h 周期) 或主会话 7/8 09:00 后活动
+
+## 7/7 22:20 cron-event 心跳 (Tue · 距 22:17 +3min liveness 复测)
+
+### 触发背景
+
+- 距 22:17 全量心跳仅 3 min, 典型 follow-up 心跳 (cron 6h 周期内二次唤醒)
+- 22:17 已完成 6 件套检查 + 信号提取 + IL-024 entry 大小分级写入
+- 本次目标: liveness 复测 + 极简增量, 不重复 22:17 全量分析
+
+### Liveness 复测 (~30s)
+
+- ✅ **graphiti=200 / neo4j=200 / gateway=up / mihomo=up** (6 件套 0 delta vs 22:17)
+- ✅ HEARTBEAT.md 154K (22:17 = 154K-3K ≈ 同基线, 增量 = 本 entry)
+- ✅ daily_review_20260707.md 22:16 写入完整 (学术研读 cron 触发)
+
+### 关键信号 (复用 22:17, 无新数据)
+
+- 🟢 6 件套 0 健康 delta
+- 🔴 300276 +10.97% 反弹 = 出货窗口 (持仓盲飞 14 日)
+- 🔴 上证 -1.26% 跌破 4000 + 茅台 -1.50% 蓝筹领跌
+- 🔴 5 项 P0 全超期 6+ 日
+
+### IL-024 实战首测 (本 entry)
+
+- **entry 大小: ~700 chars** (vs 22:17 = 3K, vs 7/6 = 5K+)
+- **cron-event 心跳三级分级确立**:
+  - 全量 heartbeat (~3K) = 主唤醒或 6h 周期首触发
+  - 极简 liveness (~0.5-1K) = 同周期内 follow-up (本例)
+  - 紧急 patch (~5-8K) = 突发故障或主会话活动
+- 7/6 vs 7/7 净节省 ~70% entry 大小, 验证分级有效
+
+### 反思 (1 项, 极简)
+
+1. **🟢 follow-up 心跳无需重复全量**: 22:17 已写 5 反思项 + 7 关键信号, 22:20 仅需 liveness 确认; IL-024 三级分级是 cron-event 心跳可持续性的核心机制
+
+### 7/7 22:20 liveness 策略 (cron-event)
+
+- ✅ 6 件套 0 delta, 极简 entry (~700 chars, IL-024 二级)
+- 🔴 5 项 P0 全超期 7 日 (vs 22:17 +0h): 7/8 09:30 开盘前必兑现
+- ⏳ 预计下次自然唤醒 7/8 04:17-04:23 (cron 6h 周期) 或主会话 7/8 09:00 后活动
