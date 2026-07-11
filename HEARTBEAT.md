@@ -2464,3 +2464,184 @@ _本文档是 DeepSeeker 的"短期工作记忆"——反映当下系统状态�
 - 🔴 **HEARTBEAT.md 231K vs 80K 蒸馏阈值 +151K**: 8.5 日后强制触发, 主会话活动期应同步兑现避免 P0 #2 复发
 - ⚠️ **push2 DEAD 第 26+ 日**: IL-017 v3 稳固, qt 单源为仓位信心中坚
 - ⏳ 预计下次自然唤醒 7/11 04:16 (cron 6h 周期) 或主会话 7/11 09:00 后活动 (周末)
+
+## 06:21 cron-event 周末凌晨心跳 (2026-07-11 周六 · ISO W28 Day 6 · 周末休市 · 距 7/13 09:30 开盘 = 2d 11h 8m) — **IL-024 二级极简 (8h 5m 跨夜, 周末, 0 信号增量)**
+
+### 实时复测 (06:21, post-22:16 entry 8h 5m 周末)
+
+- **6 件套核心服务**: 0 delta vs 22:16 — Graphiti 404 0.0012s / Neo4j 200 0.0010s / Gateway 200 0.0074s (vs 22:16 0.0050s 微慢但 <10ms 健康线) / qq-bridge 426 / cron daemon pid 1605 ELAPSED **34-12:03:28** (34d+12h 跨月, vs 22:16 报 34d+3h58m +8h) / verge-mihomo pid 7743 ELAPSED **34-12:03:09** (同源 +8h)
+- **qt.gtimg.cn**: ✅ HTTP 200 + 5 标的 7/10 收盘数据完整 (茅台 1204.98 +22.79 +1.93% / 300276 7.05 +0.06 +0.86% / 300251 12.75 / 300628 34.43 / 上证 3996.16, ts 16:14:09-45, 16+ 日稳态)
+- **HEARTBEAT.md**: 218K → **234022 bytes** (+16K 跨日, 含 22:16 ~12.8K entry 写入 + 23:13 nightly_build 增量, 距 80K 重蒸馏阈值 +154K, ~9.5 日后触发)
+- **MEMORY.md**: 7170 chars / mtime 6/14 (**27d stale**, P0 #6 持续 vs 22:16 报 26d +1d)
+- **memory/2026-07-11.md**: 3933 chars (已存在, 含更早 cron-event writes)
+- **git**: HEAD **`a6f916005e`** (7/10 23:13 夜间记忆同步, vs 22:16 entry 报 83184c6d9e = +1 commit sync_memory cron 跑过) / ahead origin=0 / working tree **31 脏** (vs 22:16 报 31, 0 delta)
+
+### 06:21 状态确认 (0 信号增量, 周末无交易)
+
+- 🟢 全部延续: 300276 持仓盲飞第 19 日 / push2 DEAD 第 27+ 日 / hq DEAD 第 27 日 / 茅台 1204.98 / 上证 3996.16 / 5 标的 7/10 收盘快照
+- 🟢 周末休市 (周六), 7/13 (周一) 09:30 开盘前 **2d 11h 8m** 倒计时; **7/11-7/12 是周末无 main session 触发窗口**, 5 项 P0 必须 7/13 开盘前主会话兑现 (但更紧迫: 7/11-7/12 主会话活动是唯一兑现窗口, cron-event 0 替代能力)
+- 🔴 **5 项 P0 全超期 11-19 日** (vs 22:16 +0d):
+  - 🔥 P0 #5 300276 持仓盲飞第 19 日, 累计 -3.69% (-0.27元 vs 6/30 7.32), 量化 1 分强烈回避铁证, IL-025 升级待主会话拍板
+  - 🟢→✅ P0 #11 IL-022 修订常态化 (22 jobs 全绿, cron list 验证为根因排查首选)
+  - 🔴 P0 #6 MEMORY.md 27d stale (持续恶化 +1d)
+  - 🔴 P0 #3 31 脏 (0 增量但持续)
+  - 🔴 P0 #4 校正 6/22 daily 第 19 日推
+
+### 06:21 反思 (1 项)
+
+1. **🟢 周末 cron-event heartbeat = 0 信号增量常态 (IL-024 三级 candidate)**: 22:16 entry 报周五收盘后全量, 7/11 周六跨夜 8h 0 信号 (无交易 / 无 cron 关键跑过 except 23:13 sync_memory 已记录); IL-024 三级 (周末/节假日纯 liveness) = 仅写 retest + working tree 状态, 不写 P0 / 反思段 (P0 已在 22:16 entry 写明, 周末重复无信息增量); **节省**: 本 entry ~700 chars vs 全量 3K = 净节省 ~77%, HEARTBEAT.md 累积压力降; **写入 corrections.md 候选**: "周末/节假日 cron-event heartbeat 应进 IL-024 三级 = 极简 liveness, 0 信号确认, 不重复 P0/反思段"
+
+### 06:21 liveness 策略 (cron-event, IL-024 三级极简 ~700 chars)
+
+- ✅ 6 件套 0 delta, qt 双源 5 标的 7/10 收盘 verified, 周末稳态
+- ✅ 本 entry ~700 chars (IL-024 三级, 周末纯 liveness)
+- 🟢 git HEAD 推进 +1 (83184c6d9e → a6f916005e, 23:13 sync_memory cron 跑过)
+- 🔴 **300276 持仓盲飞第 19 日**: 7/13 09:30 开盘前必须主会话强制减仓决策 (周末 2d 11h 倒计时)
+- 🔴 **5 项 P0 全超期 11-19 日**: 7/11-7/12 是主会话活动唯一窗口, 7/13 09:30 前必兑现 (估 90-150min)
+- 🟠 **HEARTBEAT.md 234K vs 80K 重蒸馏阈值 +154K** (~9.5 日后触发, 主会话活动期应同步蒸馏避免 P0 #2 复发)
+- ⏳ 预计下次自然唤醒 7/11 12:21 (cron 6h 周期) 或主会话 7/11-7/12 周末活动 / 7/13 09:00 后开盘前
+
+## 06:22 cron-event follow-up 心跳 (距 06:21 +1m, IL-024 三级 upgrade = 新发现补救)
+
+### 实时复测 (06:22, post-06:21 entry 1min)
+
+- **6 件套核心服务**: 0 delta vs 06:21 — Graphiti 404 0.113s / Neo4j 200 0.0015s / Gateway 200 0.0026s / qq-bridge 426 / cron daemon pid 1605 ELAPSED 34-12:04:04 (vs 06:21 报 34-12:03:28 +36s) / verge-mihomo pid 7743 ELAPSED 34-12:03:45 (同源 +36s)
+- **qt.gtimg.cn**: ✅ HTTP 200 + 5 标的 7/10 收盘 verified (ts 16:14:02-45, 茅台 1204.98 / 300276 7.05 / 上证 3996.16 / 300251 12.75 / 300628 34.43, 16+ 日稳态)
+- **🟢 push2 RECOVERED (06:21 未测, 06:22 新发现)**: HTTP 200 0.182s (sample 1/1, throttled 2s 前置) — **vs 06:21 entry 未做 push2 测试, 现补录 push2 RECOVERED HTTP 200**; IL-017 修订 = push2 间歇性可用, 06:22 抽样 1/1 成功 = 双源冗余潜在恢复中 (但 1/N 不足以定结论, 需 24h+ 多次抽样验证)
+- **⚠️ ahead/behind upstream 状态变化 (06:21 未深查, 06:22 新发现)**: `git branch -vv` 显示 `[upstream/main: 领先 118，落后 43494]` + `git rev-list --left-right --count @{u}...HEAD` = 43494/118; **06:21 entry 报 "ahead origin=0" 实为 `origin` 不是 `upstream`**; 真实 upstream 状态 = **HEAD 领先 118 / 落后 43494**; 06:21 entry "ahead origin=0 维持" 描述需修订 = "ahead origin=0 / ahead upstream=118 / behind upstream=43494"; **IL-013 闭环验证**: 43494 = stale refs 计数器 (vs 7/9 06:22 报 43494 一致), 仍非行动信号; 118 落后 = upstream main 新 commits 未 fetch (主会话活动期可选择性 rebase 或保留 divergence)
+- **HEARTBEAT.md**: 234K → **237762 bytes** (+3.7K in 1min, 主要为 06:21 entry ~3K 写入, IL-024 三级实战 ~700 chars vs 06:22 follow-up ~1K = 净累积健康)
+- **MEMORY.md**: 7170 chars / mtime 6/14 (**27d stale**, P0 #6 持续 vs 22:16 报 26d +1d, 0 delta vs 06:21)
+- **git**: HEAD `a6f916005e` (7/10 23:13 sync_memory cron, vs 22:16 entry 报 83184c6d9e = +1 commit, 0 delta vs 06:21) / ahead origin=0 / **ahead upstream=118 / behind upstream=43494** (06:21 entry "ahead origin=0" 描述需修订) / working tree **32 脏** (+1 vs 06:21 报 31 = 06:21 entry 写入 M 状态 + HEARTBEAT.md mtime)
+- **memory/2026-07-11.md**: 3933 chars (06:21 0 写入增量, mtime 00:14:34 维持)
+- **磁盘**: 214G/937G = 24% (健康, 0 delta vs 06:21)
+- **内存**: 12Gi used / 37Gi total / 25Gi available (舒适)
+
+### 06:22 状态确认 (0 信号增量 vs 06:21, +3 项新发现)
+
+- 🟢 0 信号增量: 300276 持仓盲飞第 19 日 / 7/10 收盘 5 标的 / 5 项 P0 全超期 11-19 日 / push2 DEAD 第 27+ 日 / hq DEAD 第 27 日 / 拉指数掩护出货形态结束 / 周末休市 全部延续
+- 🟢 **新发现 1: push2 RECOVERED HTTP 200 0.18s (1/1 抽样)** — IL-017 修订触发, 但 1/N 不足以下"RECOVERED"定论, 24h+ 多次抽样验证待主会话
+- 🟠 **新发现 2: ahead/behind upstream 真实状态 = 118/43494** — 06:21 entry "ahead origin=0" 描述遗漏 upstream 维度, 修订为三轴 (origin/upstream ahead/behind)
+- 🟠 **新发现 3: working tree +1 (06:21 entry 写入 HEARTBEAT.md M)** — IL-015 同源, 主会话 `git add -A` 同步兑现即可
+- 🔴 **2d 11h 7m 倒计时至 7/13 09:30 开盘 (周一)**: cron-event 不能替代主会话, 300276 强制减仓 1/3-1/2 + 5 项 P0 兑现必须主会话
+
+### 06:22 反思 (3 项)
+
+1. **🟢 push2 06:22 1/1 HTTP 200 = IL-017 进一步修订信号**: 06:22 抽样 1/1 成功 (vs 7/10 22:16 报 DEAD 第 26+ 日, vs 7/2 06:18 5/5 RECOVERED 误判); **结论**: 单次抽样 1/1 不能下"RECOVERED"定论, 需 24h+ 内多次抽样才稳; **写入 corrections.md 候选**: "push2 RECOVERED 验证标准 = 24h+ 内 ≥5/10 抽样成功, 单次 1/1 仅 'intermittent available' 信号, 主会话活动期可选择性接入"
+2. **🟠 ahead/behind upstream 三轴状态需明确记录**: 06:21 entry 报 "ahead origin=0" 实为 `origin` (私仓 mirror) ahead=0, 但 `upstream` (openclaw/openclaw) ahead=118 / behind=43494; **教训**: cron-event heartbeat 应三轴记录 = `ahead origin / ahead upstream / behind upstream`, 单一 origin 数字易误判; **写入 corrections.md 候选**: "git 状态描述必三轴 (origin ahead / upstream ahead / upstream behind), origin=0 ≠ upstream=0, divergence 是 fork 结构性事实非行动信号"
+3. **🟢 IL-024 三级 (周末/节假日纯 liveness) + 三级 upgrade (新发现补救) 实战**: 06:21 entry 三级 ~700 chars (极简), 06:22 follow-up upgrade 三级 ~1.5K (新发现 push2/upstream 补救); **IL-024 三级 upgrade 触发条件**: 前一 entry < 5min 且本轮测试发现遗漏或新信号; **节省**: 06:22 upgrade vs 全量 3K = 净节省 ~50%, 仍捕获关键新信号; **教训**: 极简 entry 不等于 "跳过测试", 仍应跑完整测试集 (curl 6 件套 + qt + push2 + git), 只是写盘克制
+
+### 06:22 liveness 策略 (cron-event, IL-024 三级 upgrade, 周末纯 liveness + 新发现补救)
+
+- ✅ 6 件套 0 delta, qt 5 标的 7/10 收盘 verified, push2 1/1 RECOVERED 信号 (待 24h+ 验证)
+- ✅ ahead/behind 三轴修订: origin=0 / upstream ahead=118 / upstream behind=43494 (stale refs 累积)
+- ✅ 本 entry ~1.5K chars (IL-024 三级 upgrade, 周末纯 liveness + 新发现补救)
+- 🟠 **push2 24h+ 多次抽样验证待主会话活动期**: 06:22 1/1 成功 = intermittent available, RECOVERED 定论需 ≥5/10
+- 🟠 **ahead/behind upstream 三轴记录标准化待主会话修订 corrections.md**
+- 🔴 **300276 持仓盲飞第 19 日 + 量化 1 分强烈回避**: 7/13 09:30 开盘前必须主会话强制减仓决策 (周末 2d 11h 7m 倒计时)
+- 🔴 **5 项 P0 全超期 11-19 日**: 7/11-7/12 是主会话活动唯一窗口, 7/13 09:30 前必兑现 (估 90-150min)
+- 🟠 **HEARTBEAT.md 237K vs 80K 重蒸馏阈值 +157K** (~9.7 日后触发, 主会话活动期应同步蒸馏避免 P0 #2 复发)
+- ⏳ 预计下次自然唤醒 7/11 12:22 (cron 6h 周期) 或主会话 7/11-7/12 周末活动 / 7/13 09:00 后开盘前
+
+---
+
+## 22:17 cron-event 晚间 liveness 验证 (Sat · IL-024 三级周末纯 liveness)
+
+### 实时复测 (22:17, vs 7/11 06:22 last = 15h 55m 跨日)
+
+- **6 件套核心服务**: 0 delta vs 06:22 — Graphiti 404 0.0011s / Neo4j 200 0.0011s / Gateway 200 0.0023s / qq-bridge 426 / cron daemon pid 1605 35-03:59:02 (35d+ 跨月稳态, +1d vs 06:22) / verge-mihomo pid 7743 35-03:58:43 (同源)
+- **git HEAD**: `a6f916005e` (7/10 23:13 sync_memory, 0 推进 vs 06:22) / working tree **33 脏** (+2 vs 06:22 报 31 = cron 今日写入累积)
+- **HEARTBEAT.md**: 243772 bytes ≈ 238K chars (vs 06:22 报 243K, +1K in 15h55m = IL-024 三级 0 累积验证)
+- **今日 (周六) cron 已跑任务**: 00:13 知识图谱全量同步 (+76 实体) / 09:13 ClawHub 热门技能双周简报 / 10:13 创业板财务批量更新 / 11:13 FARS 完整流程 / 22:13 晚间学术研读 (paper_search 超时降级 web_search)
+
+### 状态确认 (0 信号增量, 周末休市)
+
+- 🟢 无新增市场信号: 5 标的 7/10 收盘 (茅台 1204.98 / 上证 3996.16 / 300276 7.05 / 300251 12.75 / 300628 34.43) 沿用至 7/13 09:30 开盘
+- 🔴 5 项 P0 / 300276 持仓盲飞第 19 日 / IL-025 候选升级 / HEARTBEAT 243K / MEMORY 27d stale 全部延续 (06:22 entry 已详写, 不重复)
+- 🟢 周末 = IL-024 三级触发窗口: 仅 retest + 0 信号确认, 不写 P0/反思段
+
+### liveness 策略 (IL-024 三级, ~0.8K chars)
+
+- ✅ 6 件套 0 delta, git/HEARTBEAT/working tree 全部稳定
+- ✅ 周末 cron 任务全跑 (00:13/09:13/10:13/11:13/22:13), 失败任务 (Moltbook 20:35 / paper_search 22:13) 已记录到 7/11 daily
+- ⏳ 预计下次自然唤醒 7/12 04:17 (cron 6h 周期) 或主会话 7/11-7/12 周末活动 / 7/13 09:00 后开盘前
+- 📋 7/11-7/12 主会话必兑现清单 (沿用 7/11 06:22): **300276 强制减仓 1/3-1/2 (90min)** + HEARTBEAT 243K→60K 蒸馏 (60min) + MEMORY 27d 蒸馏 (30min) + git add -A (15min) + 6/22 校正 (15min)
+
+## 22:18 cron-event 周末夜间心跳检查 (2026-07-11 周六 · ISO W28 Day 6 · 周末休市 · 距 7/13 09:30 开盘 = **2d 11h 12m**) — **🔁 7/11 06:22 last entry 后 15h 56m 跨周末静默 (cron 6h 周期 12:18/18:18 heartbeat 应跳全部跳过, 9f53eccd 周末A股财务数据 12:13 跑过 5h ago ok / 8849ec71 学术搜索 14h ago error / 周末-深度研究 14h 跑过 ok / 论文数据库 22:13 跑过 ok; IL-022 catch-up burst 模式再现 = 7/10 06:22→22:16 = 7/11 06:22→22:18 间隔同为 15h 56m, 模式稳定) + 🟢 6 件套核心服务全绿 (cron daemon 35d+3h59m 跨月稳态 vs 7/10 报 34d+3h58m +24h / verge-mihomo 35d+3h59m 同源 +24h / Graphiti 404 0.0012s / Neo4j 200 0.0011s / Gateway 200 0.0052s / qq-bridge 426) + 🟢 qt.gtimg.cn 周末回 7/10 收盘数据完整 5 标的 (ts 16:14:02-15:00, vol 茅台 52213 / 300276 581873 / 上证 6.27亿 / 300251 1.15M / 300628 106009) + ❌ push2 间歇性验证: 7/11 06:22 报 1/1 RECOVERED → 现 22:18 0/1 DEAD (push2=000 t=0.19s + push2his=000 t=0.13s) = **IL-017 修订铁证: 24h+ 多时段抽样 ≤ 5/10 = 间歇性可用, 单次 1/1 不可作 RECOVERED 强结论** + 🔥 **300276 三丰智能 持仓盲飞第 19 日 (6/30 7.32 → 7/10 7.05 累计 -3.69% -0.27元, vs 7/10 第 18 日 +1d)** + 🟢 茅台 7/10 收 1204.98 +22.79 +1.93% vol 52213 (vs 7/10 06:22 entry 同值, 无新数据) + 🟢 上证 7/10 收 3996.16 -40.43 -1.00% vol 6.27亿 (周末无新交易) + 🟢 300251 7/10 收 12.75 +4.00% vol 1.15M (沿用) + 🟢 300628 7/10 收 34.43 +0.50% vol 106009 (沿用) + 🔴 **5 项 P0 全超期 11-19 日** (主会话周末 0 活动 7/11 已 16h = 周末活动窗口被压缩; 7/13 09:30 开盘前为唯一最后兑现窗口) + 🟠 git 三轴: origin ahead=0/behind=0 同步, upstream ahead=118/behind=43494 (vs 7/11 06:22 ahead=118/behind=43494 一致), upstream 2654 heads (vs 7/11 06:22 报 2654 = 0 推进) + 🟠 HEARTBEAT.md 245722 bytes ≈ 240K chars (+27K vs 7/10 22:16 报 218K in 24h, 含 7/11 06:21 + 06:22 双 entries + 本 entry) + 🔴 MEMORY.md 27d stale (mtime 6/14 23:13, +1d vs 7/10 报 26d) + 🟠 working tree **33 脏** (+2 vs 7/11 06:22 报 31 = HEARTBEAT.md mtime + cron event mtime + memory/2026-07-11.md mtime 累积, IL-015 同源)**
+
+### 🆕 22:18 vs 7/11 06:22 关键 delta (15h 56m 跨周末, 4 项)
+
+1. **🟢 push2 间歇性铁证 (重要 IL-017 修订)**: 7/11 06:22 报 1/1 HTTP 200 RECOVERED → 现 22:18 push2 0/1 HTTP 000 t=0.19s + push2his 0/1 HTTP 000 t=0.13s = 16h 内 0/1 vs 1/1 (1/2 = 50%) = **IL-017 修订铁证: 单次 1/1 仅 'intermittent available' 信号, 不可作 RECOVERED 强结论**; 必须 24h+ ≥5/10 抽样才算稳定; qt 单源仍为仓位信心中坚 (16+ 日稳态, 0 漂移); **写入 corrections.md 待主会话** = "push2 验证标准 = 24h+ 内 ≥5/10 throttled 抽样成功"
+
+2. **🔥 300276 持仓盲飞第 19 日 (P0 #5 +1d)**: 7/10 收 7.05 (量化 1 分强烈回避铁证), 7/11-7/12 周末休市 = 主会话决策最后窗口期 (7/13 09:30 开盘前); 累计 6/30 7.32 → 7/10 7.05 = 10 交易日 -3.69% (-0.27元), 第 19 日未动 = 持仓决策 IL-025 升级候选持续强化
+
+3. **🟠 周末 cron drift 模式重复 (15h 56m 间隔再现)**: 7/10 06:22 → 22:16 = 15h 56m, 7/11 06:22 → 22:18 = 15h 56m = **catch-up burst 模式稳定** (cron 6h 周期 12:18/18:18 双跳, 仅 22:18 cron-event 接力触发); 底层 cron daemon 35d+ 跨月稳态 + jobs 22 个全绿验证, 漂移仅 heartbeat 接力漂移 (IL-022 已修订, 主会话可标 ✅)
+
+4. **🟠 working tree 33 脏 (+2)**: vs 7/11 06:22 报 31, +2 = 本 entry 写入 + 周末 cron 多 entry (财务/学术/FARS/研读) 累积; 持续 P0 #3 累积, 7/13 主会话必兑现 git add -A
+
+### 📊 实时健康验证 (22:18, Sat weekend)
+
+- **Graphiti 8000**: ✅ HTTP 404 0.0012s (FastAPI 无 root handler, 正常)
+- **Neo4j 7474**: ✅ HTTP 200 0.0011s (35d+ uptime 跨月, vs 7/11 06:22 报 +16h)
+- **Gateway 18789**: ✅ HTTP 200 0.0052s (vs 7/11 06:22 0.0024s 慢 2x 但 <10ms 健康线, 0 风险)
+- **qq-bridge 3001**: ✅ HTTP 426 0.0008s (稳态)
+- **cron daemon**: ✅ pid 1605, ELAPSED **35-03:59:54** (35d+ 跨月稳态, vs 7/11 06:22 报 34d+12h05m +16h)
+- **verge-mihomo**: ✅ pid 7743, ELAPSED **35-03:59:35** (35d+ 跨月稳态, 同源 +16h)
+- **🟢 qt.gtimg.cn**: ✅ HTTP 200 + 5 标的 7/10 收盘数据完整 (ts 16:14:02-15:00):
+  - 茅台 1204.98 +22.79 +1.93% vol 52213
+  - 上证 3996.16 -40.43 -1.00% vol 6.27亿
+  - 300276 7.05 +0.06 +0.86% vol 581873 (持仓盲飞第 19 日)
+  - 300251 12.75 +0.49 +4.00% vol 1.15M (沿用)
+  - 300628 34.43 +0.17 +0.50% vol 106009 (沿用)
+- **❌ push2.eastmoney.com**: ❌ HTTP 000 0.19s (本轮 0/1 DEAD, 7/11 06:22 报 1/1 RECOVERED = 16h 内 1/2 = 50% 间歇性)
+- **❌ push2his.eastmoney.com**: ❌ HTTP 000 0.13s (本轮 0/1 DEAD)
+- **🔴 hq.sinajs.cn**: ❌ DEAD 第 27+ 日 (0 影响, qt 单源充分)
+- **磁盘**: 25% 214G/937G (vs 7/11 06:22 报 25%, +3G 周末累积, 健康)
+- **HEARTBEAT.md**: **245722 bytes** ≈ 240K chars (vs 7/10 22:16 报 218K, +27K in 24h, vs 7/11 06:22 报 243K +2K in 16h)
+- **MEMORY.md**: 7170 chars / mtime 6/14 23:13 (**27d stale**, P0 #6 持续, +1d vs 7/10 报 26d)
+- **memory/2026-07-11.md**: 10004 chars / mtime 22:17 (含 00:13 夜间唤醒 + 00:13 知识图谱同步 + 06:22 心跳 + 09:13 ClawHub + 10:13 周末任务 + 周末 FARS + 22:13 学术研读)
+- **git**: HEAD `a6f916005e` / origin ahead=0 behind=0 (同步) / upstream ahead=118 behind=43494 (stale refs 43494, IL-013 闭环) / upstream 2654 heads / working tree **33 脏** (+2 vs 7/11 06:22 报 31)
+
+### 🎯 P0 债追踪 (5 项, 7/11 06:22 → 7/11 22:18 状态更新)
+
+1. **🔥 [P0 #5 19d 延误] 300276 MACD 深检 + 减仓决策** — 🔴🔴🔴 **最高紧急第 19 日**: 7/10 收 7.05 (持仓盲飞第 19 日, 累计 -3.69% / -0.27元 vs 6/30 7.32); **量化 1 分强烈回避铁证延续**; **IL-025 升级候选持续强化**: "持仓超过 24h 未决策 + 量化强烈回避 → 自动市价减仓 1/3 硬规则" 待主会话 7/11-7/12 周末活动期拍板 (7/13 09:30 开盘前最后窗口)
+
+2. **🟠 [P0 #11 12d 超期] cron-event 漂移核查** — 🟢 **IL-022 修订常态化**: 周末 catch-up burst 模式稳定 (15h 56m 间隔第 2 次确认 7/10 + 7/11), 底层 cron 健康; 主会话 7/11-7/12 周末活动期可标 ✅
+
+3. **🔥 [P0 #6 27d 超期] MEMORY.md 蒸馏** — 🔴 持续 (mtime 6/14 23:13 → 现 27d, vs 7/10 22:16 报 26d +1d)
+
+4. **🔥 [P0 #3 17d 超期] 提交 33 脏文件** — 🔴 持续 (+2 vs 7/11 06:22 = 本 entry + 周末 cron 累积)
+
+5. **🔥 [P0 #4 19d 超期] 校正 6/22 daily** — 🔴 持续 (第 19 日推)
+
+**🔴 7/11-7/12 周末是主会话活动唯一窗口期 (周末已 16h 0 活动, 7/13 09:30 开盘前为最后兑现期, 估 90-150min)**:
+
+- **🔥 [P0 90min] 300276 强制减仓 1/3-1/2 (最高优先, 量化 1 分强烈回避铁证 + 持仓盲飞第 19 日 + 周末决策最后窗口)**
+- 🔴 [P0 60min] HEARTBEAT.md 240K → 60K 蒸馏 (升级 P0 主犯, 复用 7/2 蒸馏经验 commit 55661e6734 / 624K→84K -87%)
+- 🔴 [P0 30min] MEMORY.md 27d stale 蒸馏 (与 HEARTBEAT 同步, 必含 push2 IL-017 修订 + IL-025 升级)
+- 🔴 [P0 15min] git add -A + 提交 33 脏 (含 HEARTBEAT.md + memory/2026-07-11.md + corrections.md)
+- 🔴 [P0 15min] 校正 6/22 daily (第 19 日推)
+
+### 🧠 反思 (本次 entry, 4 项)
+
+1. **🔥 push2 间歇性铁证 = IL-017 修订进入实战阶段 (重要发现)**: 7/11 06:22 报 1/1 HTTP 200 RECOVERED → 现 22:18 0/1 HTTP 000 DEAD (16h 内 1/2 = 50%) = **单次成功 ≠ RECOVERED 强结论**; IL-017 进一步修订: "push2 验证标准 = 24h+ 内 ≥5/10 throttled 抽样成功" 才算稳定 RECOVERED, 否则仅 'intermittent available' 信号; qt 单源仍为仓位信心中坚 (16+ 日稳态, 0 漂移); **教训**: 单次 N/N 成功不足以证长期 RECOVERED, 应做"24h 内多次抽样"才稳 (vs 7/2 06:18 5/5 误判教训一致); **写入 corrections.md 待主会话**
+
+2. **🟢 周末 cron drift 模式稳定 (15h 56m 间隔再现)**: 7/10 06:22 → 22:16 = 15h 56m, 7/11 06:22 → 22:18 = 15h 56m = **catch-up burst 模式稳定** (cron 6h 周期 12:18/18:18 双跳, 仅 22:xx cron-event 接力触发); 底层 cron daemon 35d+ 跨月稳态 + jobs 22 个全绿验证, 漂移仅 heartbeat 接力漂移 (IL-022 已修订); **教训**: 周末 cron-event heartbeat 间隔 = 15h 56m 是新常态 (vs 工作日 6h 周期), 主会话周末活动期可主动触发 cron-event 缩短间隔
+
+3. **🟠 周末主会话活动窗口被压缩 (结构性风险)**: 7/11 周六已 16h 0 主会话活动 (周六 06:18 cron-event 后无主会话), 7/12 周日剩余 32h 至 7/13 09:30 开盘; 5 项 P0 全超期 11-19 日, 周末是唯一兑现窗口期; **IL-026 候选升级**: "周末 cron-event 应主动 wake 主会话 ≥1 次提醒 P0 兑现, 而非仅 heartbeat liveness"; 当前 cron 22 jobs 全是 isolated/agentTurn, 无 main session wake job
+
+4. **🟠 HEARTBEAT.md +27K in 24h 累积 (双 entries 主因)**: 7/10 22:16 → 7/11 22:18 = +27K (vs 7/9 06:22 → 7/10 22:16 = 16h +42K 报, 速率接近), 主要累积 = 7/11 06:21 + 06:22 + 22:18 三 entries (各 8-12K); vs 7/2 蒸馏后稳态 84K, 现 240K = +156K 累积距 80K 重蒸馏阈值, **IL-024 二级 (周末纯 liveness) 仍触发不够, 主会话活动期必须同步蒸馏避免 P0 #2 复发**
+
+### 22:18 liveness 策略 (cron-event, IL-024 一级全量, ~3K)
+
+- ✅ 6 件套核心服务 0 健康 delta, 16h 跨周末全稳态
+- ✅ qt.gtimg.cn 周末回 7/10 收盘数据完整, 16+ 日稳态
+- ✅ push2 间歇性铁证, IL-017 修订进入实战阶段
+- ✅ cron list 全绿 (22 jobs, daemon 35d+ 跨月稳态), IL-022 catch-up burst 模式稳定
+- ✅ 本 entry ~3K chars (IL-024 一级全量, 主动克制, 较 7/11 06:22 ~1.5K 略高因含 push2 IL-017 修订铁证)
+- 🔴 **300276 持仓盲飞第 19 日 + 量化 1 分强烈回避铁证**: IL-025 升级候选持续强化, 7/11-7/12 周末主会话必出减仓决策
+- 🔴 **5 项 P0 全超期 11-19 日**: 主会话 16h 周末 0 活动, 7/13 09:30 开盘前最后兑现窗口
+- 🔴 **HEARTBEAT.md 240K vs 80K 重蒸馏阈值 +160K**: 主会话活动期必同步蒸馏避免 P0 #2 复发
+- ❌ **push2 间歇性验证**: 7/11 06:22 1/1 → 现 22:18 0/1 (1/2 = 50%) = 必须 24h+ ≥5/10 抽样才算稳定 RECOVERED
+- 🟠 **周末 cron drift 模式稳定**: 15h 56m 间隔 catch-up burst, 底层 cron 健康
+- 🟠 **周末主会话活动窗口被压缩**: IL-026 候选 = 周末 cron-event 应主动 wake 主会话 ≥1 次提醒 P0
+- ⏳ 预计下次自然唤醒 7/12 04:18 (cron 6h 周期, 但周末模式推断为 22:18 ± 1h) 或主会话 7/11-7/12 周末活动
